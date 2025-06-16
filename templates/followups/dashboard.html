@@ -1,0 +1,646 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Follow-up Dashboard - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="display-6 fw-bold text-primary">
+                        <i class="fas fa-envelope-open-text"></i> Follow-up Dashboard
+                    </h2>
+                    <p class="text-muted">Manage your follow-up emails and increase response rates</p>
+                </div>
+                <div>
+                    <a href="{% url 'followups:create_template' %}" class="btn btn-success me-2">
+                        <i class="fas fa-plus"></i> New Template
+                    </a>
+                    <button class="btn btn-primary" onclick="sendBulkFollowup()">
+                        <i class="fas fa-envelope-bulk"></i> Bulk Follow-up
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="text-warning fw-bold">{{ due_followups.count }}</h3>
+                            <p class="mb-0">Due Today</p>
+                        </div>
+                        <div class="stats-icon bg-warning">
+                            <i class="fas fa-clock text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="text-success fw-bold">{{ recent_followups.count }}</h3>
+                            <p class="mb-0">Sent This Week</p>
+                        </div>
+                        <div class="stats-icon bg-success">
+                            <i class="fas fa-paper-plane text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-info">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="text-info fw-bold">{{ templates.count }}</h3>
+                            <p class="mb-0">Active Templates</p>
+                        </div>
+                        <div class="stats-icon bg-info">
+                            <i class="fas fa-file-alt text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="text-primary fw-bold">27.5%</h3>
+                            <p class="mb-0">Response Rate</p>
+                        </div>
+                        <div class="stats-icon bg-primary">
+                            <i class="fas fa-chart-line text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Due Follow-ups Section -->
+    {% if due_followups %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Follow-ups Due Today ({{ due_followups.count }})
+                    </h5>
+                    <button class="btn btn-dark btn-sm" onclick="sendAllDueFollowups()">
+                        <i class="fas fa-send"></i> Send All Due
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAllDue" class="form-check-input">
+                                    </th>
+                                    <th>Job Title</th>
+                                    <th>Company</th>
+                                    <th>Days Since Applied</th>
+                                    <th>Follow-up Count</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in due_followups %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input due-app-checkbox" value="{{ app.id }}">
+                                    </td>
+                                    <td>
+                                        <strong>{{ app.job_title }}</strong>
+                                        <br><small class="text-muted">Applied: {{ app.applied_date|date:"M d, Y" }}</small>
+                                    </td>
+                                    <td>{{ app.company_name }}</td>
+                                    <td>
+                                        {% if app.applied_date %}
+                                            {% now "c" as today %}
+                                            {{ app.applied_date|timesince }} ago
+                                        {% else %}
+                                            Not applied
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ app.follow_up_count }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-success" onclick="sendSingleFollowup({{ app.id }})">
+                                                <i class="fas fa-paper-plane"></i> Send Now
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="scheduleFollowup({{ app.id }})">
+                                                <i class="fas fa-calendar"></i> Schedule
+                                            </button>
+                                            <a href="{% url 'jobs:application_detail' app.pk %}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Templates and Recent Activity -->
+    <div class="row">
+        <!-- Follow-up Templates -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i> Your Templates ({{ templates.count }})
+                    </h5>
+                    <a href="{% url 'followups:templates' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-cog"></i> Manage All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if templates %}
+                        {% for template in templates %}
+                        <div class="template-item p-3 border rounded mb-3 position-relative">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ template.template_name }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> {{ template.days_after_application }} days after application
+                                    </small>
+                                    <br>
+                                    <small class="text-success">
+                                        <i class="fas fa-chart-line"></i> {{ template.success_rate }}% success rate
+                                        ({{ template.times_used }} uses)
+                                    </small>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{% url 'followups:edit_template' template.pk %}">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="duplicateTemplate({{ template.id }})">
+                                            <i class="fas fa-copy"></i> Duplicate
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteTemplate({{ template.id }})">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            {% if template.is_default %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">
+                                    Default
+                                </span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-file-alt fa-3x mb-3"></i>
+                            <h6>No Templates Yet</h6>
+                            <p>Create your first follow-up template</p>
+                            <a href="{% url 'followups:create_template' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Template
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Follow-up Activity -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Recent Activity
+                    </h5>
+                    <a href="{% url 'followups:history' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-list"></i> View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_followups %}
+                        <div class="activity-timeline">
+                            {% for followup in recent_followups %}
+                            <div class="activity-item d-flex mb-3">
+                                <div class="activity-icon me-3">
+                                    {% if followup.response_received %}
+                                        <i class="fas fa-reply text-success"></i>
+                                    {% else %}
+                                        <i class="fas fa-paper-plane text-primary"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{{ followup.application.job_title }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ followup.application.company_name }}</small>
+                                        </div>
+                                        <small class="text-muted">{{ followup.sent_date|timesince }} ago</small>
+                                    </div>
+                                    
+                                    {% if followup.response_received %}
+                                        <div class="mt-1">
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Response Received
+                                            </span>
+                                            <span class="badge bg-{{ followup.response_type|default:'secondary' }}">
+                                                {{ followup.get_response_type_display }}
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <div class="mt-1">
+                                            <span class="badge bg-primary">Follow-up Sent</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <h6>No Recent Activity</h6>
+                            <p>Follow-up history will appear here</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Follow-up Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-envelope-bulk"></i> Bulk Follow-up Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'followups:bulk_followup' %}" id="bulkFollowupForm">
+                        {% csrf_token %}
+                        <div class="row align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Select Template</label>
+                                <select name="template_id" class="form-select" required>
+                                    <option value="">Choose template...</option>
+                                    {% for template in templates %}
+                                        <option value="{{ template.id }}">{{ template.template_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Select Applications</label>
+                                <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                    {% for app in due_followups %}
+                                    <div class="form-check">
+                                        <input class="form-check-input bulk-app-checkbox" type="checkbox" name="applications" value="{{ app.id }}" id="bulkApp{{ app.id }}">
+                                        <label class="form-check-label" for="bulkApp{{ app.id }}">
+                                            {{ app.job_title }} at {{ app.company_name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-send"></i> Send Bulk Follow-up
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stats-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.template-item {
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.template-item:hover {
+    background-color: #e9ecef;
+    transform: translateX(5px);
+}
+
+.activity-timeline {
+    position: relative;
+}
+
+.activity-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+}
+
+.activity-item {
+    position: relative;
+}
+
+.activity-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 30px;
+    height: calc(100% + 12px);
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+@media (max-width: 768px) {
+    .stats-card {
+        margin-bottom: 15px;
+    }
+    
+    .template-item {
+        margin-bottom: 10px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Send single follow-up
+function sendSingleFollowup(applicationId) {
+    Swal.fire({
+        title: 'Send Follow-up?',
+        text: 'This will send a follow-up email using your default template.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Send Follow-up',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post(`/followups/send/${applicationId}/`, {
+                csrfmiddlewaretoken: csrftoken
+            }).done(function(data) {
+                Swal.fire('Success!', 'Follow-up email sent successfully.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }).fail(function() {
+                Swal.fire('Error!', 'Failed to send follow-up email.', 'error');
+            });
+        }
+    });
+}
+
+// Schedule follow-up
+function scheduleFollowup(applicationId) {
+    Swal.fire({
+        title: 'Schedule Follow-up',
+        html: `
+            <div class="mb-3">
+                <label class="form-label">Follow-up Date</label>
+                <input type="date" class="form-control" id="followupDate" min="${new Date().toISOString().split('T')[0]}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Template</label>
+                <select class="form-select" id="templateId">
+                    {% for template in templates %}
+                        <option value="{{ template.id }}">{{ template.template_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Schedule',
+        preConfirm: () => {
+            const date = document.getElementById('followupDate').value;
+            const templateId = document.getElementById('templateId').value;
+            
+            if (!date || !templateId) {
+                Swal.showValidationMessage('Please fill all fields');
+                return false;
+            }
+            
+            return { date, templateId };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post(`/followups/schedule/${applicationId}/`, {
+                follow_up_date: result.value.date,
+                template: result.value.templateId,
+                csrfmiddlewaretoken: csrftoken
+            }).done(function(data) {
+                Swal.fire('Scheduled!', 'Follow-up has been scheduled successfully.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }).fail(function() {
+                Swal.fire('Error!', 'Failed to schedule follow-up.', 'error');
+            });
+        }
+    });
+}
+
+// Send all due follow-ups
+function sendAllDueFollowups() {
+    const checkedBoxes = document.querySelectorAll('.due-app-checkbox:checked');
+    
+    if (checkedBoxes.length === 0) {
+        Swal.fire('No Selection', 'Please select at least one application.', 'warning');
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Send All Due Follow-ups?',
+        text: `This will send follow-ups for ${checkedBoxes.length} selected applications.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Send All',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const applicationIds = Array.from(checkedBoxes).map(cb => cb.value);
+            
+            $.post('/followups/bulk/', {
+                application_ids: applicationIds,
+                template_id: $('select[name="template_id"]').val() || 'default',
+                csrfmiddlewaretoken: csrftoken
+            }).done(function(data) {
+                Swal.fire('Success!', 'Bulk follow-ups sent successfully.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }).fail(function() {
+                Swal.fire('Error!', 'Failed to send bulk follow-ups.', 'error');
+            });
+        }
+    });
+}
+
+// Bulk follow-up functionality
+function sendBulkFollowup() {
+    const form = document.getElementById('bulkFollowupForm');
+    const formData = new FormData(form);
+    const selectedApps = form.querySelectorAll('input[name="applications"]:checked');
+    
+    if (selectedApps.length === 0) {
+        Swal.fire('No Selection', 'Please select at least one application.', 'warning');
+        return;
+    }
+    
+    if (!form.querySelector('select[name="template_id"]').value) {
+        Swal.fire('No Template', 'Please select a follow-up template.', 'warning');
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Send Bulk Follow-ups?',
+        text: `This will send follow-ups for ${selectedApps.length} applications.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Send Bulk Follow-ups',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: form.action,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    Swal.fire('Success!', 'Bulk follow-ups sent successfully.', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                },
+                error: function() {
+                    Swal.fire('Error!', 'Failed to send bulk follow-ups.', 'error');
+                }
+            });
+        }
+    });
+}
+
+// Template management functions
+function duplicateTemplate(templateId) {
+    Swal.fire({
+        title: 'Duplicate Template',
+        input: 'text',
+        inputLabel: 'New template name',
+        inputPlaceholder: 'Enter name for the duplicated template',
+        showCancelButton: true,
+        confirmButtonText: 'Duplicate',
+        inputValidator: (value) => {
+            if (!value) {
+                return 'Please enter a template name';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post(`/followups/templates/${templateId}/duplicate/`, {
+                new_name: result.value,
+                csrfmiddlewaretoken: csrftoken
+            }).done(function(data) {
+                Swal.fire('Duplicated!', 'Template has been duplicated successfully.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }).fail(function() {
+                Swal.fire('Error!', 'Failed to duplicate template.', 'error');
+            });
+        }
+    });
+}
+
+function deleteTemplate(templateId) {
+    Swal.fire({
+        title: 'Delete Template?',
+        text: 'This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: `/followups/templates/${templateId}/delete/`,
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                success: function(response) {
+                    Swal.fire('Deleted!', 'Template has been deleted.', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                },
+                error: function() {
+                    Swal.fire('Error!', 'Failed to delete template.', 'error');
+                }
+            });
+        }
+    });
+}
+
+// Select all functionality
+document.getElementById('selectAllDue').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.due-app-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+});
+
+// Auto-refresh due follow-ups every 30 seconds
+setInterval(() => {
+    // In production, this would check for new due follow-ups
+    console.log('Checking for new due follow-ups...');
+}, 30000);
+</script>
+{% endblock %}

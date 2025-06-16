@@ -1,0 +1,665 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ application.job_title }} at {{ application.company_name }} - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'jobs:applications' %}">Applications</a></li>
+                            <li class="breadcrumb-item active">{{ application.job_title }}</li>
+                        </ol>
+                    </nav>
+                    <h2 class="display-6 fw-bold text-primary mb-0">{{ application.job_title }}</h2>
+                    <p class="text-muted">at {{ application.company_name }}</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-{% if application.application_status == 'applied' %}primary{% elif application.application_status == 'responded' %}success{% elif application.application_status == 'interview' %}warning{% elif application.application_status == 'offer' %}info{% else %}secondary{% endif %} fs-6 me-2">
+                        {{ application.get_application_status_display }}
+                    </span>
+                    <span class="badge bg-{% if application.urgency_level == 'urgent' %}danger{% elif application.urgency_level == 'high' %}warning{% elif application.urgency_level == 'medium' %}info{% else %}secondary{% endif %} fs-6">
+                        {{ application.get_urgency_level_display }} Priority
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Job Information -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-briefcase"></i> Job Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item mb-3">
+                                <strong><i class="fas fa-building text-primary"></i> Company:</strong>
+                                <p class="mb-0">{{ application.company_name }}</p>
+                                {% if application.company_rating %}
+                                    <div class="rating">
+                                        {% for i in "12345" %}
+                                            <i class="fas fa-star {% if forloop.counter <= application.company_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                        {% endfor %}
+                                        <span class="ms-2">{{ application.company_rating }}/5</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="info-item mb-3">
+                                <strong><i class="fas fa-map-marker-alt text-danger"></i> Location:</strong>
+                                <p class="mb-0">{{ application.location|default:"Not specified" }}</p>
+                                {% if application.remote_option %}
+                                    <span class="badge bg-success">{{ application.remote_option|title }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if application.salary_range %}
+                            <div class="info-item mb-3">
+                                <strong><i class="fas fa-dollar-sign text-success"></i> Salary Range:</strong>
+                                <p class="mb-0">{{ application.salary_range }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-item mb-3">
+                                <strong><i class="fas fa-calendar text-info"></i> Found:</strong>
+                                <p class="mb-0">{{ application.created_at|date:"F d, Y H:i" }}</p>
+                            </div>
+                            
+                            {% if application.applied_date %}
+                            <div class="info-item mb-3">
+                                <strong><i class="fas fa-paper-plane text-primary"></i> Applied:</strong>
+                                <p class="mb-0">{{ application.applied_date|date:"F d, Y H:i" }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if application.match_percentage %}
+                            <div class="info-item mb-3">
+                                <strong><i class="fas fa-percentage text-warning"></i> Match Score:</strong>
+                                <div class="progress mt-2" style="height: 20px;">
+                                    <div class="progress-bar bg-{% if application.match_percentage >= 80 %}success{% elif application.match_percentage >= 60 %}warning{% else %}danger{% endif %}" 
+                                         style="width: {{ application.match_percentage }}%">
+                                        {{ application.match_percentage }}%
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if application.job_url %}
+                    <div class="mt-3">
+                        <a href="{{ application.job_url }}" target="_blank" class="btn btn-outline-primary">
+                            <i class="fas fa-external-link-alt"></i> View Original Job Posting
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Job Description -->
+            {% if application.job_description %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-text"></i> Job Description
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="job-description">
+                        {{ application.job_description|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Skills Analysis -->
+            {% if application.skills_match_analysis %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> Skills Match Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="skills-analysis">
+                        {{ application.skills_match_analysis|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes Section -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sticky-note"></i> Notes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if application.notes %}
+                        <div class="notes-content">
+                            {{ application.notes|linebreaks }}
+                        </div>
+                        <hr>
+                    {% endif %}
+                    
+                    <!-- Add/Edit Notes Form -->
+                    <form method="post" id="notesForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="notes" class="form-label">Add or update notes:</label>
+                            <textarea class="form-control" 
+                                      id="notes" 
+                                      name="notes" 
+                                      rows="3" 
+                                      placeholder="Add your notes about this application...">{{ application.notes }}</textarea>
+                        </div>
+                        <div class="mt-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Notes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if application.application_status == 'found' %}
+                            <button class="btn btn-primary" onclick="markAsApplied()">
+                                <i class="fas fa-paper-plane"></i> Mark as Applied
+                            </button>
+                        {% endif %}
+                        
+                        {% if application.application_status == 'applied' or application.application_status == 'responded' %}
+                            <button class="btn btn-success" onclick="sendFollowup()">
+                                <i class="fas fa-envelope"></i> Send Follow-up
+                            </button>
+                        {% endif %}
+                        
+                        {% if application.documents_generated %}
+                            <a href="{% url 'documents:download' application.id %}" class="btn btn-info">
+                                <i class="fas fa-download"></i> Download Documents
+                            </a>
+                        {% else %}
+                            <button class="btn btn-outline-info" onclick="generateDocuments()">
+                                <i class="fas fa-file-alt"></i> Generate Documents
+                            </button>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-secondary" onclick="openStatusModal()">
+                            <i class="fas fa-edit"></i> Update Status
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Timeline -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history"></i> Application Timeline
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <strong>Job Found</strong>
+                                <br><small class="text-muted">{{ application.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if application.applied_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <strong>Application Submitted</strong>
+                                <br><small class="text-muted">{{ application.applied_date|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.last_follow_up_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <strong>Follow-up Sent</strong>
+                                <br><small class="text-muted">{{ application.last_follow_up_date|date:"M d, Y H:i" }}</small>
+                                <br><small class="text-muted">{{ application.follow_up_count }} follow-up(s) sent</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.interview_scheduled_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <strong>Interview Scheduled</strong>
+                                <br><small class="text-muted">{{ application.interview_scheduled_date|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.offer_received %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <strong>Offer Received</strong>
+                                {% if application.offer_amount %}
+                                    <br><small class="text-success">${{ application.offer_amount|floatformat:0 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.rejection_received %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-danger"></div>
+                            <div class="timeline-content">
+                                <strong>Application Rejected</strong>
+                                {% if application.rejection_reason %}
+                                    <br><small class="text-muted">{{ application.rejection_reason }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tasks"></i> Next Steps
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if application.application_status == 'found' %}
+                        <div class="next-step">
+                            <i class="fas fa-paper-plane text-primary"></i>
+                            <strong>Apply for this position</strong>
+                            <p class="small text-muted">Use the generated documents to submit your application</p>
+                        </div>
+                    {% elif application.application_status == 'applied' %}
+                        {% if application.next_follow_up_date %}
+                            <div class="next-step">
+                                <i class="fas fa-envelope text-warning"></i>
+                                <strong>Follow-up scheduled</strong>
+                                <p class="small text-muted">Next follow-up: {{ application.next_follow_up_date }}</p>
+                            </div>
+                        {% else %}
+                            <div class="next-step">
+                                <i class="fas fa-clock text-info"></i>
+                                <strong>Wait for response</strong>
+                                <p class="small text-muted">Consider sending a follow-up in 7-10 days</p>
+                            </div>
+                        {% endif %}
+                    {% elif application.application_status == 'responded' %}
+                        <div class="next-step">
+                            <i class="fas fa-calendar-check text-success"></i>
+                            <strong>Schedule interview</strong>
+                            <p class="small text-muted">Respond to their message and set up an interview</p>
+                        </div>
+                    {% elif application.application_status == 'interview' %}
+                        <div class="next-step">
+                            <i class="fas fa-user-tie text-warning"></i>
+                            <strong>Prepare for interview</strong>
+                            <p class="small text-muted">Research the company and practice your responses</p>
+                        </div>
+                    {% elif application.application_status == 'offer' %}
+                        <div class="next-step">
+                            <i class="fas fa-handshake text-info"></i>
+                            <strong>Consider the offer</strong>
+                            <p class="small text-muted">Review terms and negotiate if needed</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related Applications -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-link"></i> Similar Applications
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- This would be populated with similar job applications -->
+                    <div class="similar-apps">
+                        <p class="text-muted small">
+                            <i class="fas fa-info-circle"></i> 
+                            No similar applications found yet.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Application Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="statusForm">
+                    {% csrf_token %}
+                    <div class="form-group mb-3">
+                        <label for="status" class="form-label">Application Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="found" {% if application.application_status == 'found' %}selected{% endif %}>Found</option>
+                            <option value="applied" {% if application.application_status == 'applied' %}selected{% endif %}>Applied</option>
+                            <option value="responded" {% if application.application_status == 'responded' %}selected{% endif %}>Responded</option>
+                            <option value="interview" {% if application.application_status == 'interview' %}selected{% endif %}>Interview Scheduled</option>
+                            <option value="offer" {% if application.application_status == 'offer' %}selected{% endif %}>Offer Received</option>
+                            <option value="hired" {% if application.application_status == 'hired' %}selected{% endif %}>Hired</option>
+                            <option value="rejected" {% if application.application_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                            <option value="withdrawn" {% if application.application_status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="urgency" class="form-label">Priority Level</label>
+                        <select class="form-select" id="urgency" name="urgency_level">
+                            <option value="low" {% if application.urgency_level == 'low' %}selected{% endif %}>Low</option>
+                            <option value="medium" {% if application.urgency_level == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="high" {% if application.urgency_level == 'high' %}selected{% endif %}>High</option>
+                            <option value="urgent" {% if application.urgency_level == 'urgent' %}selected{% endif %}>Urgent</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="statusNotes" class="form-label">Update Notes</label>
+                        <textarea class="form-control" id="statusNotes" name="notes" rows="3" placeholder="Add any relevant notes about this status change..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateStatus()">Update Status</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.info-item {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.job-description {
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.skills-analysis {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: linear-gradient(to bottom, #007bff, #28a745);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -37px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+
+.next-step {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+    margin-bottom: 10px;
+}
+
+.next-step i {
+    margin-right: 10px;
+}
+
+.rating .fa-star {
+    font-size: 0.9rem;
+}
+
+.notes-content {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #6c757d;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 0.5em 0.75em;
+}
+
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 20px;
+    }
+    
+    .timeline-marker {
+        left: -27px;
+    }
+    
+    .info-item {
+        margin-bottom: 15px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markAsApplied() {
+    Swal.fire({
+        title: 'Mark as Applied?',
+        text: 'This will update the status and start follow-up tracking.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Mark Applied',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            updateApplicationStatus('applied');
+        }
+    });
+}
+
+function sendFollowup() {
+    Swal.fire({
+        title: 'Send Follow-up Email?',
+        text: 'This will send a follow-up email using your default template.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Send Follow-up',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post(`/followups/send/{{ application.id }}/`, {
+                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+            }).done(function(data) {
+                Swal.fire('Success!', 'Follow-up email sent successfully.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }).fail(function() {
+                Swal.fire('Error!', 'Failed to send follow-up email.', 'error');
+            });
+        }
+    });
+}
+
+function generateDocuments() {
+    Swal.fire({
+        title: 'Generate Documents?',
+        text: 'This will create personalized resume, cover letter, and other documents for this application.',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Generate Documents',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Generating Documents...',
+                text: 'Please wait while we create your personalized documents.',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Simulate document generation
+            setTimeout(() => {
+                Swal.fire('Success!', 'Documents have been generated successfully.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }, 3000);
+        }
+    });
+}
+
+function openStatusModal() {
+    $('#statusModal').modal('show');
+}
+
+function updateStatus() {
+    const form = document.getElementById('statusForm');
+    const formData = new FormData(form);
+    
+    $.ajax({
+        url: '{% url "jobs:update_status" application.pk %}',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            $('#statusModal').modal('hide');
+            Swal.fire('Success!', 'Application status updated successfully.', 'success');
+            setTimeout(() => location.reload(), 1500);
+        },
+        error: function() {
+            Swal.fire('Error!', 'Failed to update application status.', 'error');
+        }
+    });
+}
+
+function updateApplicationStatus(status) {
+    $.ajax({
+        url: '{% url "jobs:update_status" application.pk %}',
+        method: 'POST',
+        data: {
+            'status': status,
+            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+        },
+        success: function(response) {
+            Swal.fire('Success!', 'Status updated successfully.', 'success');
+            setTimeout(() => location.reload(), 1500);
+        },
+        error: function() {
+            Swal.fire('Error!', 'Failed to update status.', 'error');
+        }
+    });
+}
+
+// Notes form submission
+document.getElementById('notesForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    $.ajax({
+        url: window.location.href,
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            Swal.fire('Success!', 'Notes saved successfully.', 'success');
+        },
+        error: function() {
+            Swal.fire('Error!', 'Failed to save notes.', 'error');
+        }
+    });
+});
+
+// Auto-save notes
+let saveTimeout;
+document.getElementById('notes').addEventListener('input', function() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        console.log('Auto-saving notes...');
+        // Auto-save functionality
+    }, 2000);
+});
+</script>
+{% endblock %}

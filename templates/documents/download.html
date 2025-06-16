@@ -1,0 +1,507 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Download Documents - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h2 class="display-6 fw-bold text-primary">
+                    <i class="fas fa-download"></i> Download Documents
+                </h2>
+                <p class="lead text-muted">
+                    Choose how you'd like to download your job application documents
+                </p>
+            </div>
+
+            <!-- Download Options -->
+            <div class="row mb-5">
+                <!-- Single Document Download -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 border-primary">
+                        <div class="card-header bg-primary text-white text-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-file"></i> Individual Documents
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="download-icon mb-3">
+                                <i class="fas fa-file-download fa-4x text-primary"></i>
+                            </div>
+                            <h6>Download Specific Documents</h6>
+                            <p class="text-muted">
+                                Browse and download individual documents like resumes, cover letters, or email templates.
+                            </p>
+                            <div class="features-list text-start">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Choose specific document types</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Preview before downloading</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Quick access to frequently used docs</li>
+                                </ul>
+                            </div>
+                            <a href="{% url 'documents:list' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-list"></i> Browse Documents
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bulk Download -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-header bg-success text-white text-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-archive"></i> Bulk Download
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="download-icon mb-3">
+                                <i class="fas fa-download fa-4x text-success"></i>
+                            </div>
+                            <h6>Download Complete Job Packages</h6>
+                            <p class="text-muted">
+                                Get all documents for specific job applications or your entire portfolio in one ZIP file.
+                            </p>
+                            <div class="features-list text-start">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Complete job application packages</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Organized folder structure</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Ready for immediate use</li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-success btn-lg" onclick="showBulkDownloadOptions()">
+                                <i class="fas fa-archive"></i> Bulk Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Applications -->
+            <div class="card shadow-sm mb-5">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i> Recent Job Applications
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for application in recent_applications %}
+                        <div class="col-lg-6 mb-3">
+                            <div class="application-card p-3 border rounded">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="fw-bold text-primary">{{ application.job_title }}</h6>
+                                        <p class="text-muted mb-1">{{ application.company_name }}</p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar"></i>
+                                            {{ application.created_at|date:"M d, Y" }}
+                                        </small>
+                                        {% if application.documents_generated %}
+                                            <br><span class="badge bg-success">Documents Ready</span>
+                                        {% else %}
+                                            <br><span class="badge bg-warning">No Documents</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="btn-group-vertical btn-group-sm">
+                                        {% if application.documents_generated %}
+                                            <a href="{% url 'documents:application_documents' application.pk %}"
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <button class="btn btn-outline-success btn-sm"
+                                                    onclick="downloadApplicationDocs({{ application.pk }})">
+                                                <i class="fas fa-download"></i> Download
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-outline-warning btn-sm"
+                                                    onclick="generateDocs({{ application.pk }})">
+                                                <i class="fas fa-cog"></i> Generate
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center">
+                            <div class="empty-state py-5">
+                                <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                                <h5 class="text-muted">No Job Applications Yet</h5>
+                                <p class="text-muted">Start by creating a job search configuration and finding jobs.</p>
+                                <a href="{% url 'jobs:search_config' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Create Search Configuration
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Statistics -->
+            <div class="row mb-5">
+                <div class="col-md-3">
+                    <div class="stat-card text-center p-4 border rounded">
+                        <h3 class="text-primary">{{ total_documents|default:0 }}</h3>
+                        <p class="text-muted mb-0">Total Documents</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center p-4 border rounded">
+                        <h3 class="text-success">{{ total_applications|default:0 }}</h3>
+                        <p class="text-muted mb-0">Job Applications</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center p-4 border rounded">
+                        <h3 class="text-warning">{{ document_types|default:0 }}</h3>
+                        <p class="text-muted mb-0">Document Types</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center p-4 border rounded">
+                        <h3 class="text-info">{{ storage_used_mb|default:0 }}MB</h3>
+                        <p class="text-muted mb-0">Storage Used</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <button class="btn btn-outline-primary btn-lg" onclick="downloadAllDocuments()">
+                                    <i class="fas fa-download"></i> Download All My Documents
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{% url 'documents:stats' %}" class="btn btn-outline-info btn-lg">
+                                    <i class="fas fa-chart-bar"></i> View Document Statistics
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Download Modal -->
+<div class="modal fade" id="bulkDownloadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-archive"></i> Bulk Download Options
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="bulk-option text-center p-4 border rounded mb-3">
+                            <i class="fas fa-briefcase fa-3x text-primary mb-3"></i>
+                            <h6>By Job Application</h6>
+                            <p class="text-muted small">Download all documents for specific job applications</p>
+                            <button class="btn btn-primary" onclick="selectApplicationsForDownload()">
+                                <i class="fas fa-briefcase"></i> Select Applications
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="bulk-option text-center p-4 border rounded mb-3">
+                            <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+                            <h6>By Document Type</h6>
+                            <p class="text-muted small">Download all documents of specific types (resumes, cover letters, etc.)</p>
+                            <button class="btn btn-success" onclick="selectDocumentTypesForDownload()">
+                                <i class="fas fa-file-alt"></i> Select Types
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="bulk-option text-center p-4 border rounded">
+                            <i class="fas fa-calendar fa-3x text-warning mb-3"></i>
+                            <h6>By Date Range</h6>
+                            <p class="text-muted small">Download documents created within a specific time period</p>
+                            <button class="btn btn-warning" onclick="selectDateRangeForDownload()">
+                                <i class="fas fa-calendar"></i> Select Dates
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="bulk-option text-center p-4 border rounded">
+                            <i class="fas fa-globe fa-3x text-info mb-3"></i>
+                            <h6>Everything</h6>
+                            <p class="text-muted small">Download your complete document portfolio</p>
+                            <button class="btn btn-info" onclick="downloadAllDocuments()">
+                                <i class="fas fa-download"></i> Download All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.download-icon {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.features-list {
+    margin: 20px 0;
+}
+
+.application-card {
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.application-card:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card {
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.bulk-option {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.bulk-option:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.empty-state {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.card {
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .btn-group-vertical .btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .stat-card {
+        margin-bottom: 15px;
+    }
+
+    .download-icon {
+        width: 80px;
+        height: 80px;
+    }
+
+    .download-icon i {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showBulkDownloadOptions() {
+    $('#bulkDownloadModal').modal('show');
+}
+
+function downloadApplicationDocs(applicationId) {
+    // Show loading
+    Swal.fire({
+        title: 'Preparing Download',
+        text: 'Creating ZIP file with all documents...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // Create form and submit
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{% url "documents:bulk_download" %}';
+
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = $('[name=csrfmiddlewaretoken]').val();
+
+    const appInput = document.createElement('input');
+    appInput.type = 'hidden';
+    appInput.name = 'application_id';
+    appInput.value = applicationId;
+
+    form.appendChild(csrfInput);
+    form.appendChild(appInput);
+    document.body.appendChild(form);
+
+    form.submit();
+    document.body.removeChild(form);
+
+    // Hide loading after a delay
+    setTimeout(() => {
+        Swal.close();
+    }, 2000);
+}
+
+function generateDocs(applicationId) {
+    Swal.fire({
+        title: 'Generate Documents?',
+        text: 'This will create personalized documents for this job application.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Generate',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post(`/documents/generate/${applicationId}/`, {
+                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+            }).done(function(response) {
+                Swal.fire('Success!', 'Document generation started. You will be notified when complete.', 'success')
+                .then(() => {
+                    setTimeout(() => location.reload(), 2000);
+                });
+            }).fail(function() {
+                Swal.fire('Error!', 'Failed to start document generation.', 'error');
+            });
+        }
+    });
+}
+
+function selectApplicationsForDownload() {
+    // In a real implementation, this would show a modal with application checkboxes
+    Swal.fire({
+        title: 'Feature Coming Soon',
+        text: 'Application-specific bulk download will be available soon.',
+        icon: 'info'
+    });
+}
+
+function selectDocumentTypesForDownload() {
+    // In a real implementation, this would show a modal with document type checkboxes
+    Swal.fire({
+        title: 'Feature Coming Soon',
+        text: 'Document type filtering will be available soon.',
+        icon: 'info'
+    });
+}
+
+function selectDateRangeForDownload() {
+    // In a real implementation, this would show a date range picker
+    Swal.fire({
+        title: 'Feature Coming Soon',
+        text: 'Date range filtering will be available soon.',
+        icon: 'info'
+    });
+}
+
+function downloadAllDocuments() {
+    Swal.fire({
+        title: 'Download All Documents?',
+        text: 'This will create a ZIP file with all your documents. It may take a few minutes.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Download All',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+                title: 'Creating Archive',
+                text: 'Please wait while we prepare your complete document archive...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Submit form for all documents
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "documents:bulk_download" %}';
+
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = $('[name=csrfmiddlewaretoken]').val();
+
+            form.appendChild(csrfInput);
+            document.body.appendChild(form);
+
+            form.submit();
+            document.body.removeChild(form);
+
+            // Hide loading after delay
+            setTimeout(() => {
+                Swal.close();
+            }, 3000);
+        }
+    });
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

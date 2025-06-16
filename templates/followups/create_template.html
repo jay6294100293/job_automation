@@ -1,0 +1,675 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Create Follow-up Template - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="display-6 fw-bold text-primary">
+                                <i class="fas fa-plus-circle"></i> Create Follow-up Template
+                            </h2>
+                            <p class="text-muted">Design a professional follow-up email template to increase response rates</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'followups:templates' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Templates
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Main Form -->
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-edit"></i> Template Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="templateForm">
+                                {% csrf_token %}
+
+                                <!-- Template Name -->
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-tag"></i> Template Name *
+                                    </label>
+                                    {{ form.template_name|as_crispy_field }}
+                                    <small class="form-text text-muted">Give your template a descriptive name (e.g., "Professional 1-week follow-up")</small>
+                                </div>
+
+                                <!-- Template Type and Timing -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">
+                                            <i class="fas fa-list"></i> Template Type *
+                                        </label>
+                                        {{ form.template_type|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">
+                                            <i class="fas fa-calendar"></i> Days After Application *
+                                        </label>
+                                        {{ form.days_after_application|as_crispy_field }}
+                                        <small class="form-text text-muted">When to send this follow-up (e.g., 7 for one week later)</small>
+                                    </div>
+                                </div>
+
+                                <!-- Default Template Toggle -->
+                                <div class="form-group mb-4">
+                                    <div class="card border-warning">
+                                        <div class="card-body">
+                                            <div class="form-check form-switch">
+                                                {{ form.is_default }}
+                                                <label class="form-check-label fw-bold" for="{{ form.is_default.id_for_label }}">
+                                                    <i class="fas fa-star"></i> Set as Default Template
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">Default templates are used automatically in follow-up sequences</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Email Subject -->
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-envelope"></i> Email Subject Line *
+                                    </label>
+                                    {{ form.subject_template|as_crispy_field }}
+                                    <small class="form-text text-muted">
+                                        Use variables like {{job_title}}, {{company_name}}, {{user_name}} for personalization
+                                    </small>
+                                </div>
+
+                                <!-- Email Body -->
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-file-text"></i> Email Body *
+                                    </label>
+                                    {{ form.body_template|as_crispy_field }}
+                                    <small class="form-text text-muted">
+                                        Professional, concise, and personalized. Use variables for dynamic content.
+                                    </small>
+                                </div>
+
+                                <!-- Form Actions -->
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <button type="submit" class="btn btn-success btn-lg me-3">
+                                            <i class="fas fa-save"></i> Create Template
+                                        </button>
+                                        <a href="{% url 'followups:templates' %}" class="btn btn-outline-secondary btn-lg">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-info btn-lg" onclick="previewTemplate()">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Available Variables -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-code"></i> Available Variables
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="small text-muted">Click to insert into your template:</p>
+                            
+                            <div class="variable-group mb-3">
+                                <h6 class="fw-bold">Personal Information</h6>
+                                <div class="variable-buttons">
+                                    <button class="btn btn-sm btn-outline-primary m-1" onclick="insertVariable('{{user_name}}')">
+                                        {{user_name}}
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary m-1" onclick="insertVariable('{{first_name}}')">
+                                        {{first_name}}
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary m-1" onclick="insertVariable('{{current_title}}')">
+                                        {{current_title}}
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary m-1" onclick="insertVariable('{{years_experience}}')">
+                                        {{years_experience}}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="variable-group mb-3">
+                                <h6 class="fw-bold">Job Information</h6>
+                                <div class="variable-buttons">
+                                    <button class="btn btn-sm btn-outline-success m-1" onclick="insertVariable('{{job_title}}')">
+                                        {{job_title}}
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success m-1" onclick="insertVariable('{{company_name}}')">
+                                        {{company_name}}
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success m-1" onclick="insertVariable('{{hiring_manager}}')">
+                                        {{hiring_manager}}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="variable-group mb-3">
+                                <h6 class="fw-bold">Timing Information</h6>
+                                <div class="variable-buttons">
+                                    <button class="btn btn-sm btn-outline-warning m-1" onclick="insertVariable('{{days_since_application}}')">
+                                        {{days_since_application}}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Template Tips -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-lightbulb"></i> Best Practices
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Keep it under 150 words</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Personalize with variables</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Include a clear call-to-action</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Reference specific job details</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Professional but friendly tone</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Thank for their time and consideration</small>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Pre-built Templates -->
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-magic"></i> Quick Start Templates
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadTemplate('professional')">
+                                    <i class="fas fa-briefcase"></i> Professional Follow-up
+                                </button>
+                                <button class="btn btn-outline-info btn-sm" onclick="loadTemplate('friendly')">
+                                    <i class="fas fa-smile"></i> Friendly Follow-up
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="loadTemplate('thank_you')">
+                                    <i class="fas fa-heart"></i> Thank You Note
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="loadTemplate('final')">
+                                    <i class="fas fa-flag"></i> Final Follow-up
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Preview Modal -->
+<div class="modal fade" id="templatePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Template Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="email-preview">
+                    <div class="preview-header mb-3">
+                        <h6>Email Preview:</h6>
+                        <div class="alert alert-info">
+                            <strong>From:</strong> Mrityunjay Gupta &lt;mrityunjay.100293@gmail.com&gt;<br>
+                            <strong>To:</strong> hiring@company.com<br>
+                            <strong>Subject:</strong> <span id="previewSubject">[Subject will appear here]</span>
+                        </div>
+                    </div>
+                    
+                    <div class="preview-body">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="previewBody" style="white-space: pre-wrap; font-family: Arial, sans-serif; line-height: 1.6;">
+                                    [Email body will appear here]
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close Preview</button>
+                <button type="button" class="btn btn-primary" onclick="sendTestEmail()">
+                    <i class="fas fa-paper-plane"></i> Send Test Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.variable-buttons .btn {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+}
+
+.variable-group {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.email-preview {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.preview-header .alert {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.preview-body .card {
+    background-color: white;
+    border: 2px solid #e9ecef;
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.variable-buttons .btn:hover {
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .variable-buttons .btn {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .d-flex.justify-content-between > div {
+        width: 100%;
+    }
+    
+    .d-flex.justify-content-between .btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Insert variable into the currently focused textarea
+function insertVariable(variable) {
+    const activeElement = document.activeElement;
+    let targetTextarea;
+    
+    // Find the textarea to insert into
+    if (activeElement.tagName === 'TEXTAREA') {
+        targetTextarea = activeElement;
+    } else {
+        // Default to body template if no textarea is focused
+        targetTextarea = document.querySelector('textarea[name="body_template"]');
+    }
+    
+    if (targetTextarea) {
+        const start = targetTextarea.selectionStart;
+        const end = targetTextarea.selectionEnd;
+        const text = targetTextarea.value;
+        
+        targetTextarea.value = text.substring(0, start) + variable + text.substring(end);
+        targetTextarea.focus();
+        targetTextarea.setSelectionRange(start + variable.length, start + variable.length);
+        
+        // Show success feedback
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            icon: 'success',
+            title: `Inserted ${variable}`
+        });
+    }
+}
+
+// Load pre-built template
+function loadTemplate(templateType) {
+    const templates = {
+        professional: {
+            name: 'Professional Follow-up (1 Week)',
+            type: '1_week',
+            days: 7,
+            subject: 'Following up on {{job_title}} Application - {{user_name}}',
+            body: `Dear Hiring Manager,
+
+I hope this email finds you well. I wanted to follow up on my application for the {{job_title}} position at {{company_name}} that I submitted {{days_since_application}} days ago.
+
+I remain very interested in this opportunity and believe my {{years_experience}} years of experience would be valuable to your team. I'm particularly excited about the possibility of contributing to {{company_name}}'s innovative projects.
+
+I would welcome the opportunity to discuss how my background aligns with your needs. Please let me know if you require any additional information.
+
+Thank you for your time and consideration. I look forward to hearing from you.
+
+Best regards,
+{{user_name}}`
+        },
+        friendly: {
+            name: 'Friendly Follow-up',
+            type: 'custom',
+            days: 10,
+            subject: 'Checking in about the {{job_title}} opportunity',
+            body: `Hi there,
+
+I hope you're having a great week! I wanted to touch base regarding my application for the {{job_title}} position at {{company_name}}.
+
+I'm still very excited about the opportunity to join your team and contribute to {{company_name}}'s success. If there's anything else you need from me or if you'd like to discuss my background further, I'm always happy to chat.
+
+Thanks again for considering my application!
+
+Best,
+{{user_name}}`
+        },
+        thank_you: {
+            name: 'Thank You After Interview',
+            type: 'thank_you',
+            days: 1,
+            subject: 'Thank you for the {{job_title}} interview',
+            body: `Dear {{hiring_manager}},
+
+Thank you for taking the time to meet with me yesterday to discuss the {{job_title}} position at {{company_name}}. I thoroughly enjoyed our conversation and learning more about your team's goals.
+
+Our discussion reinforced my enthusiasm for this opportunity. I'm particularly excited about [specific project discussed] and how my experience can contribute to {{company_name}}'s continued success.
+
+Please don't hesitate to reach out if you have any additional questions. I look forward to the next steps in the process.
+
+Best regards,
+{{user_name}}`
+        },
+        final: {
+            name: 'Final Follow-up (1 Month)',
+            type: '1_month',
+            days: 30,
+            subject: 'Final follow-up: {{job_title}} Application',
+            body: `Dear Hiring Team,
+
+I hope this message finds you well. This will be my final follow-up regarding the {{job_title}} position at {{company_name}}.
+
+I understand that hiring decisions take time, and I respect your thorough evaluation process. I remain interested in the opportunity and believe that my skills would be valuable to your team.
+
+If the position is still available and you'd like to discuss my qualifications further, I'm available at your convenience. If you've moved forward with other candidates, I completely understand and wish you success with your selection.
+
+Thank you once again for your time and consideration.
+
+Best regards,
+{{user_name}}`
+        }
+    };
+    
+    const template = templates[templateType];
+    if (template) {
+        Swal.fire({
+            title: 'Load Template?',
+            text: 'This will replace your current content with the selected template.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Load Template',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.querySelector('input[name="template_name"]').value = template.name;
+                document.querySelector('select[name="template_type"]').value = template.type;
+                document.querySelector('input[name="days_after_application"]').value = template.days;
+                document.querySelector('input[name="subject_template"]').value = template.subject;
+                document.querySelector('textarea[name="body_template"]').value = template.body;
+                
+                Swal.fire('Loaded!', 'Template has been loaded successfully.', 'success');
+            }
+        });
+    }
+}
+
+// Preview template with sample data
+function previewTemplate() {
+    const subject = document.querySelector('input[name="subject_template"]').value;
+    const body = document.querySelector('textarea[name="body_template"]').value;
+    
+    if (!subject || !body) {
+        Swal.fire('Incomplete Template', 'Please fill in both subject and body before previewing.', 'warning');
+        return;
+    }
+    
+    // Sample data for preview
+    const sampleData = {
+        user_name: 'Mrityunjay Gupta',
+        first_name: 'Mrityunjay',
+        current_title: 'Data Scientist',
+        years_experience: '5',
+        job_title: 'Senior Data Scientist',
+        company_name: 'TechCorp Inc.',
+        hiring_manager: 'Hiring Manager',
+        days_since_application: '7'
+    };
+    
+    // Replace variables with sample data
+    let previewSubject = subject;
+    let previewBody = body;
+    
+    Object.entries(sampleData).forEach(([key, value]) => {
+        const variable = new RegExp(`{{${key}}}`, 'g');
+        previewSubject = previewSubject.replace(variable, value);
+        previewBody = previewBody.replace(variable, value);
+    });
+    
+    document.getElementById('previewSubject').textContent = previewSubject;
+    document.getElementById('previewBody').textContent = previewBody;
+    
+    $('#templatePreviewModal').modal('show');
+}
+
+// Send test email
+function sendTestEmail() {
+    Swal.fire({
+        title: 'Send Test Email?',
+        text: 'This will send a test email to your email address with sample data.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Send Test',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData(document.getElementById('templateForm'));
+            formData.append('send_test', 'true');
+            
+            $.ajax({
+                url: window.location.href,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    Swal.fire('Test Sent!', 'Test email sent to your email address.', 'success');
+                    $('#templatePreviewModal').modal('hide');
+                },
+                error: function() {
+                    Swal.fire('Error!', 'Failed to send test email.', 'error');
+                }
+            });
+        }
+    });
+}
+
+// Form validation
+document.getElementById('templateForm').addEventListener('submit', function(e) {
+    const templateName = document.querySelector('input[name="template_name"]').value.trim();
+    const subject = document.querySelector('input[name="subject_template"]').value.trim();
+    const body = document.querySelector('textarea[name="body_template"]').value.trim();
+    const daysAfter = document.querySelector('input[name="days_after_application"]').value;
+    
+    let errors = [];
+    
+    if (!templateName) {
+        errors.push('Template name is required');
+    }
+    
+    if (!subject) {
+        errors.push('Subject line is required');
+    }
+    
+    if (!body) {
+        errors.push('Email body is required');
+    }
+    
+    if (!daysAfter || daysAfter < 0) {
+        errors.push('Days after application must be a positive number');
+    }
+    
+    if (body.length > 2000) {
+        errors.push('Email body should be under 2000 characters for best results');
+    }
+    
+    if (errors.length > 0) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Validation Errors',
+            html: '<ul class="text-left"><li>' + errors.join('</li><li>') + '</li></ul>',
+            icon: 'error'
+        });
+    }
+});
+
+// Character counter for email body
+const bodyTextarea = document.querySelector('textarea[name="body_template"]');
+if (bodyTextarea) {
+    bodyTextarea.addEventListener('input', function() {
+        const charCount = this.value.length;
+        const maxChars = 2000;
+        const remaining = maxChars - charCount;
+        
+        // Find or create character counter
+        let counter = this.parentNode.querySelector('.char-counter');
+        if (!counter) {
+            counter = document.createElement('small');
+            counter.className = 'char-counter form-text';
+            this.parentNode.appendChild(counter);
+        }
+        
+        counter.textContent = `${charCount}/${maxChars} characters`;
+        counter.className = `char-counter form-text ${remaining < 100 ? 'text-warning' : remaining < 0 ? 'text-danger' : 'text-muted'}`;
+    });
+}
+
+// Auto-save draft every 30 seconds
+let draftTimeout;
+document.querySelectorAll('input, textarea, select').forEach(element => {
+    element.addEventListener('input', function() {
+        clearTimeout(draftTimeout);
+        draftTimeout = setTimeout(() => {
+            console.log('Auto-saving template draft...');
+            // In real implementation, save draft to localStorage or server
+            const draftData = {
+                template_name: document.querySelector('input[name="template_name"]').value,
+                subject_template: document.querySelector('input[name="subject_template"]').value,
+                body_template: document.querySelector('textarea[name="body_template"]').value,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('followup_template_draft', JSON.stringify(draftData));
+        }, 30000);
+    });
+});
+
+// Load draft on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const draft = localStorage.getItem('followup_template_draft');
+    if (draft) {
+        const draftData = JSON.parse(draft);
+        const draftAge = new Date() - new Date(draftData.timestamp);
+        
+        // If draft is less than 24 hours old, offer to restore it
+        if (draftAge < 24 * 60 * 60 * 1000) {
+            Swal.fire({
+                title: 'Restore Draft?',
+                text: 'We found a saved draft from earlier. Would you like to restore it?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Restore Draft',
+                cancelButtonText: 'Start Fresh'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.querySelector('input[name="template_name"]').value = draftData.template_name || '';
+                    document.querySelector('input[name="subject_template"]').value = draftData.subject_template || '';
+                    document.querySelector('textarea[name="body_template"]').value = draftData.body_template || '';
+                    
+                    Swal.fire('Restored!', 'Your draft has been restored.', 'success');
+                } else {
+                    localStorage.removeItem('followup_template_draft');
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

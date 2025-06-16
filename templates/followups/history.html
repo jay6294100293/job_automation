@@ -1,0 +1,837 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Follow-up History - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="display-6 fw-bold text-primary">
+                        <i class="fas fa-history"></i> Follow-up History
+                    </h2>
+                    <p class="text-muted">Track all your follow-up emails and their responses</p>
+                </div>
+                <div>
+                    <a href="{% url 'followups:dashboard' %}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <button class="btn btn-success" onclick="exportHistory()">
+                        <i class="fas fa-download"></i> Export History
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary text-center">
+                <div class="card-body">
+                    <i class="fas fa-envelope fa-2x text-primary mb-2"></i>
+                    <h3 class="text-primary">{{ total_followups|default:0 }}</h3>
+                    <p class="text-muted mb-0">Total Follow-ups</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-success text-center">
+                <div class="card-body">
+                    <i class="fas fa-reply fa-2x text-success mb-2"></i>
+                    <h3 class="text-success">{{ total_responses|default:0 }}</h3>
+                    <p class="text-muted mb-0">Responses Received</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-warning text-center">
+                <div class="card-body">
+                    <i class="fas fa-percentage fa-2x text-warning mb-2"></i>
+                    <h3 class="text-warning">{{ response_rate|default:0|floatformat:1 }}%</h3>
+                    <p class="text-muted mb-0">Response Rate</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-info text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar-week fa-2x text-info mb-2"></i>
+                    <h3 class="text-info">{{ this_week_followups|default:0 }}</h3>
+                    <p class="text-muted mb-0">This Week</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter"></i> Filter & Search
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3" id="filterForm">
+                        <div class="col-md-3">
+                            <label class="form-label">Response Status</label>
+                            <select name="response_status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="responded" {% if request.GET.response_status == 'responded' %}selected{% endif %}>Responded</option>
+                                <option value="no_response" {% if request.GET.response_status == 'no_response' %}selected{% endif %}>No Response</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Response Type</label>
+                            <select name="response_type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="positive" {% if request.GET.response_type == 'positive' %}selected{% endif %}>Positive</option>
+                                <option value="negative" {% if request.GET.response_type == 'negative' %}selected{% endif %}>Negative</option>
+                                <option value="interview_invite" {% if request.GET.response_type == 'interview_invite' %}selected{% endif %}>Interview Invite</option>
+                                <option value="rejection" {% if request.GET.response_type == 'rejection' %}selected{% endif %}>Rejection</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Date Range</label>
+                            <select name="date_range" class="form-select">
+                                <option value="">All Time</option>
+                                <option value="today" {% if request.GET.date_range == 'today' %}selected{% endif %}>Today</option>
+                                <option value="week" {% if request.GET.date_range == 'week' %}selected{% endif %}>This Week</option>
+                                <option value="month" {% if request.GET.date_range == 'month' %}selected{% endif %}>This Month</option>
+                                <option value="quarter" {% if request.GET.date_range == 'quarter' %}selected{% endif %}>Last 3 Months</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control"
+                                       placeholder="Company or job title..."
+                                       value="{{ request.GET.search }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Follow-up History Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Follow-up History
+                    </h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="view" id="table-view" autocomplete="off" checked>
+                        <label class="btn btn-outline-light" for="table-view">
+                            <i class="fas fa-table"></i> Table
+                        </label>
+                        <input type="radio" class="btn-check" name="view" id="timeline-view" autocomplete="off">
+                        <label class="btn btn-outline-light" for="timeline-view">
+                            <i class="fas fa-list-ul"></i> Timeline
+                        </label>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Table View -->
+                    <div id="tableView">
+                        {% if history %}
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="5%">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                                </div>
+                                            </th>
+                                            <th width="20%">Company & Position</th>
+                                            <th width="15%">Template Used</th>
+                                            <th width="15%">Sent Date</th>
+                                            <th width="15%">Response</th>
+                                            <th width="15%">Response Date</th>
+                                            <th width="10%">Type</th>
+                                            <th width="5%">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for followup in history %}
+                                        <tr class="followup-row" data-id="{{ followup.id }}">
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input followup-checkbox"
+                                                           type="checkbox" value="{{ followup.id }}">
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ followup.application.job_title }}</strong><br>
+                                                    <small class="text-muted">at {{ followup.application.company_name }}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">{{ followup.template.template_name|default:"Custom" }}</span>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    {{ followup.sent_date|date:"M d, Y" }}<br>
+                                                    <small class="text-muted">{{ followup.sent_date|time:"H:i" }}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if followup.response_received %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check"></i> Responded
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-hourglass-half"></i> No Response
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if followup.response_date %}
+                                                    <div>
+                                                        {{ followup.response_date|date:"M d, Y" }}<br>
+                                                        <small class="text-muted">{{ followup.response_date|time:"H:i" }}</small>
+                                                    </div>
+                                                {% else %}
+                                                    <small class="text-muted">-</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if followup.response_type and followup.response_type != 'no_response' %}
+                                                    <span class="badge bg-{% if followup.response_type == 'positive' or followup.response_type == 'interview_invite' %}success{% elif followup.response_type == 'negative' or followup.response_type == 'rejection' %}danger{% else %}warning{% endif %}">
+                                                        {{ followup.get_response_type_display }}
+                                                    </span>
+                                                {% else %}
+                                                    <small class="text-muted">-</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                            data-bs-toggle="dropdown">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li>
+                                                            <a class="dropdown-item" href="#"
+                                                               onclick="viewFollowupDetails({{ followup.id }})">
+                                                                <i class="fas fa-eye"></i> View Details
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="#"
+                                                               onclick="viewEmailContent({{ followup.id }})">
+                                                                <i class="fas fa-envelope-open"></i> View Email
+                                                            </a>
+                                                        </li>
+                                                        {% if not followup.response_received %}
+                                                        <li>
+                                                            <a class="dropdown-item" href="#"
+                                                               onclick="markAsResponded({{ followup.id }})">
+                                                                <i class="fas fa-check"></i> Mark as Responded
+                                                            </a>
+                                                        </li>
+                                                        {% endif %}
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="#"
+                                                               onclick="resendFollowup({{ followup.application.id }})">
+                                                                <i class="fas fa-redo"></i> Send New Follow-up
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination -->
+                            {% if is_paginated %}
+                            <div class="card-footer">
+                                <nav aria-label="Follow-up history pagination">
+                                    <ul class="pagination justify-content-center mb-0">
+                                        {% if page_obj.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for num in page_obj.paginator.page_range %}
+                                            {% if page_obj.number == num %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ num }}</span>
+                                                </li>
+                                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if page_obj.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-envelope fa-4x text-muted mb-3"></i>
+                                <h4>No Follow-ups Yet</h4>
+                                <p class="text-muted">Start sending follow-ups to see them here.</p>
+                                <a href="{% url 'followups:dashboard' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Send Your First Follow-up
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Timeline View -->
+                    <div id="timelineView" style="display: none;">
+                        <div class="p-4">
+                            <div class="timeline">
+                                {% for followup in history %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-{% if followup.response_received %}success{% else %}primary{% endif %}">
+                                        <i class="fas fa-{% if followup.response_received %}reply{% else %}envelope{% endif %}"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    Follow-up sent for <strong>{{ followup.application.job_title }}</strong>
+                                                </h6>
+                                                <p class="text-muted mb-2">at {{ followup.application.company_name }}</p>
+                                                <p class="mb-2">
+                                                    <strong>Subject:</strong> {{ followup.subject|truncatechars:60 }}
+                                                </p>
+                                                {% if followup.response_received %}
+                                                    <div class="alert alert-success alert-sm">
+                                                        <i class="fas fa-check-circle"></i>
+                                                        <strong>Response received:</strong> {{ followup.response_type|title }}
+                                                        <br><small>{{ followup.response_date|date:"M d, Y H:i" }}</small>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="text-end">
+                                                <small class="text-muted">{{ followup.sent_date|date:"M d, Y H:i" }}</small>
+                                                <br>
+                                                <button class="btn btn-sm btn-outline-primary mt-1"
+                                                        onclick="viewEmailContent({{ followup.id }})">
+                                                    <i class="fas fa-eye"></i> View
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    {% if history %}
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tasks"></i> Bulk Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <select class="form-select" id="bulkAction">
+                                <option value="">Select action...</option>
+                                <option value="mark_responded">Mark as Responded</option>
+                                <option value="export_selected">Export Selected</option>
+                                <option value="delete_selected">Delete Selected</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <span id="selectedCount">0</span> follow-ups selected
+                            </small>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary" onclick="executeBulkAction()">
+                                <i class="fas fa-play"></i> Execute
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Email Content Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-envelope-open"></i> Email Content
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="email-display">
+                    <div class="email-header mb-3 p-3 bg-light border-start border-primary border-4">
+                        <div>
+                            <strong>Subject:</strong> <span id="modalEmailSubject"></span><br>
+                            <strong>Sent:</strong> <span id="modalEmailDate"></span><br>
+                            <strong>Template:</strong> <span id="modalEmailTemplate"></span>
+                        </div>
+                    </div>
+                    <div class="email-body" id="modalEmailBody" style="white-space: pre-line; line-height: 1.6;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="forwardEmail()">
+                    <i class="fas fa-share"></i> Forward
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Response Details Modal -->
+<div class="modal fade" id="responseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-reply"></i> Mark as Responded
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="responseForm">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Response Type</label>
+                        <select class="form-select" name="response_type" required>
+                            <option value="">Select response type...</option>
+                            <option value="positive">Positive Response</option>
+                            <option value="negative">Negative Response</option>
+                            <option value="interview_invite">Interview Invitation</option>
+                            <option value="rejection">Rejection</option>
+                            <option value="neutral">Neutral Response</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Response Date</label>
+                        <input type="datetime-local" class="form-control" name="response_date" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" name="notes" rows="3"
+                                  placeholder="Add any relevant notes about the response..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="saveResponse()">
+                    <i class="fas fa-save"></i> Save Response
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.followup-row {
+    transition: background-color 0.3s ease;
+}
+
+.followup-row:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: linear-gradient(to bottom, #007bff, #28a745);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -42px;
+    top: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border: 3px solid white;
+    box-shadow: 0 0 0 3px #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.email-display {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.email-header {
+    background-color: #f8f9fb !important;
+}
+
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 20px;
+    }
+
+    .timeline-marker {
+        left: -32px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .timeline-content {
+        padding: 15px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedFollowupId = null;
+
+// View toggle
+document.getElementById('timeline-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('tableView').style.display = 'none';
+        document.getElementById('timelineView').style.display = 'block';
+    }
+});
+
+document.getElementById('table-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('tableView').style.display = 'block';
+        document.getElementById('timelineView').style.display = 'none';
+    }
+});
+
+// Select all checkbox
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.followup-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+    updateSelectedCount();
+});
+
+// Individual checkbox change
+document.querySelectorAll('.followup-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectedCount);
+});
+
+function updateSelectedCount() {
+    const selectedCheckboxes = document.querySelectorAll('.followup-checkbox:checked');
+    document.getElementById('selectedCount').textContent = selectedCheckboxes.length;
+}
+
+// View email content
+function viewEmailContent(followupId) {
+    // In real implementation, this would fetch the email content via AJAX
+
+    // Sample data (replace with actual API call)
+    const emailData = {
+        subject: 'Following up on Data Scientist Application - Mrityunjay Gupta',
+        date: 'Dec 15, 2024 10:30 AM',
+        template: 'Professional Follow-up (1 Week)',
+        body: `Dear Hiring Manager,
+
+I hope this email finds you well. I wanted to follow up on my application for the Data Scientist position at TechCorp Inc. that I submitted 7 days ago.
+
+I remain very interested in this opportunity and believe my 5 years of experience in data science and machine learning would be valuable to your team. I'm particularly excited about the possibility of contributing to TechCorp Inc.'s innovative projects.
+
+I would welcome the opportunity to discuss how my background in Python, Django, machine learning, and cloud technologies aligns with your needs. Please let me know if you require any additional information.
+
+Thank you for your time and consideration. I look forward to hearing from you.
+
+Best regards,
+Mrityunjay Gupta
+Data Scientist & ML Engineer
+Phone: 778-636-6294
+Email: mrityunjay.100293@gmail.com
+LinkedIn: linkedin.com/in/gupta-mrityunjay`
+    };
+
+    document.getElementById('modalEmailSubject').textContent = emailData.subject;
+    document.getElementById('modalEmailDate').textContent = emailData.date;
+    document.getElementById('modalEmailTemplate').textContent = emailData.template;
+    document.getElementById('modalEmailBody').textContent = emailData.body;
+
+    new bootstrap.Modal(document.getElementById('emailModal')).show();
+}
+
+// View followup details
+function viewFollowupDetails(followupId) {
+    // Redirect to detailed view or show modal with full details
+    Swal.fire({
+        title: 'Follow-up Details',
+        html: `
+            <div class="text-left">
+                <p><strong>Follow-up ID:</strong> #${followupId}</p>
+                <p><strong>Application:</strong> Data Scientist at TechCorp Inc.</p>
+                <p><strong>Template:</strong> Professional Follow-up (1 Week)</p>
+                <p><strong>Sent:</strong> Dec 15, 2024 10:30 AM</p>
+                <p><strong>Response Status:</strong> <span class="badge bg-secondary">No Response</span></p>
+                <hr>
+                <p><strong>Email Performance:</strong></p>
+                <ul>
+                    <li>Delivery Status: Delivered</li>
+                    <li>Open Rate: Not tracked</li>
+                    <li>Click Rate: Not tracked</li>
+                </ul>
+            </div>
+        `,
+        width: 600,
+        confirmButtonText: 'Close'
+    });
+}
+
+// Mark as responded
+function markAsResponded(followupId) {
+    selectedFollowupId = followupId;
+
+    // Set default date to now
+    const now = new Date();
+    const localISOTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.querySelector('input[name="response_date"]').value = localISOTime;
+
+    new bootstrap.Modal(document.getElementById('responseModal')).show();
+}
+
+// Save response
+function saveResponse() {
+    const form = document.getElementById('responseForm');
+    const formData = new FormData(form);
+
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    // In real implementation, make API call to save response
+    Swal.fire({
+        title: 'Response Recorded!',
+        text: 'The follow-up has been marked as responded.',
+        icon: 'success'
+    }).then(() => {
+        bootstrap.Modal.getInstance(document.getElementById('responseModal')).hide();
+        location.reload();
+    });
+}
+
+// Resend followup
+function resendFollowup(applicationId) {
+    Swal.fire({
+        title: 'Send New Follow-up?',
+        text: 'This will send a new follow-up email for this application.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Send Follow-up'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire('Follow-up Sent!', 'A new follow-up email has been sent.', 'success');
+        }
+    });
+}
+
+// Bulk actions
+function executeBulkAction() {
+    const action = document.getElementById('bulkAction').value;
+    const selectedCheckboxes = document.querySelectorAll('.followup-checkbox:checked');
+
+    if (!action) {
+        Swal.fire('No Action Selected', 'Please select an action to perform.', 'warning');
+        return;
+    }
+
+    if (selectedCheckboxes.length === 0) {
+        Swal.fire('No Items Selected', 'Please select at least one follow-up.', 'warning');
+        return;
+    }
+
+    const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+    switch (action) {
+        case 'mark_responded':
+            Swal.fire({
+                title: 'Mark as Responded?',
+                text: `Mark ${selectedIds.length} follow-ups as responded?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Mark All'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Updated!', 'Selected follow-ups marked as responded.', 'success');
+                }
+            });
+            break;
+
+        case 'export_selected':
+            exportSelectedFollowups(selectedIds);
+            break;
+
+        case 'delete_selected':
+            Swal.fire({
+                title: 'Delete Selected?',
+                text: `Delete ${selectedIds.length} follow-up records? This cannot be undone.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Delete All'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Deleted!', 'Selected follow-ups have been deleted.', 'success');
+                }
+            });
+            break;
+    }
+}
+
+// Export functions
+function exportHistory() {
+    Swal.fire({
+        title: 'Export Follow-up History',
+        text: 'Choose export format:',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Export as CSV',
+        cancelButtonText: 'Export as PDF',
+        showDenyButton: true,
+        denyButtonText: 'Export as Excel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            exportAsCSV();
+        } else if (result.isDenied) {
+            exportAsExcel();
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            exportAsPDF();
+        }
+    });
+}
+
+function exportAsCSV() {
+    // Simulate CSV export
+    const csvData = `Date,Company,Position,Template,Response Status,Response Type
+2024-12-15,TechCorp Inc.,Data Scientist,Professional Follow-up,No Response,
+2024-12-14,StartupAI,ML Engineer,Initial Follow-up,Responded,Positive
+2024-12-13,BigTech,Python Developer,2 Week Follow-up,Responded,Interview Invite`;
+
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `followup_history_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function exportAsExcel() {
+    Swal.fire('Excel Export', 'Excel export functionality would be implemented here.', 'info');
+}
+
+function exportAsPDF() {
+    Swal.fire('PDF Export', 'PDF export functionality would be implemented here.', 'info');
+}
+
+function exportSelectedFollowups(selectedIds) {
+    Swal.fire('Exporting Selected', `Exporting ${selectedIds.length} selected follow-ups...`, 'info');
+}
+
+// Auto-refresh every 30 seconds for new responses
+setInterval(() => {
+    console.log('Checking for new responses...');
+    // In real implementation, make AJAX call to check for updates
+}, 30000);
+
+// Filter form auto-submit on change
+document.querySelectorAll('#filterForm select').forEach(select => {
+    select.addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
+});
+</script>
+{% endblock %}

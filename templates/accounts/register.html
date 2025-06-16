@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Register - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-plus"></i> Create Your Account
+                    </h4>
+                    <p class="mb-0 mt-2">Join thousands of job seekers using AI automation</p>
+                </div>
+                <div class="card-body p-5">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Registration Failed</h6>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" id="registrationForm">
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        <i class="fas fa-user"></i> First Name *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control form-control-lg" 
+                                           id="{{ form.first_name.id_for_label }}" 
+                                           name="{{ form.first_name.name }}" 
+                                           placeholder="Enter first name"
+                                           value="{{ form.first_name.value|default:'' }}"
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        <i class="fas fa-user"></i> Last Name *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control form-control-lg" 
+                                           id="{{ form.last_name.id_for_label }}" 
+                                           name="{{ form.last_name.name }}" 
+                                           placeholder="Enter last name"
+                                           value="{{ form.last_name.value|default:'' }}"
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Username -->
+                        <div class="form-group mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                <i class="fas fa-at"></i> Username *
+                            </label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="{{ form.username.id_for_label }}" 
+                                   name="{{ form.username.name }}" 
+                                   placeholder="Choose a unique username"
+                                   value="{{ form.username.value|default:'' }}"
+                                   required>
+                            <small class="form-text text-muted">
+                                Letters, numbers, and @/./+/-/_ characters only
+                            </small>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="form-group mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                <i class="fas fa-envelope"></i> Email Address *
+                            </label>
+                            <input type="email" 
+                                   class="form-control form-control-lg" 
+                                   id="{{ form.email.id_for_label }}" 
+                                   name="{{ form.email.name }}" 
+                                   placeholder="Enter your email address"
+                                   value="{{ form.email.value|default:'' }}"
+                                   required>
+                            <small class="form-text text-muted">
+                                We'll use this for job alerts and follow-up notifications
+                            </small>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="form-group mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">
+                                <i class="fas fa-lock"></i> Password *
+                            </label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       class="form-control form-control-lg" 
+                                       id="{{ form.password1.id_for_label }}" 
+                                       name="{{ form.password1.name }}" 
+                                       placeholder="Create a strong password"
+                                       required>
+                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('{{ form.password1.id_for_label }}', 'toggleIcon1')">
+                                    <i class="fas fa-eye" id="toggleIcon1"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength mt-2">
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar" id="passwordStrength" style="width: 0%"></div>
+                                </div>
+                                <small class="form-text text-muted" id="passwordStrengthText">
+                                    Password strength will appear here
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="form-group mb-4">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">
+                                <i class="fas fa-lock"></i> Confirm Password *
+                            </label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       class="form-control form-control-lg" 
+                                       id="{{ form.password2.id_for_label }}" 
+                                       name="{{ form.password2.name }}" 
+                                       placeholder="Confirm your password"
+                                       required>
+                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('{{ form.password2.id_for_label }}', 'toggleIcon2')">
+                                    <i class="fas fa-eye" id="toggleIcon2"></i>
+                                </button>
+                            </div>
+                            <small class="form-text text-muted" id="passwordMatch">
+                                Passwords must match
+                            </small>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">
+                                I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a> 
+                                and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                <i class="fas fa-user-plus"></i> Create Account
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="text-muted mb-3">Already have an account?</p>
+                        <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-sign-in-alt"></i> Sign In Instead
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-light text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt"></i> 
+                        Your data is encrypted and secure
+                    </small>
+                </div>
+            </div>
+
+            <!-- What You Get -->
+            <div class="card mt-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-star"></i> What You Get With Your Account
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    AI-powered document generation
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Automated job searching
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Smart follow-up system
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Application tracking
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Discord bot integration
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Analytics and insights
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Terms of Service</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Acceptance of Terms</h6>
+                <p>By using the Job Automation System, you agree to these terms and conditions.</p>
+                
+                <h6>2. Service Description</h6>
+                <p>Our service provides automated job search, document generation, and application tracking tools.</p>
+                
+                <h6>3. User Responsibilities</h6>
+                <ul>
+                    <li>Provide accurate and up-to-date information</li>
+                    <li>Use the service for legitimate job searching purposes</li>
+                    <li>Respect the terms of job boards and employers</li>
+                </ul>
+                
+                <h6>4. Privacy and Data</h6>
+                <p>We protect your personal information and use it only for the purposes of job search automation.</p>
+                
+                <h6>5. Limitation of Liability</h6>
+                <p>While we strive for accuracy, we cannot guarantee job placement or specific outcomes.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Information We Collect</h6>
+                <ul>
+                    <li>Profile information (name, email, phone, location)</li>
+                    <li>Professional details (experience, skills, education)</li>
+                    <li>Job preferences and search history</li>
+                    <li>Application and follow-up data</li>
+                </ul>
+                
+                <h6>How We Use Your Information</h6>
+                <ul>
+                    <li>Generate personalized resumes and cover letters</li>
+                    <li>Search for relevant job opportunities</li>
+                    <li>Send automated follow-up emails</li>
+                    <li>Provide analytics and insights</li>
+                </ul>
+                
+                <h6>Data Security</h6>
+                <p>We use industry-standard encryption and security measures to protect your data.</p>
+                
+                <h6>Data Sharing</h6>
+                <p>We do not sell or share your personal information with third parties without your consent.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        min-height: 100vh;
+    }
+    
+    .card {
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+        background-color: rgba(255, 255, 255, 0.95);
+    }
+    
+    .card-header {
+        border-radius: 15px 15px 0 0 !important;
+        background: linear-gradient(135deg, #28a745, #20c997) !important;
+    }
+    
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #20c997, #17a2b8);
+        transform: translateY(-1px);
+    }
+    
+    .password-strength .progress-bar {
+        transition: width 0.3s ease;
+    }
+    
+    .strength-weak { background-color: #dc3545; }
+    .strength-medium { background-color: #ffc107; }
+    .strength-strong { background-color: #28a745; }
+    
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+    }
+    
+    .modal-content {
+        border-radius: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Password strength checker
+document.getElementById('{{ form.password1.id_for_label }}').addEventListener('input', function() {
+    const password = this.value;
+    const strengthBar = document.getElementById('passwordStrength');
+    const strengthText = document.getElementById('passwordStrengthText');
+    
+    let score = 0;
+    let feedback = [];
+    
+    // Length check
+    if (password.length >= 8) score++;
+    else feedback.push('at least 8 characters');
+    
+    // Uppercase check
+    if (/[A-Z]/.test(password)) score++;
+    else feedback.push('uppercase letter');
+    
+    // Lowercase check
+    if (/[a-z]/.test(password)) score++;
+    else feedback.push('lowercase letter');
+    
+    // Number check
+    if (/\d/.test(password)) score++;
+    else feedback.push('number');
+    
+    // Special character check
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    else feedback.push('special character');
+    
+    // Update progress bar
+    const percentage = (score / 5) * 100;
+    strengthBar.style.width = percentage + '%';
+    
+    // Update colors and text
+    strengthBar.className = 'progress-bar ';
+    if (score <= 2) {
+        strengthBar.classList.add('strength-weak');
+        strengthText.textContent = 'Weak - Add: ' + feedback.join(', ');
+        strengthText.className = 'form-text text-danger';
+    } else if (score <= 3) {
+        strengthBar.classList.add('strength-medium');
+        strengthText.textContent = 'Medium - Consider adding: ' + feedback.join(', ');
+        strengthText.className = 'form-text text-warning';
+    } else {
+        strengthBar.classList.add('strength-strong');
+        strengthText.textContent = 'Strong password!';
+        strengthText.className = 'form-text text-success';
+    }
+});
+
+// Password confirmation checker
+document.getElementById('{{ form.password2.id_for_label }}').addEventListener('input', function() {
+    const password1 = document.getElementById('{{ form.password1.id_for_label }}').value;
+    const password2 = this.value;
+    const matchText = document.getElementById('passwordMatch');
+    
+    if (password2 === '') {
+        matchText.textContent = 'Passwords must match';
+        matchText.className = 'form-text text-muted';
+    } else if (password1 === password2) {
+        matchText.textContent = 'Passwords match!';
+        matchText.className = 'form-text text-success';
+    } else {
+        matchText.textContent = 'Passwords do not match';
+        matchText.className = 'form-text text-danger';
+    }
+});
+
+// Toggle password visibility
+function togglePassword(fieldId, iconId) {
+    const passwordField = document.getElementById(fieldId);
+    const toggleIcon = document.getElementById(iconId);
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordField.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
+// Form validation
+document.getElementById('registrationForm').addEventListener('submit', function(e) {
+    const password1 = document.getElementById('{{ form.password1.id_for_label }}').value;
+    const password2 = document.getElementById('{{ form.password2.id_for_label }}').value;
+    const termsChecked = document.getElementById('agreeTerms').checked;
+    
+    let isValid = true;
+    let errors = [];
+    
+    if (password1 !== password2) {
+        errors.push('Passwords do not match');
+        isValid = false;
+    }
+    
+    if (password1.length < 8) {
+        errors.push('Password must be at least 8 characters long');
+        isValid = false;
+    }
+    
+    if (!termsChecked) {
+        errors.push('You must agree to the Terms of Service and Privacy Policy');
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Please fix the following errors:\n\n' + errors.join('\n'));
+    }
+});
+
+// Auto-focus on first name field
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('{{ form.first_name.id_for_label }}').focus();
+});
+
+// Submit button loading state
+document.getElementById('registrationForm').addEventListener('submit', function() {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+    submitBtn.disabled = true;
+});
+</script>
+{% endblock %}

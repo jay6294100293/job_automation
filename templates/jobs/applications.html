@@ -1,0 +1,409 @@
+<!-- templates/jobs/applications.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Applications - Job Automation{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="found">Found</option>
+                            <option value="applied">Applied</option>
+                            <option value="responded">Responded</option>
+                            <option value="interview">Interview</option>
+                            <option value="offer">Offer</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Urgency</label>
+                        <select name="urgency" class="form-select">
+                            <option value="">All Urgency</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Search</label>
+                        <input type="text" name="search" class="form-control" placeholder="Job title or company">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary d-block">Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline View -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-project-diagram"></i> Application Pipeline</h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="view" id="pipeline-view" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="pipeline-view">Pipeline</label>
+
+                    <input type="radio" class="btn-check" name="view" id="list-view" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="list-view">List</label>
+                </div>
+            </div>
+            <div class="card-body" id="pipeline-container">
+                <div class="row">
+                    {% for status, apps in pipeline.items %}
+                    <div class="col-md pipeline-column">
+                        <div class="pipeline-header text-center mb-3">
+                            <h6>{{ status|title }} ({{ apps.count }})</h6>
+                        </div>
+                        <div class="pipeline-items" data-status="{{ status }}">
+                            {% for app in apps %}
+                            <div class="pipeline-item" data-id="{{ app.id }}" draggable="true">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0 pipeline-job-title">{{ app.job_title }}</h6>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{% url 'jobs:application_detail' app.pk %}">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </a></li>
+                                            {% if app.documents_generated %}
+                                            <li><a class="dropdown-item" href="{% url 'documents:download' app.id %}">
+                                                <i class="fas fa-download"></i> Download Docs
+                                            </a></li>
+                                            {% endif %}
+                                            {% if app.application_status == 'applied' or app.application_status == 'responded' %}
+                                            <li><a class="dropdown-item" href="#" onclick="sendFollowup({{ app.id }})">
+                                                <i class="fas fa-envelope"></i> Send Follow-up
+                                            </a></li>
+                                            {% endif %}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="updateStatus({{ app.id }}, 'withdrawn')">
+                                                <i class="fas fa-times"></i> Withdraw
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <p class="mb-1 text-muted small">{{ app.company_name }}</p>
+
+                                {% if app.salary_range %}
+                                <p class="mb-1 small"><i class="fas fa-dollar-sign"></i> {{ app.salary_range }}</p>
+                                {% endif %}
+
+                                {% if app.location %}
+                                <p class="mb-1 small"><i class="fas fa-map-marker-alt"></i> {{ app.location }}</p>
+                                {% endif %}
+
+                                {% if app.match_percentage %}
+                                <div class="progress mb-2" style="height: 4px;">
+                                    <div class="progress-bar" style="width: {{ app.match_percentage }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ app.match_percentage }}% match</small>
+                                {% endif %}
+
+                                <div class="mt-2">
+                                    <span class="badge bg-{% if app.urgency_level == 'urgent' %}danger{% elif app.urgency_level == 'high' %}warning{% elif app.urgency_level == 'medium' %}info{% else %}secondary{% endif %} me-1">
+                                        {{ app.get_urgency_level_display }}
+                                    </span>
+
+                                    {% if app.remote_option %}
+                                    <span class="badge bg-success">{{ app.remote_option }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mt-2 d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ app.created_at|date:"M d" }}</small>
+                                    {% if app.application_status == 'found' %}
+                                        <button class="btn btn-sm btn-primary" onclick="markAsApplied({{ app.id }})">
+                                            <i class="fas fa-paper-plane"></i> Applied
+                                        </button>
+                                    {% elif app.next_follow_up_date %}
+                                        <small class="text-warning">
+                                            <i class="fas fa-clock"></i> Follow-up {{ app.next_follow_up_date|date:"M d" }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-inbox"></i>
+                                <br>No applications
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions -->
+{% if applications %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-tasks"></i> Bulk Actions</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'jobs:bulk_action' %}">
+                    {% csrf_token %}
+                    <div class="row align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">Action</label>
+                            <select name="action" class="form-select" required>
+                                <option value="">Select action...</option>
+                                <option value="send_followup">Send Follow-up</option>
+                                <option value="mark_applied">Mark as Applied</option>
+                                <option value="download_docs">Download Documents</option>
+                                <option value="update_status">Update Status</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Select Applications</label>
+                            <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                    <label class="form-check-label fw-bold" for="selectAll">
+                                        Select All
+                                    </label>
+                                </div>
+                                <hr class="my-2">
+                                {% for app in applications %}
+                                <div class="form-check">
+                                    <input class="form-check-input app-checkbox" type="checkbox" name="applications" value="{{ app.id }}" id="app{{ app.id }}">
+                                    <label class="form-check-label" for="app{{ app.id }}">
+                                        {{ app.job_title }} at {{ app.company_name }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-play"></i> Execute
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.pipeline-column {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 0 5px;
+    min-height: 600px;
+}
+
+.pipeline-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    cursor: move;
+    transition: all 0.3s ease;
+}
+
+.pipeline-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.pipeline-item.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.pipeline-items {
+    min-height: 500px;
+    border: 2px dashed transparent;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.pipeline-items.drag-over {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Drag and drop functionality
+let draggedElement = null;
+
+document.querySelectorAll('.pipeline-item').forEach(item => {
+    item.addEventListener('dragstart', handleDragStart);
+    item.addEventListener('dragend', handleDragEnd);
+});
+
+document.querySelectorAll('.pipeline-items').forEach(column => {
+    column.addEventListener('dragover', handleDragOver);
+    column.addEventListener('drop', handleDrop);
+    column.addEventListener('dragenter', handleDragEnter);
+    column.addEventListener('dragleave', handleDragLeave);
+});
+
+function handleDragStart(e) {
+    draggedElement = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.outerHTML);
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    draggedElement = null;
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+
+    this.classList.remove('drag-over');
+
+    if (draggedElement !== null) {
+        const newStatus = this.getAttribute('data-status');
+        const applicationId = draggedElement.getAttribute('data-id');
+
+        // Update status via AJAX
+        updateApplicationStatus(applicationId, newStatus);
+
+        // Move element to new column
+        this.appendChild(draggedElement);
+    }
+
+    return false;
+}
+
+function updateApplicationStatus(applicationId, newStatus) {
+    $.ajax({
+        url: `/jobs/applications/${applicationId}/update-status/`,
+        method: 'POST',
+        data: {
+            'status': newStatus,
+            'csrfmiddlewaretoken': csrftoken
+        },
+        success: function(response) {
+            if (response.success) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    icon: 'success',
+                    title: 'Status updated successfully'
+                });
+            }
+        },
+        error: function() {
+            Swal.fire('Error!', 'Failed to update status', 'error');
+        }
+    });
+}
+
+function markAsApplied(applicationId) {
+    Swal.fire({
+        title: 'Mark as Applied?',
+        text: 'This will update the application status and start follow-up tracking.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Mark Applied',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            updateApplicationStatus(applicationId, 'applied');
+            location.reload();
+        }
+    });
+}
+
+function sendFollowup(applicationId) {
+    Swal.fire({
+        title: 'Send Follow-up?',
+        text: 'This will send a follow-up email using your default template.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Send Follow-up',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post(`/followups/send/${applicationId}/`, {
+                csrfmiddlewaretoken: csrftoken
+            }).done(function(data) {
+                Swal.fire('Success!', 'Follow-up email sent successfully.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }).fail(function() {
+                Swal.fire('Error!', 'Failed to send follow-up email.', 'error');
+            });
+        }
+    });
+}
+
+// Bulk selection functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.app-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+});
+
+// View toggle
+document.getElementById('list-view').addEventListener('change', function() {
+    if (this.checked) {
+        // Switch to list view (implement as needed)
+        console.log('Switching to list view');
+    }
+});
+
+document.getElementById('pipeline-view').addEventListener('change', function() {
+    if (this.checked) {
+        // Switch to pipeline view (already shown)
+        console.log('Switching to pipeline view');
+    }
+});
+</script>
+{% endblock %>

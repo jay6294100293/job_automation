@@ -1,0 +1,363 @@
+<!-- templates/dashboard/dashboard.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Job Automation{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Profile Completion Card -->
+    {% if profile.profile_completion_percentage < 100 %}
+    <div class="col-12 mb-4">
+        <div class="alert alert-warning">
+            <h5><i class="fas fa-exclamation-triangle"></i> Complete Your Profile</h5>
+            <p>Your profile is {{ profile.profile_completion_percentage }}% complete.</p>
+            <div class="progress mb-3">
+                <div class="progress-bar" style="width: {{ profile.profile_completion_percentage }}%"></div>
+            </div>
+            <a href="{% url 'accounts:profile' %}" class="btn btn-warning">Complete Profile</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <button class="btn btn-primary btn-lg w-100 mb-2" onclick="startQuickSearch()">
+                            <i class="fas fa-search"></i><br>
+                            New Job Search
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-success btn-lg w-100 mb-2" onclick="sendBulkFollowup()">
+                            <i class="fas fa-envelope-bulk"></i><br>
+                            Bulk Follow-up
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'jobs:search_config' %}" class="btn btn-info btn-lg w-100 mb-2">
+                            <i class="fas fa-cog"></i><br>
+                            Manage Searches
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-secondary btn-lg w-100 mb-2">
+                            <i class="fas fa-user-edit"></i><br>
+                            Update Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_applications }}</h4>
+                        <p class="mb-0">Total Applications</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ response_rate|floatformat:1 }}%</h4>
+                        <p class="mb-0">Response Rate</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-reply fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ interviews_scheduled }}</h4>
+                        <p class="mb-0">Interviews</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar-check fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ due_followups }}</h4>
+                        <p class="mb-0">Due Follow-ups</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Application Pipeline -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-project-diagram"></i> Application Pipeline</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Found -->
+                    <div class="col-md-2">
+                        <div class="pipeline-column">
+                            <h6 class="text-center">Found ({{ pipeline_data.found }})</h6>
+                            <div class="pipeline-items" id="found-column">
+                                <!-- Items populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Applied -->
+                    <div class="col-md-2">
+                        <div class="pipeline-column">
+                            <h6 class="text-center">Applied ({{ pipeline_data.applied }})</h6>
+                            <div class="pipeline-items" id="applied-column">
+                                <!-- Items populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Responded -->
+                    <div class="col-md-2">
+                        <div class="pipeline-column">
+                            <h6 class="text-center">Responded ({{ pipeline_data.responded }})</h6>
+                            <div class="pipeline-items" id="responded-column">
+                                <!-- Items populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interview -->
+                    <div class="col-md-2">
+                        <div class="pipeline-column">
+                            <h6 class="text-center">Interview ({{ pipeline_data.interview }})</h6>
+                            <div class="pipeline-items" id="interview-column">
+                                <!-- Items populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Offer -->
+                    <div class="col-md-2">
+                        <div class="pipeline-column">
+                            <h6 class="text-center">Offer ({{ pipeline_data.offer }})</h6>
+                            <div class="pipeline-items" id="offer-column">
+                                <!-- Items populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Applications -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-history"></i> Recent Applications</h5>
+                <a href="{% url 'jobs:applications' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_applications %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Job Title</th>
+                                    <th>Company</th>
+                                    <th>Status</th>
+                                    <th>Applied Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in recent_applications %}
+                                <tr>
+                                    <td>{{ app.job_title }}</td>
+                                    <td>{{ app.company_name }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if app.application_status == 'applied' %}primary{% elif app.application_status == 'responded' %}success{% elif app.application_status == 'interview' %}warning{% elif app.application_status == 'offer' %}info{% else %}secondary{% endif %}">
+                                            {{ app.get_application_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ app.applied_date|date:"M d, Y"|default:"Not applied" }}</td>
+                                    <td>
+                                        {% if app.application_status == 'applied' or app.application_status == 'responded' %}
+                                            <button class="btn btn-sm btn-success" onclick="sendFollowup({{ app.id }})">
+                                                <i class="fas fa-envelope"></i> Follow-up
+                                            </button>
+                                        {% endif %}
+                                        {% if app.documents_generated %}
+                                            <a href="{% url 'documents:download' app.id %}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-download"></i> Docs
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-search fa-3x mb-3"></i>
+                        <h5>No applications yet</h5>
+                        <p>Start your first job search to see applications here.</p>
+                        {% if search_configs %}
+                            <button class="btn btn-primary" onclick="startQuickSearch()">
+                                Start Job Search
+                            </button>
+                        {% else %}
+                            <a href="{% url 'jobs:create_config' %}" class="btn btn-primary">
+                                Create Search Configuration
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pipeline-column {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        min-height: 300px;
+        margin: 5px;
+    }
+    .pipeline-items {
+        min-height: 250px;
+    }
+    .pipeline-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 10px;
+        cursor: move;
+        transition: all 0.3s ease;
+    }
+    .pipeline-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function startQuickSearch() {
+    {% if search_configs %}
+        // Use first active configuration
+        const configId = {{ search_configs.first.id }};
+        Swal.fire({
+            title: 'Start Job Search?',
+            text: 'This will search for jobs using your default configuration.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Start Search',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Send AJAX request to start search
+                $.post(`/jobs/search/${configId}/`, {
+                    csrfmiddlewaretoken: csrftoken
+                }).done(function(data) {
+                    Swal.fire('Success!', 'Job search started. Results will appear shortly.', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                }).fail(function() {
+                    Swal.fire('Error!', 'Failed to start job search.', 'error');
+                });
+            }
+        });
+    {% else %}
+        Swal.fire({
+            title: 'No Search Configuration',
+            text: 'Please create a search configuration first.',
+            icon: 'warning',
+            confirmButtonText: 'Create Configuration'
+        }).then(() => {
+            window.location.href = '{% url "jobs:create_config" %}';
+        });
+    {% endif %}
+}
+
+function sendFollowup(applicationId) {
+    Swal.fire({
+        title: 'Send Follow-up?',
+        text: 'This will send a follow-up email for this application.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Send Follow-up',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post(`/followups/send/${applicationId}/`, {
+                csrfmiddlewaretoken: csrftoken
+            }).done(function(data) {
+                Swal.fire('Success!', 'Follow-up email sent successfully.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }).fail(function() {
+                Swal.fire('Error!', 'Failed to send follow-up email.', 'error');
+            });
+        }
+    });
+}
+
+function sendBulkFollowup() {
+    window.location.href = '{% url "followups:dashboard" %}';
+}
+
+// Load pipeline data on page load
+$(document).ready(function() {
+    loadPipelineData();
+});
+
+function loadPipelineData() {
+    // This would typically load via AJAX, but for now we'll use the context data
+    // In a real implementation, you'd make an AJAX call to get current applications
+}
+</script>
+{% endblock %}
