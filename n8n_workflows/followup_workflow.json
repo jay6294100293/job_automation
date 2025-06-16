@@ -1,0 +1,540 @@
+{
+  "name": "Follow-up Automation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "followup",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-followup",
+      "name": "Follow-up Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "followup-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse follow-up request\nconst requestData = items[0].json;\nconst followupType = requestData.type; // 'single', 'bulk', 'scheduled'\nconst applicationIds = Array.isArray(requestData.application_ids) ? \n  requestData.application_ids : [requestData.application_id];\nconst userId = requestData.user_id;\nconst templateType = requestData.template_type || '1_week';\n\nconsole.log(`Processing ${followupType} follow-up for ${applicationIds.length} applications`);\n\nreturn [{\n  json: {\n    type: followupType,\n    application_ids: applicationIds,\n    user_id: userId,\n    template_type: templateType,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-followup-request",
+      "name": "Parse Follow-up Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/user/{{ $json.user_id }}/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-user-profile",
+      "name": "Get User Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/applications/{{ $json.application_ids.join(',') }}/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-applications",
+      "name": "Get Applications",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/followup-templates/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.user_id }}"
+            },
+            {
+              "name": "template_type",
+              "value": "={{ $json.template_type }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-template",
+      "name": "Get Follow-up Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate personalized follow-up emails\nconst userProfile = items[0].json;\nconst applications = items[1].json.applications || [];\nconst template = items[2].json.template || {};\n\nconst followupEmails = [];\n\n// Default templates if none found\nconst defaultTemplates = {\n  '1_week': {\n    subject: 'Following up on my application - {{job_title}} at {{company_name}}',\n    body: `Dear Hiring Manager,\n\nI hope this email finds you well. I wanted to follow up on my application for the {{job_title}} position at {{company_name}} that I submitted {{days_since_application}} days ago.\n\nI remain very interested in this opportunity and believe my background in {{key_skills}} would be a great fit for your team. I'm particularly excited about {{company_name}}'s mission and would love to contribute to your success.\n\nI would welcome the opportunity to discuss how my {{years_experience}} years of experience in {{relevant_field}} can benefit your organization.\n\nThank you for your time and consideration. I look forward to hearing from you.\n\nBest regards,\n{{user_name}}\n{{user_email}}\n{{user_phone}}`\n  },\n  '2_week': {\n    subject: 'Checking in - {{job_title}} position at {{company_name}}',\n    body: `Hello,\n\nI hope you're doing well. I'm writing to check in regarding my application for the {{job_title}} position at {{company_name}}.\n\nI submitted my application {{days_since_application}} days ago and wanted to reiterate my strong interest in joining your team. Since applying, I've been following {{company_name}}'s recent developments and I'm even more excited about the possibility of contributing to your goals.\n\nIf you need any additional information or would like to schedule a conversation, please don't hesitate to reach out. I'm available at your convenience.\n\nThank you for your consideration.\n\nWarm regards,\n{{user_name}}`\n  },\n  'custom': {\n    subject: 'Re: {{job_title}} Application',\n    body: 'Custom message based on user input'\n  }\n};\n\n// Use template from database or default\nconst emailTemplate = template.subject_template ? {\n  subject: template.subject_template,\n  body: template.body_template\n} : defaultTemplates[items[0].json.template_type] || defaultTemplates['1_week'];\n\n// Generate emails for each application\napplications.forEach(application => {\n  const daysSinceApplication = Math.floor(\n    (new Date() - new Date(application.created_at)) / (1000 * 60 * 60 * 24)\n  );\n  \n  // Replace template variables\n  const variables = {\n    user_name: userProfile.full_name || userProfile.first_name + ' ' + userProfile.last_name,\n    user_email: userProfile.email,\n    user_phone: userProfile.phone || '',\n    job_title: application.job_title,\n    company_name: application.company_name,\n    days_since_application: daysSinceApplication,\n    key_skills: userProfile.key_skills ? userProfile.key_skills.slice(0, 3).join(', ') : 'data science, machine learning',\n    years_experience: userProfile.years_experience || '5+',\n    relevant_field: application.job_title.toLowerCase().includes('data') ? 'data science' : \n                   application.job_title.toLowerCase().includes('software') ? 'software development' : \n                   'technology'\n  };\n  \n  let personalizedSubject = emailTemplate.subject;\n  let personalizedBody = emailTemplate.body;\n  \n  // Replace all variables\n  Object.keys(variables).forEach(key => {\n    const regex = new RegExp(`{{${key}}}`, 'g');\n    personalizedSubject = personalizedSubject.replace(regex, variables[key]);\n    personalizedBody = personalizedBody.replace(regex, variables[key]);\n  });\n  \n  followupEmails.push({\n    application_id: application.id,\n    to_email: application.contact_email || `careers@${application.company_name.toLowerCase().replace(/\\s+/g, '')}.com`,\n    subject: personalizedSubject,\n    body: personalizedBody,\n    application: application,\n    variables: variables\n  });\n});\n\nconsole.log(`Generated ${followupEmails.length} personalized follow-up emails`);\n\nreturn [{\n  json: {\n    user_profile: userProfile,\n    emails: followupEmails,\n    template_used: emailTemplate,\n    generation_timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "generate-followup-emails",
+      "name": "Generate Follow-up Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split emails into individual items for processing\nconst emailData = items[0].json;\nconst emails = emailData.emails;\n\nreturn emails.map(email => ({\n  json: {\n    ...email,\n    user_profile: emailData.user_profile,\n    template_used: emailData.template_used\n  }\n}));"
+      },
+      "id": "split-emails",
+      "name": "Split Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.DEFAULT_FROM_EMAIL }}",
+        "toEmail": "={{ $json.to_email }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "options": {
+          "ccEmail": "",
+          "bccEmail": "",
+          "replyTo": "={{ $json.user_profile.email }}",
+          "priority": "normal"
+        }
+      },
+      "id": "send-email",
+      "name": "Send Follow-up Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "credentials": {
+        "smtp": {
+          "id": "sendgrid-smtp",
+          "name": "SendGrid SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/followup-history/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "application_id",
+              "value": "={{ $json.application_id }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $json.body }}"
+            },
+            {
+              "name": "sent_date",
+              "value": "={{ new Date().toISOString() }}"
+            },
+            {
+              "name": "template_type",
+              "value": "={{ $json.template_used.type || 'auto' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "record-followup-history",
+      "name": "Record Follow-up History",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/applications/{{ $json.application_id }}/update-followup/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "last_followup_date",
+              "value": "={{ new Date().toISOString() }}"
+            },
+            {
+              "name": "followup_count",
+              "value": "increment"
+            },
+            {
+              "name": "next_followup_date",
+              "value": "={{ new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-application-status",
+      "name": "Update Application Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-results",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Follow-up emails sent successfully\",\n  \"emails_sent\": {{ $json.length }},\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "daily-followup-check",
+      "name": "Daily Follow-up Check",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 600]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/applications/due-followups/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-due-followups",
+      "name": "Get Due Follow-ups",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-due-followups",
+              "leftValue": "={{ $json.applications.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-due-followups",
+      "name": "Check Due Follow-ups",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 600]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "📧 **Follow-up Sent!**\\n\\n📊 **Summary:**\\n• Follow-ups sent: {{ $json.length }}\\n• Template used: {{ $json[0].template_used.type || 'default' }}\\n• Timestamp: {{ new Date().toLocaleString() }}\\n\\n🔗 **View Dashboard:** [Follow-up History]({{ $env.SITE_URL }}/followups/history/)\\n\\n💡 **Tip:** Check your email for delivery confirmations!"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "discord-notification",
+      "name": "Discord Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2000, 480]
+    }
+  ],
+  "connections": {
+    "Follow-up Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Follow-up Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Follow-up Request": {
+      "main": [
+        [
+          {
+            "node": "Get User Profile",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Applications",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Follow-up Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Profile": {
+      "main": [
+        [
+          {
+            "node": "Generate Follow-up Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Applications": {
+      "main": [
+        [
+          {
+            "node": "Generate Follow-up Emails",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Follow-up Template": {
+      "main": [
+        [
+          {
+            "node": "Generate Follow-up Emails",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Generate Follow-up Emails": {
+      "main": [
+        [
+          {
+            "node": "Split Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Emails": {
+      "main": [
+        [
+          {
+            "node": "Send Follow-up Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Follow-up Email": {
+      "main": [
+        [
+          {
+            "node": "Record Follow-up History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Follow-up History": {
+      "main": [
+        [
+          {
+            "node": "Update Application Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Application Status": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Discord Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Follow-up Check": {
+      "main": [
+        [
+          {
+            "node": "Get Due Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Due Follow-ups": {
+      "main": [
+        [
+          {
+            "node": "Check Due Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Due Follow-ups": {
+      "main": [
+        [
+          {
+            "node": "Generate Follow-up Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/Toronto",
+    "saveManualExecutions": true,
+    "errorWorkflow": {
+      "id": "error-handler-workflow"
+    }
+  },
+  "pinData": {},
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "job-automation-instance"
+  },
+  "id": "followup-automation",
+  "tags": [
+    {
+      "createdAt": "2024-06-15T12:00:00.000Z",
+      "updatedAt": "2024-06-15T12:00:00.000Z",
+      "id": "job-automation",
+      "name": "job-automation"
+    }
+  ]
+}
