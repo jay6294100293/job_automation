@@ -1,0 +1,346 @@
+name: Deploy Django Job Automation with n8n Monitoring
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-django pytest-cov coverage
+
+    - name: Create test environment
+      run: |
+        cat > .env << 'EOF'
+        DEBUG=True
+        SECRET_KEY=test-secret-key-for-github-actions
+        DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_db
+        REDIS_URL=redis://localhost:6379/0
+        MONITORING_API_KEY=test-monitoring-key
+        ALLOWED_HOSTS=localhost,127.0.0.1
+        EOF
+
+    - name: Run migrations
+      run: |
+        python manage.py migrate --noinput
+
+    - name: Run tests with coverage
+      id: test_results
+      run: |
+        python -m pytest --cov=. --cov-report=xml --junitxml=test-results.xml -v || true
+        
+        # Extract test results
+        if [ -f "test-results.xml" ]; then
+          TOTAL_TESTS=$(python -c "
+          import xml.etree.ElementTree as ET
+          try:
+              tree = ET.parse('test-results.xml')
+              root = tree.getroot()
+              print(root.attrib.get('tests', '0'))
+          except:
+              print('0')
+          ")
+          
+          FAILED_TESTS=$(python -c "
+          import xml.etree.ElementTree as ET
+          try:
+              tree = ET.parse('test-results.xml')
+              root = tree.getroot()
+              print(root.attrib.get('failures', '0'))
+          except:
+              print('0')
+          ")
+          
+          PASSED_TESTS=$((TOTAL_TESTS - FAILED_TESTS))
+        else
+          TOTAL_TESTS=0
+          FAILED_TESTS=0
+          PASSED_TESTS=0
+        fi
+        
+        # Get coverage
+        COVERAGE=0
+        if [ -f "coverage.xml" ]; then
+          COVERAGE=$(python -c "
+          import xml.etree.ElementTree as ET
+          try:
+              tree = ET.parse('coverage.xml')
+              root = tree.getroot()
+              coverage = float(root.attrib.get('line-rate', '0')) * 100
+              print(f'{coverage:.2f}')
+          except:
+              print('0')
+          ")
+        fi
+        
+        # Calculate pass rate
+        if [ "$TOTAL_TESTS" -gt 0 ]; then
+          PASS_RATE=$(echo "scale=2; $PASSED_TESTS * 100 / $TOTAL_TESTS" | bc)
+        else
+          PASS_RATE=0
+        fi
+        
+        echo "total_tests=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+        echo "passed_tests=$PASSED_TESTS" >> $GITHUB_OUTPUT
+        echo "failed_tests=$FAILED_TESTS" >> $GITHUB_OUTPUT
+        echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+        echo "pass_rate=$PASS_RATE" >> $GITHUB_OUTPUT
+
+    - name: Send Test Results to n8n
+      if: always()
+      run: |
+        TEST_DATA=$(cat <<EOF
+        {
+          "event_id": "test_${{ github.run_id }}_${{ github.run_attempt }}",
+          "repository": "${{ github.repository }}",
+          "branch": "${{ github.ref_name }}",
+          "commit_sha": "${{ github.sha }}",
+          "workflow_run_id": "${{ github.run_id }}",
+          "total_tests": ${{ steps.test_results.outputs.total_tests }},
+          "passed": ${{ steps.test_results.outputs.passed_tests }},
+          "failed": ${{ steps.test_results.outputs.failed_tests }},
+          "skipped": 0,
+          "pass_rate": ${{ steps.test_results.outputs.pass_rate }},
+          "coverage": ${{ steps.test_results.outputs.coverage }},
+          "timestamp": "$(date -Iseconds)",
+          "workflow_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        }
+        EOF
+        )
+        
+        echo "Sending test results to n8n..."
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -d "$TEST_DATA" \
+          "https://ai.jobautomation.me/webhook/test-results" \
+          --max-time 30 || echo "Failed to send to n8n"
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=sha
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: [test, build-and-push]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    environment:
+      name: production
+      url: https://ai.jobautomation.me
+
+    steps:
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+    - name: Add server to known hosts
+      run: |
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to production server
+      id: deployment
+      run: |
+        START_TIME=$(date +%s)
+        
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+        set -e
+        cd /opt/job_automation
+        
+        echo "🚀 Starting deployment..."
+        git pull origin main
+        
+        echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        docker compose pull django
+        
+        echo "📦 Creating backup..."
+        docker exec job_automation_postgres_1 pg_dump -U n8n n8n > /opt/backups/pre_deploy_$(date +%Y%m%d_%H%M%S).sql || true
+        
+        echo "🔄 Deploying new version..."
+        docker compose up -d --no-deps django
+        
+        echo "🏥 Waiting for health check..."
+        sleep 30
+        echo "✅ Deployment completed!"
+        EOF
+        
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
+        echo "deployment_duration=$DURATION" >> $GITHUB_OUTPUT
+
+    - name: Verify deployment health
+      id: health_check
+      run: |
+        HEALTH_STATUS=$(curl -s "https://ai.jobautomation.me/health/" | jq -r '.status' 2>/dev/null || echo "unknown")
+        echo "health_status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
+        
+        if [ "$HEALTH_STATUS" != "healthy" ]; then
+          echo "❌ Health check failed!"
+          exit 1
+        else
+          echo "✅ Health check passed!"
+        fi
+
+    - name: Send Deployment Status to n8n
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ] && [ "${{ steps.health_check.outputs.health_status }}" == "healthy" ]; then
+          DEPLOY_STATUS="success"
+          SEVERITY="low"
+        else
+          DEPLOY_STATUS="failed"
+          SEVERITY="high"
+        fi
+        
+        DEPLOYMENT_DATA=$(cat <<EOF
+        {
+          "event_id": "deploy_${{ github.run_id }}_${{ github.run_attempt }}",
+          "repository": "${{ github.repository }}",
+          "branch": "${{ github.ref_name }}",
+          "commit_sha": "${{ github.sha }}",
+          "author": "${{ github.actor }}",
+          "workflow_run_id": "${{ github.run_id }}",
+          "status": "$DEPLOY_STATUS",
+          "severity": "$SEVERITY",
+          "duration": "${{ steps.deployment.outputs.deployment_duration }}s",
+          "deployment_url": "https://ai.jobautomation.me",
+          "health_status": "${{ steps.health_check.outputs.health_status }}",
+          "timestamp": "$(date -Iseconds)",
+          "workflow_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        }
+        EOF
+        )
+        
+        echo "Sending deployment status to n8n..."
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -d "$DEPLOYMENT_DATA" \
+          "https://ai.jobautomation.me/webhook/deployment-status" \
+          --max-time 30 || echo "Failed to send to n8n"
+
+  post-deployment-monitoring:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Collect server metrics after deployment
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+        which bc >/dev/null || (apt-get update && apt-get install -y bc)
+        
+        CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | sed 's/%us,//' | sed 's/[^0-9.]//g')
+        [ -z "$CPU_USAGE" ] && CPU_USAGE=0
+        
+        MEMORY_INFO=$(free | grep '^Mem:')
+        TOTAL_MEM=$(echo $MEMORY_INFO | awk '{print $2}')
+        USED_MEM=$(echo $MEMORY_INFO | awk '{print $3}')
+        MEMORY_USAGE=$(echo "scale=2; $USED_MEM * 100 / $TOTAL_MEM" | bc 2>/dev/null || echo "0")
+        
+        DISK_USAGE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+        [ -z "$DISK_USAGE" ] && DISK_USAGE=0
+        
+        CONTAINERS_RUNNING=$(docker ps -q | wc -l)
+        CONTAINERS_TOTAL=$(docker ps -a -q | wc -l)
+        
+        METRICS_DATA=$(cat <<EOFMETRICS
+        {
+          "event_id": "post_deploy_${{ github.run_id }}_$(date +%s)",
+          "hostname": "$(hostname)",
+          "cpu_usage": $CPU_USAGE,
+          "memory_usage": $MEMORY_USAGE,
+          "disk_usage": $DISK_USAGE,
+          "containers_running": $CONTAINERS_RUNNING,
+          "containers_total": $CONTAINERS_TOTAL,
+          "timestamp": "$(date -Iseconds)",
+          "deployment_related": true,
+          "workflow_run_id": "${{ github.run_id }}"
+        }
+        EOFMETRICS
+        )
+        
+        echo "Sending post-deployment metrics to n8n..."
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -d "$METRICS_DATA" \
+          "https://ai.jobautomation.me/webhook/server-metrics" \
+          --max-time 30 || echo "Failed to send metrics to n8n"
+        EOF

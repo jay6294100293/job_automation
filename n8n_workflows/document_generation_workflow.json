@@ -1,0 +1,642 @@
+{
+  "name": "Document Generation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "document-generation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-document-generation",
+      "name": "Document Generation Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "document-generation-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse document generation request\nconst requestData = items[0].json;\nconst userId = requestData.user_id;\nconst applications = requestData.applications || [];\nconst triggerType = requestData.trigger_type || 'manual';\n\nconsole.log(`Processing document generation for ${applications.length} applications`);\n\n// Document types to generate\nconst documentTypes = [\n  'resume',\n  'cover_letter', \n  'email_templates',\n  'linkedin_messages',\n  'video_pitch_script',\n  'company_research',\n  'followup_schedule',\n  'skills_analysis'\n];\n\nreturn [{\n  json: {\n    user_id: userId,\n    applications: applications,\n    document_types: documentTypes,\n    trigger_type: triggerType,\n    batch_id: `batch_${Date.now()}`,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-generation-request",
+      "name": "Parse Generation Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/user/{{ $json.user_id }}/profile/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-user-profile",
+      "name": "Get User Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split applications for parallel processing\nconst requestData = items[0].json;\nconst userProfile = items[1].json;\nconst applications = requestData.applications;\n\n// Create job items for each application\nreturn applications.map(application => ({\n  json: {\n    ...requestData,\n    application: application,\n    user_profile: userProfile,\n    job_id: `job_${application.id}_${Date.now()}`\n  }\n}));"
+      },
+      "id": "split-applications",
+      "name": "Split Applications",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-4"
+            },
+            {
+              "name": "messages",
+              "value": "={{ JSON.stringify([{\n  role: 'system',\n  content: 'You are an expert resume writer and career coach. Generate a highly customized, ATS-optimized resume that perfectly matches the job requirements. Focus on relevant experience, skills, and achievements.'\n}, {\n  role: 'user', \n  content: `Create an ATS-optimized resume for this job application:\\n\\nUser Profile:\\n- Name: ${$json.user_profile.full_name}\\n- Email: ${$json.user_profile.email}\\n- Phone: ${$json.user_profile.phone}\\n- Location: ${$json.user_profile.location}\\n- LinkedIn: ${$json.user_profile.linkedin_url}\\n- Experience: ${$json.user_profile.years_experience} years\\n- Education: ${$json.user_profile.education}\\n- Key Skills: ${($json.user_profile.key_skills || []).join(', ')}\\n\\nJob Details:\\n- Title: ${$json.application.job_title}\\n- Company: ${$json.application.company_name}\\n- Description: ${$json.application.job_description}\\n- Location: ${$json.application.location}\\n\\nFormat as a professional resume with clear sections and bullet points. Focus on quantifiable achievements and job-relevant keywords.`\n}]) }}"
+            },
+            {
+              "name": "max_tokens",
+              "value": 2000
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-resume-openai",
+      "name": "Generate Resume (OpenAI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contents",
+              "value": "={{ JSON.stringify([{\n  parts: [{\n    text: `Write a compelling, personalized cover letter for this job application:\\n\\nApplicant: ${$json.user_profile.full_name}\\nPosition: ${$json.application.job_title}\\nCompany: ${$json.application.company_name}\\nJob Description: ${$json.application.job_description}\\nApplicant Background: ${$json.user_profile.years_experience} years experience in ${($json.user_profile.key_skills || []).slice(0,3).join(', ')}\\nEducation: ${$json.user_profile.education}\\n\\nMake it specific to this company and role. Include research about the company when possible. Keep it professional, enthusiastic, and under 400 words. Format as a business letter.`\n  }]\n}]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-cover-letter-gemini",
+      "name": "Generate Cover Letter (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-3.5-turbo"
+            },
+            {
+              "name": "messages",
+              "value": "={{ JSON.stringify([{\n  role: 'system',\n  content: 'You are an expert email writer. Create professional, personalized email templates for job applications.'\n}, {\n  role: 'user',\n  content: `Create 4 email templates for this job application:\\n\\n1. Initial Application Email\\n2. 1-Week Follow-up Email\\n3. Thank You After Interview Email\\n4. Networking Email for Current Employees\\n\\nJob: ${$json.application.job_title} at ${$json.application.company_name}\\nApplicant: ${$json.user_profile.full_name}\\nBackground: ${$json.user_profile.years_experience} years in ${($json.user_profile.key_skills || []).slice(0,2).join(', ')}\\n\\nFormat each template with Subject and Body. Keep them professional but personable.`\n}]) }}"
+            },
+            {
+              "name": "max_tokens",
+              "value": 1500
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-email-templates",
+      "name": "Generate Email Templates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contents",
+              "value": "={{ JSON.stringify([{\n  parts: [{\n    text: `Create 4 LinkedIn connection message templates (under 300 characters each):\\n\\n1. Message to connect with employees at ${$json.application.company_name}\\n2. Message to HR/Recruiters\\n3. Message to hiring manager for ${$json.application.job_title}\\n4. Follow-up message after connecting\\n\\nApplicant: ${$json.user_profile.full_name}\\nTarget Role: ${$json.application.job_title}\\nBackground: ${$json.user_profile.years_experience} years in ${($json.user_profile.key_skills || []).slice(0,2).join(', ')}\\n\\nMake them personalized, professional, and relationship-focused (not sales-y).`\n  }]\n}]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-linkedin-messages",
+      "name": "Generate LinkedIn Messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate Video Pitch Script (using local logic for speed)\nconst application = items[0].json.application;\nconst userProfile = items[0].json.user_profile;\n\nconst script = `\n**2-MINUTE VIDEO PITCH SCRIPT**\n**For: ${application.job_title} at ${application.company_name}**\n\n**HOOK (15 seconds)**\nHi! I'm ${userProfile.full_name}, and I'm excited about the ${application.job_title} opportunity at ${application.company_name}. With ${userProfile.years_experience} years of experience in ${(userProfile.key_skills || []).slice(0,2).join(' and ')}, I believe I can make an immediate impact on your team.\n\n**BACKGROUND (30 seconds)**\nMy background includes ${userProfile.education} and hands-on experience with ${(userProfile.key_skills || []).slice(0,4).join(', ')}. In my previous roles, I've successfully delivered projects that increased efficiency and drove results. I'm passionate about using technology to solve complex problems and create value.\n\n**VALUE PROPOSITION (60 seconds)**\nWhat excites me about ${application.company_name} is [research the company's mission/recent news]. I've been following your work in [relevant area], and I'm particularly impressed by [specific achievement or initiative]. \n\nFor this ${application.job_title} role, I would bring:\n- Deep expertise in [relevant skill from job description]\n- A track record of [relevant achievement]\n- Strong problem-solving abilities and collaborative approach\n- Passion for [relevant technology/industry]\n\nI'm confident I can help ${application.company_name} achieve its goals while growing my own skills in this dynamic environment.\n\n**COMPANY FIT (20 seconds)**\nI'm drawn to ${application.company_name}'s [mention company values/culture]. The opportunity to work on [specific aspect of the role] aligns perfectly with my career goals and interests. I thrive in environments that value [mention relevant company values].\n\n**CALL TO ACTION (15 seconds)**\nI'd love the opportunity to discuss how my background and enthusiasm can contribute to your team's success. Thank you for considering my application, and I look forward to hearing from you soon!\n\n**FILMING TIPS:**\n- Maintain eye contact with camera\n- Smile and show enthusiasm\n- Use natural hand gestures\n- Record in good lighting\n- Keep pace conversational but energetic\n- Practice 2-3 times before final recording\n`;\n\nreturn [{\n  json: {\n    application_id: application.id,\n    document_type: 'video_pitch_script',\n    content: script,\n    file_format: 'txt',\n    generated_at: new Date().toISOString(),\n    ai_model_used: 'Local Generation'\n  }\n}];"
+      },
+      "id": "generate-video-script",
+      "name": "Generate Video Script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 600]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-4"
+            },
+            {
+              "name": "messages",
+              "value": "={{ JSON.stringify([{\n  role: 'system',\n  content: 'You are a business research analyst. Create comprehensive company research reports with recent information, insights, and interview preparation tips.'\n}, {\n  role: 'user',\n  content: `Research ${$json.application.company_name} and create a detailed company research report including:\\n\\n1. Company Overview (history, mission, values)\\n2. Recent News (last 6 months)\\n3. Technology Stack (if tech company)\\n4. Culture & Work Environment\\n5. Growth Trajectory & Funding\\n6. Key Personnel (executives, hiring managers)\\n7. Interview Insights (common questions, process)\\n8. Industry Position & Competitors\\n\\nJob Role: ${$json.application.job_title}\\nLocation: ${$json.application.location}\\n\\nFormat as a professional research report with actionable insights for interview preparation.`\n}]) }}"
+            },
+            {
+              "name": "max_tokens",
+              "value": 2000
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-company-research",
+      "name": "Generate Company Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process and format all generated documents\nconst resume = items[0]?.json?.choices?.[0]?.message?.content || 'Resume generation failed';\nconst coverLetter = items[1]?.json?.candidates?.[0]?.content?.parts?.[0]?.text || 'Cover letter generation failed';\nconst emailTemplates = items[2]?.json?.choices?.[0]?.message?.content || 'Email templates generation failed';\nconst linkedinMessages = items[3]?.json?.candidates?.[0]?.content?.parts?.[0]?.text || 'LinkedIn messages generation failed';\nconst videoScript = items[4]?.json?.content || 'Video script generation failed';\nconst companyResearch = items[5]?.json?.choices?.[0]?.message?.content || 'Company research generation failed';\n\nconst application = items[0].json.application;\nconst userProfile = items[0].json.user_profile;\n\n// Generate follow-up schedule\nconst followupSchedule = `\nFOLLOW-UP SCHEDULE\n==================\nFor: ${application.job_title} at ${application.company_name}\nApplication Date: ${new Date().toDateString()}\n\nWEEK 1: Apply + Initial Follow-up\n• Day 1: Submit application\n• Day 3: Connect with employees on LinkedIn\n• Day 7: Send first follow-up email\n\nWEEK 2: Continued Engagement\n• Day 10: Follow up with HR/Recruiter\n• Day 14: Send second follow-up email\n\nWEEK 3: Final Push\n• Day 18: LinkedIn message to hiring manager\n• Day 21: Final follow-up call/email\n\nWEEK 4+: Move On or Interview Prep\n• If no response: Focus on other opportunities\n• If interview scheduled: Use company research for prep\n\nCONTACT METHODS:\n• Email: Primary follow-up method\n• LinkedIn: For networking and research\n• Phone: Only if contact information provided\n• Company website: Check for updates\n`;\n\n// Generate skills analysis\nconst skillsAnalysis = `\nSKILLS GAP ANALYSIS\n===================\nPosition: ${application.job_title}\nCompany: ${application.company_name}\n\nYOUR MATCHING SKILLS:\n${(userProfile.key_skills || []).map(skill => `✓ ${skill}`).join('\\n')}\n\nSKILLS TO HIGHLIGHT IN INTERVIEW:\n• Technical expertise in core technologies\n• Problem-solving and analytical thinking\n• Communication and collaboration\n• Adaptability and learning agility\n\nRECOMMENDED LEARNING:\n• Stay updated with latest industry trends\n• Consider relevant certifications\n• Practice technical interview questions\n• Review company's tech stack\n\nINTERVIEW PREPARATION:\n• Prepare STAR method examples\n• Research common questions for this role\n• Practice coding challenges (if applicable)\n• Prepare thoughtful questions about the role\n`;\n\n// Create document objects\nconst documents = [\n  {\n    application_id: application.id,\n    document_type: 'resume',\n    content: resume,\n    file_format: 'txt',\n    ai_model_used: 'GPT-4'\n  },\n  {\n    application_id: application.id,\n    document_type: 'cover_letter',\n    content: coverLetter,\n    file_format: 'txt',\n    ai_model_used: 'Gemini Pro'\n  },\n  {\n    application_id: application.id,\n    document_type: 'email_templates',\n    content: emailTemplates,\n    file_format: 'txt',\n    ai_model_used: 'GPT-3.5-Turbo'\n  },\n  {\n    application_id: application.id,\n    document_type: 'linkedin_messages',\n    content: linkedinMessages,\n    file_format: 'txt',\n    ai_model_used: 'Gemini Pro'\n  },\n  {\n    application_id: application.id,\n    document_type: 'video_pitch_script',\n    content: videoScript,\n    file_format: 'txt',\n    ai_model_used: 'Local Generation'\n  },\n  {\n    application_id: application.id,\n    document_type: 'company_research',\n    content: companyResearch,\n    file_format: 'txt',\n    ai_model_used: 'GPT-4'\n  },\n  {\n    application_id: application.id,\n    document_type: 'followup_schedule',\n    content: followupSchedule,\n    file_format: 'txt',\n    ai_model_used: 'Local Generation'\n  },\n  {\n    application_id: application.id,\n    document_type: 'skills_analysis',\n    content: skillsAnalysis,\n    file_format: 'txt',\n    ai_model_used: 'Local Generation'\n  }\n];\n\nconsole.log(`Generated ${documents.length} documents for application ${application.id}`);\n\nreturn [{\n  json: {\n    job_id: items[0].json.job_id,\n    application_id: application.id,\n    user_id: items[0].json.user_id,\n    documents: documents,\n    generation_completed: true,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "process-documents",
+      "name": "Process Generated Documents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Save documents to file system and create file paths\nconst fs = require('fs');\nconst path = require('path');\nconst documentData = items[0].json;\nconst application = documentData.application_id;\nconst userId = documentData.user_id;\n\n// Create user directory structure\nconst userDir = `/media/documents/user_${userId}`;\nconst jobDir = `${userDir}/Job_${application}_${new Date().toISOString().split('T')[0]}`;\n\n// Ensure directories exist\nif (!fs.existsSync(userDir)) {\n  fs.mkdirSync(userDir, { recursive: true });\n}\nif (!fs.existsSync(jobDir)) {\n  fs.mkdirSync(jobDir, { recursive: true });\n}\n\n// Save each document to file\nconst savedDocuments = documentData.documents.map(doc => {\n  const filename = `${doc.document_type}_${application}_${new Date().toISOString().split('T')[0]}.${doc.file_format}`;\n  const filepath = path.join(jobDir, filename);\n  \n  try {\n    fs.writeFileSync(filepath, doc.content, 'utf8');\n    return {\n      ...doc,\n      file_path: filepath,\n      filename: filename,\n      saved_successfully: true\n    };\n  } catch (error) {\n    console.error(`Error saving ${filename}:`, error);\n    return {\n      ...doc,\n      file_path: null,\n      filename: filename,\n      saved_successfully: false,\n      error: error.message\n    };\n  }\n});\n\nconsole.log(`Saved ${savedDocuments.filter(d => d.saved_successfully).length} documents to ${jobDir}`);\n\nreturn [{\n  json: {\n    ...documentData,\n    documents: savedDocuments,\n    save_directory: jobDir,\n    files_saved: savedDocuments.filter(d => d.saved_successfully).length\n  }\n}];"
+      },
+      "id": "save-documents-to-files",
+      "name": "Save Documents to Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/documents/save-generated/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "job_id",
+              "value": "={{ $json.job_id }}"
+            },
+            {
+              "name": "application_id",
+              "value": "={{ $json.application_id }}"
+            },
+            {
+              "name": "documents",
+              "value": "={{ JSON.stringify($json.documents) }}"
+            },
+            {
+              "name": "generation_completed",
+              "value": "={{ $json.generation_completed }}"
+            },
+            {
+              "name": "files_saved",
+              "value": "={{ $json.files_saved }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-to-database",
+      "name": "Save to Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1780, 400]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-all-results",
+      "name": "Merge All Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [2000, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/webhooks/document-generation-complete/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "document_generation_complete"
+            },
+            {
+              "name": "batch_id",
+              "value": "={{ $json[0].batch_id }}"
+            },
+            {
+              "name": "applications_processed",
+              "value": "={{ $json.length }}"
+            },
+            {
+              "name": "total_documents",
+              "value": "={{ $json.reduce((acc, item) => acc + item.files_saved, 0) }}"
+            },
+            {
+              "name": "results",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-completion",
+      "name": "Notify Completion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2220, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/documents/generation-confirmation/?application_ids={{ $json[0].application_id }}",
+        "responseMode": "redirect"
+      },
+      "id": "redirect-to-confirmation",
+      "name": "Redirect to Confirmation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2330, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Document generation completed\",\n  \"applications_processed\": {{ $json.length }},\n  \"total_documents_generated\": {{ $json.reduce((acc, item) => acc + item.files_saved, 0) }},\n  \"batch_id\": \"{{ $json[0].batch_id }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2440, 400]
+    }
+  ],
+  "connections": {
+    "Document Generation Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Generation Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Generation Request": {
+      "main": [
+        [
+          {
+            "node": "Get User Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Profile": {
+      "main": [
+        [
+          {
+            "node": "Split Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Applications": {
+      "main": [
+        [
+          {
+            "node": "Generate Resume (OpenAI)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Cover Letter (Gemini)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Email Templates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate LinkedIn Messages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Video Script",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Company Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Resume (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Process Generated Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Cover Letter (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Process Generated Documents",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Generate Email Templates": {
+      "main": [
+        [
+          {
+            "node": "Process Generated Documents",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Generate LinkedIn Messages": {
+      "main": [
+        [
+          {
+            "node": "Process Generated Documents",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Generate Video Script": {
+      "main": [
+        [
+          {
+            "node": "Process Generated Documents",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Generate Company Research": {
+      "main": [
+        [
+          {
+            "node": "Process Generated Documents",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Process Generated Documents": {
+      "main": [
+        [
+          {
+            "node": "Save Documents to Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Documents to Files": {
+      "main": [
+        [
+          {
+            "node": "Save to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Database": {
+      "main": [
+        [
+          {
+            "node": "Merge All Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Results": {
+      "main": [
+        [
+          {
+            "node": "Notify Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Completion": {
+      "main": [
+        [
+          {
+            "node": "Redirect to Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redirect to Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/Toronto",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "document-generation-automation",
+  "tags": [
+    {
+      "createdAt": "2024-06-15T12:00:00.000Z",
+      "updatedAt": "2024-06-15T12:00:00.000Z",
+      "id": "job-automation",
+      "name": "job-automation"
+    }
+  ]
+}

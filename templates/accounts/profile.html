@@ -1,0 +1,3605 @@
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load crispy_forms_tags %}
+{% load profile_filters %}  {% block title %}Profile Settings - Job Automation{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --linear-bg: #fafbfc;
+        --linear-surface: #ffffff;
+        --linear-border: #e1e4e8;
+        --linear-border-hover: #d1d9e0;
+        --linear-text-primary: #0d1117;
+        --linear-text-secondary: #656d76;
+        --linear-text-tertiary: #8b949e;
+        --linear-accent: #5e6ad2;
+        --linear-accent-hover: #4c63d2;
+        --linear-accent-light: #f0f3ff;
+        --linear-success: #1a7f37;
+        --linear-success-light: #dcfce7;
+        --linear-warning: #b08800;
+        --linear-warning-light: #fef3c7;
+        --linear-danger: #cf222e;
+        --linear-danger-light: #fee2e2;
+        --linear-info: #0969da;
+        --linear-info-light: #dbeafe;
+        --linear-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+        --linear-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --linear-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+        --linear-radius: 8px;
+        --linear-radius-lg: 12px;
+    }
+
+    body {
+        background-color: var(--linear-bg);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .profile-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 2rem;
+    }
+
+    .profile-sidebar {
+        position: sticky;
+        top: 2rem;
+        height: fit-content;
+    }
+
+    .profile-card {
+        background: var(--linear-surface);
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius-lg);
+        box-shadow: var(--linear-shadow-md);
+        overflow: hidden;
+        animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, var(--linear-accent) 0%, #4c63d2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        position: relative;
+        z-index: 1;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .profile-avatar i {
+        font-size: 2rem;
+        color: white;
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .profile-email {
+        opacity: 0.9;
+        font-size: 0.875rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .profile-stats {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--linear-border);
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--linear-border);
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--linear-text-secondary);
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: var(--linear-text-primary);
+    }
+
+    .completion-bar {
+        margin-top: 1rem;
+    }
+
+    .completion-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .completion-percentage {
+        font-weight: 600;
+        color: var(--linear-accent);
+    }
+
+    .progress-bar {
+        height: 6px;
+        background: var(--linear-border);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--linear-accent) 0%, var(--linear-success) 100%);
+        border-radius: 3px;
+        transition: width 0.8s ease;
+    }
+
+    .profile-nav {
+        padding: 1rem 0;
+    }
+
+    .nav-item {
+        display: block;
+        padding: 0.75rem 1.5rem;
+        color: var(--linear-text-secondary);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .nav-item:hover {
+        background: var(--linear-accent-light);
+        color: var(--linear-accent);
+        text-decoration: none;
+    }
+
+    .nav-item.active {
+        background: var(--linear-accent-light);
+        color: var(--linear-accent);
+        font-weight: 600;
+        border-right: 3px solid var(--linear-accent);
+    }
+
+    .nav-item i {
+        width: 20px;
+        margin-right: 0.75rem;
+    }
+
+    .profile-content {
+        background: var(--linear-surface);
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius-lg);
+        box-shadow: var(--linear-shadow-md);
+        overflow: hidden;
+    }
+
+    .content-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--linear-border);
+        background: var(--linear-surface);
+    }
+
+    .content-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--linear-text-primary);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .content-subtitle {
+        font-size: 0.875rem;
+        color: var(--linear-text-secondary);
+    }
+
+    .content-body {
+        padding: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .form-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--linear-text-primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--linear-border);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--linear-text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        color: var(--linear-text-primary);
+        background-color: var(--linear-surface);
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: var(--linear-shadow-sm);
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--linear-accent);
+        box-shadow: 0 0 0 3px var(--linear-accent-light);
+        background-color: var(--linear-surface);
+    }
+
+    .form-control::placeholder {
+        color: var(--linear-text-tertiary);
+        font-weight: 400;
+    }
+
+    .form-control.is-valid {
+        border-color: var(--linear-success);
+        box-shadow: 0 0 0 3px var(--linear-success-light);
+    }
+
+    .form-control.is-invalid {
+        border-color: var(--linear-danger);
+        box-shadow: 0 0 0 3px var(--linear-danger-light);
+    }
+
+    .form-text {
+        font-size: 0.8125rem;
+        color: var(--linear-text-secondary);
+        margin-top: 0.5rem;
+    }
+
+    .file-upload {
+        border: 2px dashed var(--linear-border);
+        border-radius: var(--linear-radius);
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .file-upload:hover {
+        border-color: var(--linear-accent);
+        background: var(--linear-accent-light);
+    }
+
+    .file-upload-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .file-upload-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--linear-accent-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--linear-accent);
+        font-size: 1.25rem;
+    }
+
+    .file-upload-text {
+        font-weight: 500;
+        color: var(--linear-text-primary);
+    }
+
+    .file-upload-subtext {
+        font-size: 0.8125rem;
+        color: var(--linear-text-secondary);
+    }
+
+    .file-upload input[type="file"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .skills-input {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        padding: 0.75rem;
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius);
+        min-height: 2.5rem;
+        background: var(--linear-surface);
+        cursor: text;
+    }
+
+    .skills-input:focus-within {
+        border-color: var(--linear-accent);
+        box-shadow: 0 0 0 3px var(--linear-accent-light);
+    }
+
+    .skill-tag {
+        background: var(--linear-accent-light);
+        color: var(--linear-accent);
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .skill-remove {
+        background: none;
+        border: none;
+        color: var(--linear-accent);
+        cursor: pointer;
+        padding: 0;
+        font-size: 0.75rem;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+    }
+
+    .skill-remove:hover {
+        opacity: 1;
+    }
+
+    .skill-input {
+        border: none;
+        outline: none;
+        background: none;
+        font-size: 0.875rem;
+        flex: 1;
+        min-width: 100px;
+        padding: 0.25rem 0;
+        color: var(--linear-text-primary);
+    }
+
+    .skill-input::placeholder {
+        color: var(--linear-text-tertiary);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--linear-accent) 0%, #4c63d2 100%);
+        border: none;
+        border-radius: var(--linear-radius);
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--linear-accent-hover) 0%, #3d54d2 100%);
+        transform: translateY(-1px);
+        box-shadow: var(--linear-shadow-lg);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-secondary {
+        background: var(--linear-surface);
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius);
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--linear-text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-secondary:hover {
+        background: var(--linear-surface);
+        border-color: var(--linear-border-hover);
+        color: var(--linear-text-primary);
+        text-decoration: none;
+    }
+
+    .btn-danger {
+        background: var(--linear-danger);
+        border: none;
+        border-radius: var(--linear-radius);
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-danger:hover {
+        background: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: var(--linear-shadow-lg);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--linear-border);
+    }
+
+    .success-message {
+        background: var(--linear-success-light);
+        border: 1px solid rgba(26, 127, 55, 0.2);
+        color: var(--linear-success);
+        padding: 1rem;
+        border-radius: var(--linear-radius);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .danger-zone {
+        background: var(--linear-danger-light);
+        border: 1px solid rgba(207, 34, 46, 0.2);
+        border-radius: var(--linear-radius);
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .danger-zone h6 {
+        color: var(--linear-danger);
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .danger-zone p {
+        color: var(--linear-text-secondary);
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+    }
+
+    /* Enhanced file display styles */
+    .current-file-display {
+        background: var(--linear-accent-light);
+        border: 1px solid rgba(94, 106, 210, 0.2);
+        border-radius: var(--linear-radius);
+        padding: 1rem;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .file-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--linear-accent);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.875rem;
+    }
+
+    .file-details {
+        flex: 1;
+    }
+
+    .file-name {
+        font-weight: 600;
+        color: var(--linear-text-primary);
+        font-size: 0.875rem;
+    }
+
+    .file-meta {
+        font-size: 0.75rem;
+        color: var(--linear-text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .loading .btn-primary {
+        pointer-events: none;
+    }
+
+    .loading .btn-primary::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: 50%;
+        left: 50%;
+        margin: -8px 0 0 -8px;
+        border: 2px solid transparent;
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .profile-container {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .profile-sidebar {
+            position: static;
+        }
+
+        .profile-card {
+            order: 2;
+        }
+
+        .profile-content {
+            order: 1;
+        }
+
+        .content-body {
+            padding: 1.5rem;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --linear-bg: #0d1117;
+            --linear-surface: #161b22;
+            --linear-border: #30363d;
+            --linear-border-hover: #484f58;
+            --linear-text-primary: #f0f6fc;
+            --linear-text-secondary: #8b949e;
+            --linear-text-tertiary: #656d76;
+            --linear-accent-light: rgba(94, 106, 210, 0.1);
+            --linear-success-light: rgba(26, 127, 55, 0.1);
+            --linear-warning-light: rgba(176, 136, 0, 0.1);
+            --linear-danger-light: rgba(207, 34, 46, 0.1);
+            --linear-info-light: rgba(9, 105, 218, 0.1);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-sidebar">
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="profile-name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="profile-email">{{ user.email }}</div>
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Applications</span>
+                    <span class="stat-value">{{ applications_count|default:0 }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Follow-ups sent</span>
+                    <span class="stat-value">{{ followups_count|default:0 }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Active searches</span>
+                    <span class="stat-value">{{ active_searches_count|default:0 }}</span>
+                </div>
+
+                <div class="completion-bar">
+                    <div class="completion-label">
+                        <span>Profile Completion</span>
+                        <span class="completion-percentage">{{ completion_percentage|default:0 }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ completion_percentage|default:0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="profile-nav">
+                <button class="nav-item active" data-section="personal">
+                    <i class="fas fa-user"></i>
+                    Personal Info
+                </button>
+                <button class="nav-item" data-section="professional">
+                    <i class="fas fa-briefcase"></i>
+                    Professional
+                </button>
+                <button class="nav-item" data-section="preferences">
+                    <i class="fas fa-cog"></i>
+                    Job Preferences
+                </button>
+                <button class="nav-item" data-section="security">
+                    <i class="fas fa-shield-alt"></i>
+                    Security
+                </button>
+                <a href="{% url 'accounts:password_change' %}" class="nav-item">
+                    <i class="fas fa-key"></i>
+                    Change Password
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <form method="post" enctype="multipart/form-data" id="profileForm">
+            {% csrf_token %}
+
+            <div class="profile-section" id="personal-section">
+                <div class="content-header">
+                    <h2 class="content-title">
+                        <i class="fas fa-user"></i>
+                        Personal Information
+                    </h2>
+                    <p class="content-subtitle">Update your personal details and contact information</p>
+                </div>
+
+                <div class="content-body">
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-id-card"></i>
+                            Basic Information
+                        </h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="id_first_name" name="first_name"
+                                       value="{{ user.first_name|default:'' }}" placeholder="Enter your first name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="id_last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="id_last_name" name="last_name"
+                                       value="{{ user.last_name|default:'' }}" placeholder="Enter your last name" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="id_email" name="email"
+                                   value="{{ user.email|default:'' }}" placeholder="Enter your email address" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="id_phone" name="phone"
+                                       value="{{ profile.phone|default:'' }}" placeholder="(555) 123-4567">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="id_location" name="location"
+                                       value="{{ profile.location|default:'' }}" placeholder="City, State/Province">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-link"></i>
+                            Professional Links
+                        </h3>
+
+                        <div class="form-group">
+                            <label for="id_linkedin_url" class="form-label">LinkedIn Profile</label>
+                            <input type="url" class="form-control" id="id_linkedin_url" name="linkedin_url"
+                                   value="{{ profile.linkedin_url|default:'' }}" placeholder="https://linkedin.com/in/yourprofile">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_github_url" class="form-label">GitHub Profile</label>
+                                <input type="url" class="form-control" id="id_github_url" name="github_url"
+                                       value="{{ profile.github_url|default:'' }}" placeholder="https://github.com/yourusername">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_portfolio_url" class="form-label">Portfolio Website</label>
+                                <input type="url" class="form-control" id="id_portfolio_url" name="portfolio_url"
+                                       value="{{ profile.portfolio_url|default:'' }}" placeholder="https://yourportfolio.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-section" id="professional-section" style="display: none;">
+                <div class="content-header">
+                    <h2 class="content-title">
+                        <i class="fas fa-briefcase"></i>
+                        Professional Information
+                    </h2>
+                    <p class="content-subtitle">Add your work experience, education, and skills</p>
+                </div>
+
+                <div class="content-body">
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-building"></i>
+                            Current Position
+                        </h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_current_job_title" class="form-label">Current Job Title</label>
+                                <input type="text" class="form-control" id="id_current_job_title" name="current_job_title"
+                                       value="{{ profile.current_job_title|default:'' }}" placeholder="e.g., Software Engineer">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_current_company" class="form-label">Current Company</label>
+                                <input type="text" class="form-control" id="id_current_company" name="current_company"
+                                       value="{{ profile.current_company|default:'' }}" placeholder="e.g., Tech Corp Inc.">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_years_experience" class="form-label">Years of Experience</label>
+                            <select class="form-select" id="id_years_experience" name="years_experience">
+                                <option value="">Select experience level</option>
+                                <option value="0" {% if profile.years_experience == 0 %}selected{% endif %}>Entry Level (0-1 years)</option>
+                                <option value="2" {% if profile.years_experience == 2 %}selected{% endif %}>Junior (2-3 years)</option>
+                                <option value="4" {% if profile.years_experience == 4 %}selected{% endif %}>Mid-Level (4-6 years)</option>
+                                <option value="7" {% if profile.years_experience == 7 %}selected{% endif %}>Senior (7-10 years)</option>
+                                <option value="11" {% if profile.years_experience >= 11 %}selected{% endif %}>Expert (10+ years)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-graduation-cap"></i>
+                            Education & Skills
+                        </h3>
+
+                        <div class="form-group">
+                            <label for="id_education" class="form-label">Education</label>
+                            <textarea class="form-control" id="id_education" name="education" rows="3"
+                                      placeholder="e.g., Bachelor of Science in Computer Science, University Name, 2020">{{ profile.education|default:'' }}</textarea>
+                        </div>
+
+                        <div class="form-group" id="skills-input-container">
+                            <label for="skillInput" class="form-label">Key Skills</label>
+                            <div class="skills-input" id="skillsContainer">
+                                <input type="text" class="skill-input" placeholder="Add a skill and press Enter" id="skillInput">
+                            </div>
+                            <div class="form-text">Add skills relevant to your target jobs. Press Enter after typing each skill.</div>
+                            <input type="hidden" name="key_skills" id="id_key_skills_hidden">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-file-upload"></i>
+                            Resume Upload
+                        </h3>
+
+                        <div class="form-group">
+                            <div class="file-upload" onclick="document.getElementById('id_resume_file').click()">
+                                <input type="file" id="id_resume_file" name="resume_file" accept=".pdf,.doc,.docx">
+                                <div class="file-upload-content">
+                                    <div class="file-upload-icon">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                    </div>
+                                    <div class="file-upload-text">Upload Resume</div>
+                                    <div class="file-upload-subtext">PDF, DOC, or DOCX (max 5MB)</div>
+                                </div>
+                            </div>
+                            {% if profile.resume_file %}
+                                <div class="current-file-display">
+                                    <div class="file-icon">
+                                        {% if profile.resume_file.name|get_file_extension == '.pdf' %}
+                                            <i class="fas fa-file-pdf"></i>
+                                        {% elif profile.resume_file.name|get_file_extension|slice:":4" == '.doc' %}
+                                            <i class="fas fa-file-word"></i>
+                                        {% else %}
+                                            <i class="fas fa-file"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="file-details">
+                                        <div class="file-name">{{ profile.resume_file.name|basename }}</div>
+                                        <div class="file-meta">
+                                            {{ profile.resume_file.size|filesize }}
+                                            {% if profile.resume_file.name|get_file_extension %}
+                                                • {{ profile.resume_file.name|get_file_extension|upper|slice:"1:" }} file
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <a href="{{ profile.resume_file.url }}" target="_blank" class="btn-secondary" style="font-size: 0.75rem; padding: 0.5rem;">
+                                        <i class="fas fa-eye"></i>
+                                        View
+                                    </a>
+                                    <button type="button" class="btn-danger" style="font-size: 0.75rem; padding: 0.5rem;" onclick="removeResume()">
+                                        <i class="fas fa-trash"></i>
+                                        Remove
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-section" id="preferences-section" style="display: none;">
+                <div class="content-header">
+                    <h2 class="content-title">
+                        <i class="fas fa-cog"></i>
+                        Job Preferences
+                    </h2>
+                    <p class="content-subtitle">Set your job search preferences and requirements</p>
+                </div>
+
+                <div class="content-body">
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-dollar-sign"></i>
+                            Salary Expectations
+                        </h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_preferred_salary_min" class="form-label">Minimum Salary</label>
+                                <input type="number" class="form-control" id="id_preferred_salary_min" name="preferred_salary_min"
+                                       value="{{ profile.preferred_salary_min|default:'' }}" placeholder="50000">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_preferred_salary_max" class="form-label">Maximum Salary</label>
+                                <input type="number" class="form-control" id="id_preferred_salary_max" name="preferred_salary_max"
+                                       value="{{ profile.preferred_salary_max|default:'' }}" placeholder="100000">
+                            </div>
+                        </div>
+                         <div class="form-group">
+                            <label for="id_industries_of_interest" class="form-label">Industries of Interest (comma-separated)</label>
+                            <input type="text" class="form-control" id="id_industries_of_interest" name="industries_of_interest"
+                                   value="{{ profile.industries_of_interest|join:', '|default:'' }}"
+                                   placeholder="e.g., Technology, Healthcare, Finance">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Work Preferences
+                        </h3>
+
+                        <div class="form-group">
+                            <label for="id_work_type_preference" class="form-label">Work Type</label>
+                            <select class="form-select" id="id_work_type_preference" name="work_type_preference">
+                                <option value="">Select work type</option>
+                                <option value="remote" {% if profile.work_type_preference == 'remote' %}selected{% endif %}>Remote</option>
+                                <option value="hybrid" {% if profile.work_type_preference == 'hybrid' %}selected{% endif %}>Hybrid</option>
+                                <option value="onsite" {% if profile.work_type_preference == 'onsite' %}selected{% endif %}>On-site</option>
+                                <option value="flexible" {% if profile.work_type_preference == 'flexible' %}selected{% endif %}>Flexible</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-section" id="security-section" style="display: none;">
+                <div class="content-header">
+                    <h2 class="content-title">
+                        <i class="fas fa-shield-alt"></i>
+                        Security & Privacy
+                    </h2>
+                    <p class="content-subtitle">Manage your account security and privacy settings</p>
+                </div>
+
+                <div class="content-body">
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-key"></i>
+                            Password & Authentication
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <span class="form-text">••••••••••••</span>
+                                <a href="{% url 'accounts:password_change' %}" class="btn-secondary">
+                                    <i class="fas fa-edit"></i>
+                                    Change Password
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="danger-zone">
+                        <h6>
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Danger Zone
+                        </h6>
+                        <p>
+                            Once you delete your account, there is no going back. Please be certain.
+                            All your job applications, follow-ups, and profile data will be permanently deleted.
+                        </p>
+                        <button type="button" class="btn-danger" onclick="confirmAccountDeletion()">
+                            <i class="fas fa-trash-alt"></i>
+                            Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="resetForm()">
+                    <i class="fas fa-undo"></i>
+                    Reset Changes
+                </button>
+                <button type="submit" class="btn-primary" id="saveBtn">
+                    <i class="fas fa-save"></i>
+                    <span class="btn-text">Save Profile</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ==========================================
+    // 0. Initial Setup & Hash-based Navigation
+    // ==========================================
+    const navItems = document.querySelectorAll('.nav-item[data-section]');
+    const sections = document.querySelectorAll('.profile-section');
+    const profileForm = document.getElementById('profileForm');
+    const saveBtn = document.getElementById('saveBtn');
+    const btnText = saveBtn ? saveBtn.querySelector('.btn-text') : null;
+    const hiddenSkillsInput = document.getElementById('id_key_skills_hidden');
+
+    // Function to show a specific section
+    function showSection(sectionId) {
+        navItems.forEach(nav => nav.classList.remove('active'));
+        sections.forEach(section => {
+            section.style.display = 'none';
+        });
+
+        const targetSection = document.getElementById(sectionId + '-section');
+        const targetNavItem = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
+
+        if (targetSection) {
+            targetSection.style.display = 'block';
+            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (targetNavItem) {
+            targetNavItem.classList.add('active');
+        }
+    }
+
+    // Handle initial load based on URL hash
+    const initialHash = window.location.hash.substring(1);
+    if (initialHash && document.getElementById(initialHash + '-section')) {
+        showSection(initialHash);
+    } else {
+        // Default to personal section if no hash or invalid hash
+        showSection('personal');
+    }
+
+    // Handle navigation clicks
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const sectionId = this.dataset.section;
+            history.pushState(null, null, '#' + sectionId); // Update URL hash
+            showSection(sectionId);
+        });
+    });
+
+    // Handle back/forward button for hash changes
+    window.addEventListener('hashchange', function() {
+        const hash = window.location.hash.substring(1);
+        if (hash && document.getElementById(hash + '-section')) {
+            showSection(hash);
+        } else {
+            showSection('personal'); // Default if hash is removed or invalid
+        }
+    });
+
+    // ==========================================
+    // 1. DYNAMIC SKILLS MANAGEMENT
+    // ==========================================
+    // Initialize skills from Django context (profile.key_skills should be a JSON list)
+    let skills = [];
+    try {
+        // Escapejs filter ensures proper JSON string parsing in JavaScript
+        const initialSkillsData = JSON.parse('{{ initial_key_skills|escapejs }}'); //
+        if (Array.isArray(initialSkillsData)) {
+            skills = initialSkillsData;
+        } else if (typeof initialSkillsData === 'string' && initialSkillsData.length > 0) {
+            // If it's a comma-separated string from an old format, try splitting
+            skills = initialSkillsData.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
+    } catch (e) {
+        console.error("Error parsing initial skills:", e);
+        skills = []; // Default to empty array on error
+    }
+
+    const skillsContainer = document.getElementById('skillsContainer'); //
+    const skillInput = document.getElementById('skillInput'); //
+
+
+    if (skillsContainer && skillInput) { //
+        function renderSkills() {
+            // Remove all existing skill tags except the input field
+            Array.from(skillsContainer.querySelectorAll('.skill-tag')).forEach(tag => tag.remove()); //
+
+            skills.forEach((skill, index) => { //
+                const skillTag = document.createElement('div'); //
+                skillTag.className = 'skill-tag'; //
+                skillTag.innerHTML = `
+                    ${skill}
+                    <button type="button" class="skill-remove" data-index="${index}" title="Remove skill">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                skillsContainer.insertBefore(skillTag, skillInput); //
+            });
+
+            // Re-attach event listeners for dynamically created buttons
+            skillsContainer.querySelectorAll('.skill-remove').forEach(button => { //
+                button.onclick = function() { //
+                    const indexToRemove = parseInt(this.dataset.index); //
+                    removeSkill(indexToRemove); //
+                };
+            });
+            // Update hidden input field value
+            if (hiddenSkillsInput) { //
+                hiddenSkillsInput.value = JSON.stringify(skills); //
+            }
+        }
+
+        window.removeSkill = function(index) {
+            skills.splice(index, 1); //
+            renderSkills(); //
+            updateProgress(); // Re-evaluate progress after skill change
+        };
+
+        skillInput.addEventListener('keypress', function(e) { //
+            if (e.key === 'Enter') { //
+                e.preventDefault(); //
+                const skill = this.value.trim(); //
+                if (skill && !skills.some(s => s.toLowerCase() === skill.toLowerCase())) { //
+                    skills.push(skill); //
+                    this.value = ''; //
+                    renderSkills(); //
+                    showToast('Skill added!', 'success'); //
+                    updateProgress(); // Re-evaluate progress after skill change
+                } else if (skills.some(s => s.toLowerCase() === skill.toLowerCase())) { //
+                    showToast('Skill already exists.', 'warning'); //
+                    this.value = ''; //
+                }
+            }
+        });
+
+        const commonSkills = [ //
+            // Technical Skills
+            'JavaScript', 'Python', 'Java', 'C++', 'HTML', 'CSS', 'React', 'Node.js', 'SQL', 'Git',
+            'Data Analysis', 'Machine Learning', 'Web Development', 'Mobile Development', 'AWS', 'Docker',
+            'Kubernetes', 'Cybersecurity', 'Cloud Computing', 'UI/UX Design', 'API Development',
+            // Business Skills
+            'Project Management', 'Leadership', 'Communication', 'Problem Solving', 'Strategic Planning',
+            'Microsoft Excel', 'PowerPoint', 'Word', 'Google Workspace', 'Salesforce', 'CRM', 'ERP',
+            'Financial Modeling', 'Market Research', 'Business Development', 'Negotiation',
+            // Customer-Facing Skills
+            'Customer Service', 'Sales', 'Marketing', 'Social Media', 'Public Relations',
+            'Client Relationship Management', 'Technical Support', 'Multilingual',
+            // Creative Skills
+            'Graphic Design', 'Adobe Creative Suite', 'Photoshop', 'Illustrator', 'Video Editing',
+            'Writing', 'Editing', 'Content Creation', 'Copywriting', 'Photography', 'Animation',
+            // Healthcare Skills
+            'Nursing', 'Patient Care', 'Medical Records', 'Healthcare Administration', 'CPR',
+            'Medical Terminology', 'Pharmacy', 'Physical Therapy', 'Mental Health Counseling',
+            // Education Skills
+            'Teaching', 'Curriculum Development', 'Classroom Management', 'Educational Technology',
+            'Tutoring', 'Training', 'Public Speaking', 'Presentation Skills',
+            // Finance/Accounting
+            'Accounting', 'Bookkeeping', 'Financial Analysis', 'Budgeting', 'Tax Preparation',
+            'Auditing', 'Investment Analysis', 'QuickBooks', 'Financial Planning', 'Forecasting',
+            // Trades/Manual Skills
+            'Construction', 'Electrical', 'Plumbing', 'Mechanical', 'Welding', 'Carpentry',
+            'Auto Repair', 'HVAC', 'Landscaping', 'Equipment Operation',
+            // Hospitality/Service
+            'Food Service', 'Restaurant Management', 'Event Planning', 'Hotel Management',
+            'Travel Planning', 'Catering', 'Bar Tending', 'Cleaning Services',
+            // General Professional Skills
+            'Research', 'Critical Thinking', 'Time Management', 'Multitasking', 'Team Building',
+            'Conflict Resolution', 'Decision Making', 'Attention to Detail', 'Adaptability',
+            'Organizational Skills', 'Innovation', 'Mentoring'
+        ];
+
+
+        let suggestionTimeout; //
+        skillInput.addEventListener('input', function() { //
+            clearTimeout(suggestionTimeout); //
+            const input = this.value.toLowerCase(); //
+
+            if (input.length >= 2) { //
+                suggestionTimeout = setTimeout(() => { //
+                    const suggestions = commonSkills.filter(skill => //
+                        skill.toLowerCase().includes(input) &&
+                        !skills.some(s => s.toLowerCase() === skill.toLowerCase())
+                    ).slice(0, 5);
+
+                    showSuggestions(suggestions); //
+                }, 300);
+            } else {
+                hideSuggestions(); //
+            }
+        });
+
+        function showSuggestions(suggestions) { //
+            hideSuggestions(); //
+
+            if (suggestions.length === 0) return; //
+
+            const suggestionContainer = document.createElement('div'); //
+            suggestionContainer.className = 'skill-suggestions'; //
+            suggestionContainer.style.cssText = `
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--linear-surface);
+                border: 1px solid var(--linear-border);
+                border-radius: var(--linear-radius);
+                box-shadow: var(--linear-shadow-md);
+                z-index: 1000;
+                max-height: 200px;
+                overflow-y: auto;
+                margin-top: 5px; /* space between input and suggestions */
+            `;
+
+            suggestions.forEach(suggestion => { //
+                const item = document.createElement('div'); //
+                item.className = 'suggestion-item'; //
+                item.textContent = suggestion; //
+                item.style.cssText = `
+                    padding: 0.5rem 1rem;
+                    cursor: pointer;
+                    border-bottom: 1px solid var(--linear-border);
+                    transition: background-color 0.2s ease;
+                    font-size: 0.875rem;
+                    color: var(--linear-text-primary);
+                `;
+
+                item.addEventListener('mouseenter', function() { //
+                    this.style.backgroundColor = 'var(--linear-accent-light)'; //
+                });
+
+                item.addEventListener('mouseleave', function() { //
+                    this.style.backgroundColor = ''; //
+                });
+
+                item.addEventListener('click', function() { //
+                    skills.push(suggestion); //
+                    skillInput.value = ''; //
+                    renderSkills(); //
+                    hideSuggestions(); //
+                    showToast('Skill added from suggestions!', 'success'); //
+                    updateProgress(); //
+                });
+
+                suggestionContainer.appendChild(item); //
+            });
+
+            // Ensure skillsContainer has relative position for absolute positioning of suggestions
+            skillsContainer.style.position = 'relative'; //
+            skillsContainer.parentNode.insertBefore(suggestionContainer, skillsContainer.nextSibling); // Insert after skillsContainer
+        }
+
+        function hideSuggestions() { //
+            const existing = document.querySelector('.skill-suggestions'); //
+            if (existing) { //
+                existing.remove(); //
+            }
+        }
+
+        function showSkillAddedFeedback() {
+            // Optional visual feedback for skill added
+        }
+
+        function showSkillExistsFeedback() {
+            // Optional visual feedback for skill existing
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) { //
+            if (!skillsContainer.contains(e.target) && !e.target.closest('.skill-suggestions')) { //
+                hideSuggestions(); //
+            }
+        });
+
+        // Initialize skills display
+        renderSkills(); //
+    }
+
+
+    // ==========================================
+    // 2. FILE UPLOAD PREVIEW & REMOVAL
+    // ==========================================
+    const fileInput = document.getElementById('id_resume_file'); //
+    if (fileInput) { //
+        fileInput.addEventListener('change', function() { //
+            const fileName = this.files[0]?.name; //
+            const fileSize = this.files[0]?.size; //
+
+            if (fileName) { //
+                const uploadText = document.querySelector('.file-upload-text'); //
+                if (uploadText) { //
+                    uploadText.textContent = fileName; //
+                }
+                // Dynamically create/update the current-file-display div
+                const existingFileDisplay = document.querySelector('.current-file-display'); //
+                if (existingFileDisplay) existingFileDisplay.remove(); // Remove existing if any
+
+                const newFileDisplay = document.createElement('div'); //
+                newFileDisplay.className = 'current-file-display'; //
+
+                const extension = fileName.split('.').pop().toLowerCase(); //
+                let iconClass = 'fa-file'; //
+                if (extension === 'pdf') iconClass = 'fa-file-pdf'; //
+                else if (['doc', 'docx'].includes(extension)) iconClass = 'fa-file-word'; //
+
+                newFileDisplay.innerHTML = `
+                    <div class="file-icon">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
+                    <div class="file-details">
+                        <div class="file-name">${fileName}</div>
+                        <div class="file-meta">${formatFileSize(fileSize)} • ${extension.toUpperCase()} file</div>
+                    </div>
+                    <button type="button" class="btn-danger" style="font-size: 0.75rem; padding: 0.5rem;" onclick="removeResume()">
+                        <i class="fas fa-trash"></i>
+                        Remove
+                    </button>
+                `;
+                fileInput.closest('.form-group').appendChild(newFileDisplay); //
+                updateProgress(); // Update progress after file change
+            } else {
+                // If no file selected (e.g., user opened and cancelled file dialog)
+                const uploadText = document.querySelector('.file-upload-text'); //
+                if (uploadText) uploadText.textContent = 'Upload Resume'; //
+                const existingFileDisplay = document.querySelector('.current-file-display'); //
+                if (existingFileDisplay) existingFileDisplay.remove(); //
+                updateProgress(); // Update progress if file is cleared
+            }
+        });
+    }
+
+    window.removeResume = function() {
+        const fileInput = document.getElementById('id_resume_file'); //
+        const currentFileDisplay = document.querySelector('.current-file-display'); //
+        const uploadText = document.querySelector('.file-upload-text'); //
+
+        if (fileInput) { //
+            fileInput.value = ''; // Clear the selected file
+            // Add a hidden input to signal deletion to Django if the form is submitted
+            const deleteInput = document.createElement('input'); //
+            deleteInput.type = 'hidden'; //
+            deleteInput.name = 'resume_file-clear'; // Standard Django clear field name
+            deleteInput.value = 'true'; //
+            profileForm.appendChild(deleteInput); //
+        }
+        if (currentFileDisplay) currentFileDisplay.remove(); //
+        if (uploadText) uploadText.textContent = 'Upload Resume'; //
+        updateProgress(); // Update progress after resume removal
+    };
+
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B'; //
+        const k = 1024; //
+        const sizes = ['B', 'KB', 'MB', 'GB']; //
+        const i = Math.floor(Math.log(bytes) / Math.log(k)); //
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]; //
+    }
+
+    // ==========================================
+    // 3. FORM VALIDATION & SUBMISSION
+    // ==========================================
+    if (profileForm) { //
+        profileForm.addEventListener('submit', function(e) { //
+            // Validate salary fields
+            const salaryMin = document.getElementById('id_preferred_salary_min')?.value; //
+            const salaryMax = document.getElementById('id_preferred_salary_max')?.value; //
+
+            if (salaryMin && salaryMax && parseInt(salaryMin) >= parseInt(salaryMax)) { //
+                e.preventDefault(); //
+                showToast('Minimum salary must be less than maximum salary.', 'danger'); //
+                return; //
+            }
+
+            // Update hidden skills input value
+            if (hiddenSkillsInput) { //
+                hiddenSkillsInput.value = JSON.stringify(skills); //
+            }
+
+            // Validate email format
+            const emailField = document.getElementById('id_email'); //
+            const email = emailField ? emailField.value.trim() : ''; //
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; //
+            if (email && !emailRegex.test(email)) { //
+                e.preventDefault(); //
+                showFieldError(emailField, 'Please enter a valid email address'); //
+                showToast('Please correct the email address.', 'danger'); //
+                return; //
+            }
+
+            // Convert comma-separated industries to JSON list on form submit
+            const industriesInput = document.getElementById('id_industries_of_interest'); //
+            if (industriesInput) { //
+                const industriesValue = industriesInput.value.trim(); //
+                if (industriesValue) { //
+                    // Split by comma, trim whitespace from each, filter out empty strings
+                    const industriesArray = industriesValue.split(',').map(item => item.trim()).filter(item => item.length > 0); //
+                    industriesInput.value = JSON.stringify(industriesArray); //
+                } else {
+                    industriesInput.value = JSON.stringify([]); // Send empty array if no input
+                }
+            }
+
+
+            // Add loading state
+            if (profileForm) profileForm.classList.add('loading'); //
+            if (btnText) btnText.textContent = 'Saving...'; //
+            if (saveBtn) saveBtn.disabled = true; //
+
+            // Optional: You might want to handle the actual server response
+            // and remove the loading state only after the server responds.
+            // This timeout is a fallback.
+            setTimeout(() => { //
+                if (profileForm) profileForm.classList.remove('loading'); //
+                if (btnText) btnText.textContent = 'Save Profile'; //
+                if (saveBtn) saveBtn.disabled = false; //
+            }, 10000); // 10 seconds fallback
+        });
+    }
+
+    // ==========================================
+    // 4. CLIENT-SIDE FIELD VALIDATION FEEDBACK (Email & Industries)
+    // ==========================================
+    const emailField = document.getElementById('id_email'); //
+    if (emailField) { //
+        emailField.addEventListener('blur', function() { //
+            const email = this.value.trim(); //
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; //
+
+            if (email && !emailRegex.test(email)) { //
+                this.classList.add('is-invalid'); //
+                this.classList.remove('is-valid'); //
+                showFieldError(this, 'Please enter a valid email address'); //
+            } else if (email) { //
+                this.classList.remove('is-invalid'); //
+                this.classList.add('is-valid'); //
+                hideFieldError(this); //
+            } else {
+                this.classList.remove('is-invalid', 'is-valid'); //
+                hideFieldError(this); //
+            }
+        });
+    }
+
+    // Convert comma-separated industries to JSON list on form load for display
+    const industriesInput = document.getElementById('id_industries_of_interest'); //
+    if (industriesInput) { //
+        // Restore comma-separated value on load (if it was stored as JSON)
+        try { //
+            const initialIndustries = JSON.parse(industriesInput.value); //
+            if (Array.isArray(initialIndustries)) { //
+                industriesInput.value = initialIndustries.join(', '); //
+            }
+        } catch (e) {
+            // Value is already string or empty, no action needed
+        }
+
+        // Add a blur listener to clean up input, maybe show feedback
+        industriesInput.addEventListener('blur', function() { //
+            const val = this.value.trim(); //
+            if (val) { //
+                const cleaned = val.split(',').map(item => item.trim()).filter(item => item.length > 0).join(', '); //
+                this.value = cleaned; //
+            }
+        });
+    }
+
+
+    // ==========================================
+    // 5. UTILITY FUNCTIONS (Toast & Field Error)
+    // ==========================================
+    function showFieldError(field, message) {
+        hideFieldError(field); //
+        const errorDiv = document.createElement('div'); //
+        errorDiv.className = 'field-error'; //
+        errorDiv.style.cssText = 'color: var(--linear-danger); font-size: 0.8125rem; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.5rem;'; //
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`; //
+        field.parentNode.appendChild(errorDiv); //
+    }
+
+    function hideFieldError(field) {
+        const existingError = field.parentNode.querySelector('.field-error'); //
+        if (existingError) { //
+            existingError.remove(); //
+        }
+    }
+
+    // Global Toast Function (ensure this is in your base_dashboard.html or loaded before this script)
+    // If not, include this basic version:
+    window.showToast = function(message, type = 'success') {
+        const toastContainer = getOrCreateToastContainer(); //
+        const toast = document.createElement('div'); //
+        toast.className = `toast toast-${type}`; //
+        toast.style.cssText = `
+            background: ${type === 'success' ? 'var(--linear-success)' : (type === 'danger' ? 'var(--linear-danger)' : 'var(--linear-warning)')};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: var(--linear-radius);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideInRight 0.3s ease;
+            box-shadow: var(--linear-shadow-md);
+        `;
+
+        const icon = type === 'success' ? 'fa-check-circle' : (type === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle'); //
+        toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`; //
+
+        toastContainer.appendChild(toast); //
+
+        setTimeout(() => { //
+            toast.style.animation = 'slideOutRight 0.3s ease forwards'; /* Use forwards to stay at end state */ //
+            setTimeout(() => { //
+                if (toast.parentNode) { //
+                    toast.parentNode.removeChild(toast); //
+                }
+            }, 300);
+        }, 3000);
+    };
+
+    function getOrCreateToastContainer() {
+        let container = document.getElementById('toast-container'); //
+        if (!container) { //
+            container = document.createElement('div'); //
+            container.id = 'toast-container'; //
+            container.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                max-width: 400px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+            `;
+            document.body.appendChild(container); //
+        }
+        return container; //
+    }
+
+    // ==========================================
+    // 6. RESET FORM FUNCTIONALITY
+    // ==========================================
+    window.resetForm = function() {
+        if (confirm('Are you sure you want to discard all unsaved changes? This cannot be undone.')) { //
+            // Reload the page to revert all form fields to their server-rendered state
+            location.reload(); //
+            showToast('Changes have been reset.', 'info'); //
+        }
+    };
+
+    // ==========================================
+    // 7. ACCOUNT DELETION FUNCTIONALITY
+    // ==========================================
+    window.confirmAccountDeletion = function() {
+        const steps = [ //
+            'Are you absolutely sure you want to delete your account?',
+            'This action cannot be undone and all your data will be permanently lost.',
+            'Type DELETE in the prompt to confirm.'
+        ];
+
+        let confirmed = false; //
+        if (confirm(steps[0])) { //
+            if (confirm(steps[1])) { //
+                const confirmation = prompt(steps[2]); //
+                if (confirmation === 'DELETE') { //
+                    confirmed = true; //
+                }
+            }
+        }
+
+        if (confirmed) { //
+            // Create a form to submit deletion request
+            const form = document.createElement('form'); //
+            form.method = 'POST'; //
+            // You'll need to define a URL for account deletion, e.g., 'accounts:delete_account'
+            // For now, redirecting to profile page as a placeholder. Add a proper URL in urls.py and a view in views.py
+            form.action = '{% url "accounts:profile" %}'; // This should be your actual delete account URL
+
+            const csrfInput = document.createElement('input'); //
+            csrfInput.type = 'hidden'; //
+            csrfInput.name = 'csrfmiddlewaretoken'; //
+            csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value; //
+            form.appendChild(csrfInput); //
+
+            // Add a specific hidden input to signal deletion if you're handling it via POST to the same URL
+            const deleteFlagInput = document.createElement('input'); //
+            deleteFlagInput.type = 'hidden'; //
+            deleteFlagInput.name = 'delete_account_confirm'; //
+            deleteFlagInput.value = 'true'; //
+            form.appendChild(deleteFlagInput); //
+
+
+            document.body.appendChild(form); //
+            form.submit(); //
+            showToast('Account deletion initiated...', 'info'); // User will be redirected
+        } else {
+            showToast('Account deletion cancelled.', 'success'); //
+        }
+    };
+
+    // ==========================================
+    // 8. KEYBOARD SHORTCUTS
+    // ==========================================
+    document.addEventListener('keydown', function(e) { //
+        // Ctrl/Cmd + S to save form
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') { //
+            e.preventDefault(); //
+            if (saveBtn && !saveBtn.disabled) { //
+                saveBtn.click(); //
+            }
+        }
+
+        // Escape to close suggestions
+        if (e.key === 'Escape') { //
+            hideSuggestions(); //
+        }
+    });
+
+    // ==========================================
+    // 9. FORM PROGRESS TRACKING
+    // ==========================================
+    // Select all relevant input, select, textarea elements by their Django form IDs
+    const formFields = document.querySelectorAll( //
+        '#id_first_name, #id_last_name, #id_email, #id_phone, #id_location, #id_linkedin_url, ' +
+        '#id_github_url, #id_portfolio_url, #id_current_job_title, #id_current_company, ' +
+        '#id_years_experience, #id_education, #id_preferred_salary_min, ' +
+        '#id_preferred_salary_max, #id_work_type_preference, #id_industries_of_interest'
+    );
+
+    function updateProgress() {
+        let completedFieldsCount = 0; //
+        let totalRelevantFields = formFields.length; //
+
+        formFields.forEach(field => { //
+            let value = field.value; //
+
+            // Check if field has a value
+            if (value && value.trim().length > 0) { //
+                 // Special handling for select elements if they have a default empty option
+                if (field.tagName === 'SELECT' && field.value === '') { //
+                    // Do nothing, not considered completed
+                } else {
+                    completedFieldsCount++; //
+                }
+            } else if (field.type === 'number' && field.value !== '' && !isNaN(parseFloat(value))) { //
+                completedFieldsCount++; //
+            }
+        });
+
+        // Add key_skills completion (considered complete if the list is not empty)
+        if (skills.length > 0) { //
+            completedFieldsCount++; //
+        }
+        totalRelevantFields++; // Add 1 to total for the "key_skills" pseudo-field
+
+        // Add resume_file completion
+        const hasResume = fileInput && (fileInput.files.length > 0 || {% if profile.resume_file %}true{% else %}false{% endif %}); //
+        if (hasResume) { //
+            completedFieldsCount++; //
+        }
+        totalRelevantFields++; // Add 1 to total for the "resume_file" pseudo-field
+
+        let progressPercent = 0; //
+        if (totalRelevantFields > 0) { //
+            progressPercent = Math.round((completedFieldsCount / totalRelevantFields) * 100); //
+        }
+
+        const progressFill = document.querySelector('.progress-fill'); //
+        const completionPercentageElement = document.querySelector('.completion-percentage'); //
+
+        if (progressFill) { //
+            progressFill.style.width = progressPercent + '%'; //
+        }
+        if (completionPercentageElement) { //
+            completionPercentageElement.textContent = progressPercent + '%'; //
+        }
+    }
+
+    // Add listeners to track progress for standard fields
+    formFields.forEach(field => { //
+        field.addEventListener('input', updateProgress); //
+        field.addEventListener('change', updateProgress); // for selects
+    });
+
+    // Add listener for resume file input changes (handled by the fileInput listener)
+    if (fileInput) { //
+        fileInput.addEventListener('change', updateProgress); //
+    }
+    // Also, when skills are added/removed, update progress
+    // This is already handled inside renderSkills and removeSkill functions
+
+    // Initial progress calculation on page load
+    updateProgress(); //
+
+    // ==========================================
+    // 10. AUTO-SAVE DRAFT (Optional - client-side only)
+    // ==========================================
+    let autoSaveTimeout; //
+
+    function autoSaveDraft() {
+        clearTimeout(autoSaveTimeout); //
+        autoSaveTimeout = setTimeout(() => { //
+            const formData = new FormData(profileForm); //
+            // Ensure key_skills is updated correctly for auto-save
+            formData.set('key_skills', JSON.stringify(skills)); //
+
+            // Handle industries_of_interest for auto-save
+            const industriesValue = document.getElementById('id_industries_of_interest')?.value.trim(); //
+            if (industriesValue) { //
+                const industriesArray = industriesValue.split(',').map(item => item.trim()).filter(item => item.length > 0); //
+                formData.set('industries_of_interest', JSON.stringify(industriesArray)); //
+            } else {
+                formData.set('industries_of_interest', JSON.stringify([])); //
+            }
+
+
+            // Save to localStorage as draft
+            const draftData = {}; //
+            for (let [key, value] of formData.entries()) { //
+                // For files, just store presence or name, not binary data
+                if (value instanceof File) { //
+                    draftData[key] = value.name; //
+                } else {
+                    draftData[key] = value; //
+                }
+            }
+
+            try { //
+                localStorage.setItem('profile_draft', JSON.stringify(draftData)); //
+                console.log('Profile draft auto-saved'); //
+                // You could add a small visual cue here, e.g., a "Saved!" message
+            } catch (e) {
+                console.error('Auto-save failed:', e); //
+            }
+        }, 2000); // Auto-save after 2 seconds of inactivity
+    }
+
+    // Add auto-save listeners to all relevant input fields
+    profileForm.querySelectorAll('input, textarea, select').forEach(field => { //
+        field.addEventListener('input', autoSaveDraft); //
+        field.addEventListener('change', autoSaveDraft); // for selects and file inputs
+    });
+
+    console.log('Profile page initialized successfully'); //
+});
+
+// ==========================================
+// CSS ANIMATIONS (Add to head if needed)
+// ==========================================
+// Ensure these are correctly placed in your base template or a global CSS file
+// if they are not already. Adding them here for self-containment for this response.
+{#const style = document.createElement('style'); //#}
+{#style.textContent = `#}
+{#    @keyframes slideInRight {#}
+{#        from { transform: translateX(100%); opacity: 0; }#}
+{#        to { transform: translateX(0); opacity: 1; }#}
+{#    }#}
+{##}
+{#    @keyframes slideOutRight {#}
+{#        from { transform: translateX(0); opacity: 1; }#}
+{#        to { transform: translateX(100%); opacity: 0; }#}
+{#    }#}
+{##}
+{#    .skill-tag {#}
+{#        animation: slideInUp 0.2s ease;#}
+{#    }#}
+{##}
+{#    @keyframes slideInUp {#}
+{#        from { transform: translateY(10px); opacity: 0; }#}
+{#        to { transform: translateY(0); opacity: 1; }#}
+{#    }#}
+{#`;#}
+{#document.head.appendChild(style); //#}
+</script>
+{% endblock %}
+
+
+{#<!-- templates/accounts/profile.html -->#}
+{#{% extends 'dashboard/../base_dashboard.html' %}#}
+{#{% load crispy_forms_tags %}#}
+{#{% load profile_filters %}  <!-- ADD THIS LINE -->#}
+{##}
+{#{% block title %}Profile Settings - Job Automation{% endblock %}#}
+{##}
+{#<!-- Keep all your existing CSS styles here - they're perfect! -->#}
+{#{% block extra_css %}#}
+{#<!-- All your existing styles remain the same -->#}
+{#<style>#}
+{#    :root {#}
+{#        --linear-bg: #fafbfc;#}
+{#        --linear-surface: #ffffff;#}
+{#        --linear-border: #e1e4e8;#}
+{#        --linear-border-hover: #d1d9e0;#}
+{#        --linear-text-primary: #0d1117;#}
+{#        --linear-text-secondary: #656d76;#}
+{#        --linear-text-tertiary: #8b949e;#}
+{#        --linear-accent: #5e6ad2;#}
+{#        --linear-accent-hover: #4c63d2;#}
+{#        --linear-accent-light: #f0f3ff;#}
+{#        --linear-success: #1a7f37;#}
+{#        --linear-success-light: #dcfce7;#}
+{#        --linear-warning: #b08800;#}
+{#        --linear-warning-light: #fef3c7;#}
+{#        --linear-danger: #cf222e;#}
+{#        --linear-danger-light: #fee2e2;#}
+{#        --linear-info: #0969da;#}
+{#        --linear-info-light: #dbeafe;#}
+{#        --linear-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);#}
+{#        --linear-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);#}
+{#        --linear-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);#}
+{#        --linear-radius: 8px;#}
+{#        --linear-radius-lg: 12px;#}
+{#    }#}
+{##}
+{#    body {#}
+{#        background-color: var(--linear-bg);#}
+{#        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;#}
+{#        line-height: 1.5;#}
+{#        -webkit-font-smoothing: antialiased;#}
+{#    }#}
+{##}
+{#    .profile-container {#}
+{#        max-width: 1000px;#}
+{#        margin: 0 auto;#}
+{#        padding: 2rem 1rem;#}
+{#        display: grid;#}
+{#        grid-template-columns: 300px 1fr;#}
+{#        gap: 2rem;#}
+{#    }#}
+{##}
+{#    .profile-sidebar {#}
+{#        position: sticky;#}
+{#        top: 2rem;#}
+{#        height: fit-content;#}
+{#    }#}
+{##}
+{#    .profile-card {#}
+{#        background: var(--linear-surface);#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius-lg);#}
+{#        box-shadow: var(--linear-shadow-md);#}
+{#        overflow: hidden;#}
+{#        animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#    }#}
+{##}
+{#    .profile-header {#}
+{#        background: linear-gradient(135deg, var(--linear-accent) 0%, #4c63d2 100%);#}
+{#        color: white;#}
+{#        padding: 2rem;#}
+{#        text-align: center;#}
+{#        position: relative;#}
+{#        overflow: hidden;#}
+{#    }#}
+{##}
+{#    .profile-header::before {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        top: 0;#}
+{#        left: 0;#}
+{#        right: 0;#}
+{#        bottom: 0;#}
+{#        background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);#}
+{#    }#}
+{##}
+{#    .profile-avatar {#}
+{#        width: 80px;#}
+{#        height: 80px;#}
+{#        border-radius: 50%;#}
+{#        background: rgba(255, 255, 255, 0.2);#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: center;#}
+{#        margin: 0 auto 1rem;#}
+{#        position: relative;#}
+{#        z-index: 1;#}
+{#        border: 3px solid rgba(255, 255, 255, 0.3);#}
+{#    }#}
+{##}
+{#    .profile-avatar i {#}
+{#        font-size: 2rem;#}
+{#        color: white;#}
+{#    }#}
+{##}
+{#    .profile-name {#}
+{#        font-size: 1.25rem;#}
+{#        font-weight: 600;#}
+{#        margin-bottom: 0.5rem;#}
+{#        position: relative;#}
+{#        z-index: 1;#}
+{#    }#}
+{##}
+{#    .profile-email {#}
+{#        opacity: 0.9;#}
+{#        font-size: 0.875rem;#}
+{#        position: relative;#}
+{#        z-index: 1;#}
+{#    }#}
+{##}
+{#    .profile-stats {#}
+{#        padding: 1.5rem;#}
+{#        border-bottom: 1px solid var(--linear-border);#}
+{#    }#}
+{##}
+{#    .stat-item {#}
+{#        display: flex;#}
+{#        justify-content: space-between;#}
+{#        align-items: center;#}
+{#        padding: 0.75rem 0;#}
+{#        border-bottom: 1px solid var(--linear-border);#}
+{#    }#}
+{##}
+{#    .stat-item:last-child {#}
+{#        border-bottom: none;#}
+{#    }#}
+{##}
+{#    .stat-label {#}
+{#        font-size: 0.875rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#    }#}
+{##}
+{#    .stat-value {#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-text-primary);#}
+{#    }#}
+{##}
+{#    .completion-bar {#}
+{#        margin-top: 1rem;#}
+{#    }#}
+{##}
+{#    .completion-label {#}
+{#        display: flex;#}
+{#        justify-content: space-between;#}
+{#        align-items: center;#}
+{#        margin-bottom: 0.5rem;#}
+{#        font-size: 0.875rem;#}
+{#    }#}
+{##}
+{#    .completion-percentage {#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-accent);#}
+{#    }#}
+{##}
+{#    .progress-bar {#}
+{#        height: 6px;#}
+{#        background: var(--linear-border);#}
+{#        border-radius: 3px;#}
+{#        overflow: hidden;#}
+{#    }#}
+{##}
+{#    .progress-fill {#}
+{#        height: 100%;#}
+{#        background: linear-gradient(90deg, var(--linear-accent) 0%, var(--linear-success) 100%);#}
+{#        border-radius: 3px;#}
+{#        transition: width 0.8s ease;#}
+{#    }#}
+{##}
+{#    .profile-nav {#}
+{#        padding: 1rem 0;#}
+{#    }#}
+{##}
+{#    .nav-item {#}
+{#        display: block;#}
+{#        padding: 0.75rem 1.5rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#        text-decoration: none;#}
+{#        font-weight: 500;#}
+{#        font-size: 0.875rem;#}
+{#        transition: all 0.2s ease;#}
+{#        border: none;#}
+{#        background: none;#}
+{#        width: 100%;#}
+{#        text-align: left;#}
+{#        cursor: pointer;#}
+{#    }#}
+{##}
+{#    .nav-item:hover {#}
+{#        background: var(--linear-accent-light);#}
+{#        color: var(--linear-accent);#}
+{#        text-decoration: none;#}
+{#    }#}
+{##}
+{#    .nav-item.active {#}
+{#        background: var(--linear-accent-light);#}
+{#        color: var(--linear-accent);#}
+{#        font-weight: 600;#}
+{#        border-right: 3px solid var(--linear-accent);#}
+{#    }#}
+{##}
+{#    .nav-item i {#}
+{#        width: 20px;#}
+{#        margin-right: 0.75rem;#}
+{#    }#}
+{##}
+{#    .profile-content {#}
+{#        background: var(--linear-surface);#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius-lg);#}
+{#        box-shadow: var(--linear-shadow-md);#}
+{#        overflow: hidden;#}
+{#    }#}
+{##}
+{#    .content-header {#}
+{#        padding: 1.5rem 2rem;#}
+{#        border-bottom: 1px solid var(--linear-border);#}
+{#        background: var(--linear-surface);#}
+{#    }#}
+{##}
+{#    .content-title {#}
+{#        font-size: 1.25rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-text-primary);#}
+{#        margin-bottom: 0.5rem;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 0.75rem;#}
+{#    }#}
+{##}
+{#    .content-subtitle {#}
+{#        font-size: 0.875rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#    }#}
+{##}
+{#    .content-body {#}
+{#        padding: 2rem;#}
+{#    }#}
+{##}
+{#    .form-section {#}
+{#        margin-bottom: 2.5rem;#}
+{#    }#}
+{##}
+{#    .form-section:last-child {#}
+{#        margin-bottom: 0;#}
+{#    }#}
+{##}
+{#    .section-title {#}
+{#        font-size: 1rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-text-primary);#}
+{#        margin-bottom: 1rem;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#        padding-bottom: 0.75rem;#}
+{#        border-bottom: 1px solid var(--linear-border);#}
+{#    }#}
+{##}
+{#    .form-group {#}
+{#        margin-bottom: 1.5rem;#}
+{#    }#}
+{##}
+{#    .form-row {#}
+{#        display: grid;#}
+{#        grid-template-columns: 1fr 1fr;#}
+{#        gap: 1rem;#}
+{#        margin-bottom: 1.5rem;#}
+{#    }#}
+{##}
+{#    .form-label {#}
+{#        display: block;#}
+{#        font-size: 0.875rem;#}
+{#        font-weight: 500;#}
+{#        color: var(--linear-text-primary);#}
+{#        margin-bottom: 0.5rem;#}
+{#    }#}
+{##}
+{#    .form-control, .form-select {#}
+{#        width: 100%;#}
+{#        padding: 0.75rem 1rem;#}
+{#        font-size: 0.875rem;#}
+{#        color: var(--linear-text-primary);#}
+{#        background-color: var(--linear-surface);#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius);#}
+{#        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#        box-shadow: var(--linear-shadow-sm);#}
+{#    }#}
+{##}
+{#    .form-control:focus, .form-select:focus {#}
+{#        outline: none;#}
+{#        border-color: var(--linear-accent);#}
+{#        box-shadow: 0 0 0 3px var(--linear-accent-light);#}
+{#        background-color: var(--linear-surface);#}
+{#    }#}
+{##}
+{#    .form-control::placeholder {#}
+{#        color: var(--linear-text-tertiary);#}
+{#        font-weight: 400;#}
+{#    }#}
+{##}
+{#    .form-control.is-valid {#}
+{#        border-color: var(--linear-success);#}
+{#        box-shadow: 0 0 0 3px var(--linear-success-light);#}
+{#    }#}
+{##}
+{#    .form-control.is-invalid {#}
+{#        border-color: var(--linear-danger);#}
+{#        box-shadow: 0 0 0 3px var(--linear-danger-light);#}
+{#    }#}
+{##}
+{#    .form-text {#}
+{#        font-size: 0.8125rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#        margin-top: 0.5rem;#}
+{#    }#}
+{##}
+{#    .file-upload {#}
+{#        border: 2px dashed var(--linear-border);#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 2rem;#}
+{#        text-align: center;#}
+{#        transition: all 0.2s ease;#}
+{#        cursor: pointer;#}
+{#        position: relative;#}
+{#        overflow: hidden;#}
+{#    }#}
+{##}
+{#    .file-upload:hover {#}
+{#        border-color: var(--linear-accent);#}
+{#        background: var(--linear-accent-light);#}
+{#    }#}
+{##}
+{#    .file-upload-content {#}
+{#        display: flex;#}
+{#        flex-direction: column;#}
+{#        align-items: center;#}
+{#        gap: 0.75rem;#}
+{#    }#}
+{##}
+{#    .file-upload-icon {#}
+{#        width: 48px;#}
+{#        height: 48px;#}
+{#        background: var(--linear-accent-light);#}
+{#        border-radius: 50%;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: center;#}
+{#        color: var(--linear-accent);#}
+{#        font-size: 1.25rem;#}
+{#    }#}
+{##}
+{#    .file-upload-text {#}
+{#        font-weight: 500;#}
+{#        color: var(--linear-text-primary);#}
+{#    }#}
+{##}
+{#    .file-upload-subtext {#}
+{#        font-size: 0.8125rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#    }#}
+{##}
+{#    .file-upload input[type="file"] {#}
+{#        position: absolute;#}
+{#        top: 0;#}
+{#        left: 0;#}
+{#        width: 100%;#}
+{#        height: 100%;#}
+{#        opacity: 0;#}
+{#        cursor: pointer;#}
+{#    }#}
+{##}
+{#    .skills-input {#}
+{#        display: flex;#}
+{#        flex-wrap: wrap;#}
+{#        gap: 0.5rem;#}
+{#        align-items: center;#}
+{#        padding: 0.75rem;#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius);#}
+{#        min-height: 2.5rem;#}
+{#        background: var(--linear-surface);#}
+{#        cursor: text;#}
+{#    }#}
+{##}
+{#    .skills-input:focus-within {#}
+{#        border-color: var(--linear-accent);#}
+{#        box-shadow: 0 0 0 3px var(--linear-accent-light);#}
+{#    }#}
+{##}
+{#    .skill-tag {#}
+{#        background: var(--linear-accent-light);#}
+{#        color: var(--linear-accent);#}
+{#        padding: 0.25rem 0.75rem;#}
+{#        border-radius: 15px;#}
+{#        font-size: 0.8125rem;#}
+{#        font-weight: 500;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#    }#}
+{##}
+{#    .skill-remove {#}
+{#        background: none;#}
+{#        border: none;#}
+{#        color: var(--linear-accent);#}
+{#        cursor: pointer;#}
+{#        padding: 0;#}
+{#        font-size: 0.75rem;#}
+{#        opacity: 0.7;#}
+{#        transition: opacity 0.2s ease;#}
+{#    }#}
+{##}
+{#    .skill-remove:hover {#}
+{#        opacity: 1;#}
+{#    }#}
+{##}
+{#    .skill-input {#}
+{#        border: none;#}
+{#        outline: none;#}
+{#        background: none;#}
+{#        font-size: 0.875rem;#}
+{#        flex: 1;#}
+{#        min-width: 100px;#}
+{#        padding: 0.25rem 0;#}
+{#        color: var(--linear-text-primary);#}
+{#    }#}
+{##}
+{#    .skill-input::placeholder {#}
+{#        color: var(--linear-text-tertiary);#}
+{#    }#}
+{##}
+{#    .btn-primary {#}
+{#        background: linear-gradient(135deg, var(--linear-accent) 0%, #4c63d2 100%);#}
+{#        border: none;#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 0.75rem 1.5rem;#}
+{#        font-size: 0.875rem;#}
+{#        font-weight: 500;#}
+{#        color: white;#}
+{#        cursor: pointer;#}
+{#        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#        display: inline-flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#        text-decoration: none;#}
+{#    }#}
+{##}
+{#    .btn-primary:hover {#}
+{#        background: linear-gradient(135deg, var(--linear-accent-hover) 0%, #3d54d2 100%);#}
+{#        transform: translateY(-1px);#}
+{#        box-shadow: var(--linear-shadow-lg);#}
+{#        color: white;#}
+{#        text-decoration: none;#}
+{#    }#}
+{##}
+{#    .btn-secondary {#}
+{#        background: var(--linear-surface);#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 0.75rem 1.5rem;#}
+{#        font-size: 0.875rem;#}
+{#        font-weight: 500;#}
+{#        color: var(--linear-text-primary);#}
+{#        cursor: pointer;#}
+{#        transition: all 0.2s ease;#}
+{#        display: inline-flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#        text-decoration: none;#}
+{#    }#}
+{##}
+{#    .btn-secondary:hover {#}
+{#        background: var(--linear-surface);#}
+{#        border-color: var(--linear-border-hover);#}
+{#        color: var(--linear-text-primary);#}
+{#        text-decoration: none;#}
+{#    }#}
+{##}
+{#    .btn-danger {#}
+{#        background: var(--linear-danger);#}
+{#        border: none;#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 0.75rem 1.5rem;#}
+{#        font-size: 0.875rem;#}
+{#        font-weight: 500;#}
+{#        color: white;#}
+{#        cursor: pointer;#}
+{#        transition: all 0.2s ease;#}
+{#        display: inline-flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#    }#}
+{##}
+{#    .btn-danger:hover {#}
+{#        background: #dc2626;#}
+{#        transform: translateY(-1px);#}
+{#        box-shadow: var(--linear-shadow-lg);#}
+{#    }#}
+{##}
+{#    .form-actions {#}
+{#        display: flex;#}
+{#        gap: 1rem;#}
+{#        justify-content: flex-end;#}
+{#        margin-top: 2rem;#}
+{#        padding-top: 1.5rem;#}
+{#        border-top: 1px solid var(--linear-border);#}
+{#    }#}
+{##}
+{#    .success-message {#}
+{#        background: var(--linear-success-light);#}
+{#        border: 1px solid rgba(26, 127, 55, 0.2);#}
+{#        color: var(--linear-success);#}
+{#        padding: 1rem;#}
+{#        border-radius: var(--linear-radius);#}
+{#        margin-bottom: 1.5rem;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#        font-size: 0.875rem;#}
+{#        font-weight: 500;#}
+{#    }#}
+{##}
+{#    .danger-zone {#}
+{#        background: var(--linear-danger-light);#}
+{#        border: 1px solid rgba(207, 34, 46, 0.2);#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 1.5rem;#}
+{#        margin-top: 2rem;#}
+{#    }#}
+{##}
+{#    .danger-zone h6 {#}
+{#        color: var(--linear-danger);#}
+{#        font-weight: 600;#}
+{#        margin-bottom: 0.75rem;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#    }#}
+{##}
+{#    .danger-zone p {#}
+{#        color: var(--linear-text-secondary);#}
+{#        margin-bottom: 1rem;#}
+{#        font-size: 0.875rem;#}
+{#    }#}
+{##}
+{#    /* Enhanced file display styles */#}
+{#    .current-file-display {#}
+{#        background: var(--linear-accent-light);#}
+{#        border: 1px solid rgba(94, 106, 210, 0.2);#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 1rem;#}
+{#        margin-top: 1rem;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 0.75rem;#}
+{#    }#}
+{##}
+{#    .file-icon {#}
+{#        width: 32px;#}
+{#        height: 32px;#}
+{#        background: var(--linear-accent);#}
+{#        border-radius: 6px;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: center;#}
+{#        color: white;#}
+{#        font-size: 0.875rem;#}
+{#    }#}
+{##}
+{#    .file-details {#}
+{#        flex: 1;#}
+{#    }#}
+{##}
+{#    .file-name {#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-text-primary);#}
+{#        font-size: 0.875rem;#}
+{#    }#}
+{##}
+{#    .file-meta {#}
+{#        font-size: 0.75rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#        margin-top: 0.25rem;#}
+{#    }#}
+{##}
+{#    @keyframes slideInUp {#}
+{#        from {#}
+{#            opacity: 0;#}
+{#            transform: translateY(20px);#}
+{#        }#}
+{#        to {#}
+{#            opacity: 1;#}
+{#            transform: translateY(0);#}
+{#        }#}
+{#    }#}
+{##}
+{#    .loading .btn-primary {#}
+{#        pointer-events: none;#}
+{#    }#}
+{##}
+{#    .loading .btn-primary::after {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        width: 16px;#}
+{#        height: 16px;#}
+{#        top: 50%;#}
+{#        left: 50%;#}
+{#        margin: -8px 0 0 -8px;#}
+{#        border: 2px solid transparent;#}
+{#        border-top: 2px solid white;#}
+{#        border-radius: 50%;#}
+{#        animation: spin 1s linear infinite;#}
+{#    }#}
+{##}
+{#    @keyframes spin {#}
+{#        0% { transform: rotate(0deg); }#}
+{#        100% { transform: rotate(360deg); }#}
+{#    }#}
+{##}
+{#    @media (max-width: 768px) {#}
+{#        .profile-container {#}
+{#            grid-template-columns: 1fr;#}
+{#            gap: 1rem;#}
+{#            padding: 1rem;#}
+{#        }#}
+{##}
+{#        .profile-sidebar {#}
+{#            position: static;#}
+{#        }#}
+{##}
+{#        .profile-card {#}
+{#            order: 2;#}
+{#        }#}
+{##}
+{#        .profile-content {#}
+{#            order: 1;#}
+{#        }#}
+{##}
+{#        .content-body {#}
+{#            padding: 1.5rem;#}
+{#        }#}
+{##}
+{#        .form-row {#}
+{#            grid-template-columns: 1fr;#}
+{#        }#}
+{##}
+{#        .form-actions {#}
+{#            flex-direction: column-reverse;#}
+{#        }#}
+{##}
+{#        .btn-primary,#}
+{#        .btn-secondary {#}
+{#            width: 100%;#}
+{#            justify-content: center;#}
+{#        }#}
+{#    }#}
+{##}
+{#    /* Dark mode support */#}
+{#    @media (prefers-color-scheme: dark) {#}
+{#        :root {#}
+{#            --linear-bg: #0d1117;#}
+{#            --linear-surface: #161b22;#}
+{#            --linear-border: #30363d;#}
+{#            --linear-border-hover: #484f58;#}
+{#            --linear-text-primary: #f0f6fc;#}
+{#            --linear-text-secondary: #8b949e;#}
+{#            --linear-text-tertiary: #656d76;#}
+{#            --linear-accent-light: rgba(94, 106, 210, 0.1);#}
+{#            --linear-success-light: rgba(26, 127, 55, 0.1);#}
+{#            --linear-warning-light: rgba(176, 136, 0, 0.1);#}
+{#            --linear-danger-light: rgba(207, 34, 46, 0.1);#}
+{#            --linear-info-light: rgba(9, 105, 218, 0.1);#}
+{#        }#}
+{#    }#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="profile-container">#}
+{#    <!-- Profile Sidebar -->#}
+{#    <div class="profile-sidebar">#}
+{#        <div class="profile-card">#}
+{#            <div class="profile-header">#}
+{#                <div class="profile-avatar">#}
+{#                    <i class="fas fa-user"></i>#}
+{#                </div>#}
+{#                <div class="profile-name">{{ user.get_full_name|default:user.username }}</div>#}
+{#                <div class="profile-email">{{ user.email }}</div>#}
+{#            </div>#}
+{##}
+{#            <div class="profile-stats">#}
+{#                <div class="stat-item">#}
+{#                    <span class="stat-label">Applications</span>#}
+{#                    <span class="stat-value">{{ applications_count|default:0 }}</span>#}
+{#                </div>#}
+{#                <div class="stat-item">#}
+{#                    <span class="stat-label">Follow-ups sent</span>#}
+{#                    <span class="stat-value">{{ followups_count|default:0 }}</span>#}
+{#                </div>#}
+{#                <div class="stat-item">#}
+{#                    <span class="stat-label">Active searches</span>#}
+{#                    <span class="stat-value">{{ active_searches_count|default:0 }}</span>#}
+{#                </div>#}
+{##}
+{#                <div class="completion-bar">#}
+{#                    <div class="completion-label">#}
+{#                        <span>Profile Completion</span>#}
+{#                        <span class="completion-percentage">{{ profile.profile_completion_percentage|default:0 }}%</span>#}
+{#                    </div>#}
+{#                    <div class="progress-bar">#}
+{#                        <div class="progress-fill" style="width: {{ profile.profile_completion_percentage|default:0 }}%"></div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <nav class="profile-nav">#}
+{#                <button class="nav-item active" data-section="personal">#}
+{#                    <i class="fas fa-user"></i>#}
+{#                    Personal Info#}
+{#                </button>#}
+{#                <button class="nav-item" data-section="professional">#}
+{#                    <i class="fas fa-briefcase"></i>#}
+{#                    Professional#}
+{#                </button>#}
+{#                <button class="nav-item" data-section="preferences">#}
+{#                    <i class="fas fa-cog"></i>#}
+{#                    Job Preferences#}
+{#                </button>#}
+{#                <button class="nav-item" data-section="security">#}
+{#                    <i class="fas fa-shield-alt"></i>#}
+{#                    Security#}
+{#                </button>#}
+{#                <a href="{% url 'accounts:password_change' %}" class="nav-item">#}
+{#                    <i class="fas fa-key"></i>#}
+{#                    Change Password#}
+{#                </a>#}
+{#            </nav>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Profile Content -->#}
+{#    <div class="profile-content">#}
+{#        <form method="post" enctype="multipart/form-data" id="profileForm">#}
+{#            {% csrf_token %}#}
+{##}
+{#            <!-- Personal Information Section -->#}
+{#            <div class="profile-section" id="personal-section">#}
+{#                <div class="content-header">#}
+{#                    <h2 class="content-title">#}
+{#                        <i class="fas fa-user"></i>#}
+{#                        Personal Information#}
+{#                    </h2>#}
+{#                    <p class="content-subtitle">Update your personal details and contact information</p>#}
+{#                </div>#}
+{##}
+{#                <div class="content-body">#}
+{#                    <div class="form-section">#}
+{#                        <h3 class="section-title">#}
+{#                            <i class="fas fa-id-card"></i>#}
+{#                            Basic Information#}
+{#                        </h3>#}
+{##}
+{#                        <div class="form-row">#}
+{#                            <div class="form-group">#}
+{#                                <label for="first_name" class="form-label">First Name</label>#}
+{#                                <input type="text" class="form-control" id="first_name" name="first_name"#}
+{#                                       value="{{ user.first_name }}" placeholder="Enter your first name" required>#}
+{#                            </div>#}
+{#                            <div class="form-group">#}
+{#                                <label for="last_name" class="form-label">Last Name</label>#}
+{#                                <input type="text" class="form-control" id="last_name" name="last_name"#}
+{#                                       value="{{ user.last_name }}" placeholder="Enter your last name" required>#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                        <div class="form-group">#}
+{#                            <label for="email" class="form-label">Email Address</label>#}
+{#                            <input type="email" class="form-control" id="email" name="email"#}
+{#                                   value="{{ user.email }}" placeholder="Enter your email address" required>#}
+{#                        </div>#}
+{##}
+{#                        <div class="form-row">#}
+{#                            <div class="form-group">#}
+{#                                <label for="phone" class="form-label">Phone Number</label>#}
+{#                                <input type="tel" class="form-control" id="phone" name="phone"#}
+{#                                       value="{{ profile.phone }}" placeholder="(555) 123-4567">#}
+{#                            </div>#}
+{#                            <div class="form-group">#}
+{#                                <label for="location" class="form-label">Location</label>#}
+{#                                <input type="text" class="form-control" id="location" name="location"#}
+{#                                       value="{{ profile.location }}" placeholder="City, State/Province">#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <div class="form-section">#}
+{#                        <h3 class="section-title">#}
+{#                            <i class="fas fa-link"></i>#}
+{#                            Professional Links#}
+{#                        </h3>#}
+{##}
+{#                        <div class="form-group">#}
+{#                            <label for="linkedin_url" class="form-label">LinkedIn Profile</label>#}
+{#                            <input type="url" class="form-control" id="linkedin_url" name="linkedin_url"#}
+{#                                   value="{{ profile.linkedin_url }}" placeholder="https://linkedin.com/in/yourprofile">#}
+{#                        </div>#}
+{##}
+{#                        <div class="form-row">#}
+{#                            <div class="form-group">#}
+{#                                <label for="github_url" class="form-label">GitHub Profile</label>#}
+{#                                <input type="url" class="form-control" id="github_url" name="github_url"#}
+{#                                       value="{{ profile.github_url }}" placeholder="https://github.com/yourusername">#}
+{#                            </div>#}
+{#                            <div class="form-group">#}
+{#                                <label for="portfolio_url" class="form-label">Portfolio Website</label>#}
+{#                                <input type="url" class="form-control" id="portfolio_url" name="portfolio_url"#}
+{#                                       value="{{ profile.portfolio_url }}" placeholder="https://yourportfolio.com">#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Professional Information Section -->#}
+{#            <div class="profile-section" id="professional-section" style="display: none;">#}
+{#                <div class="content-header">#}
+{#                    <h2 class="content-title">#}
+{#                        <i class="fas fa-briefcase"></i>#}
+{#                        Professional Information#}
+{#                    </h2>#}
+{#                    <p class="content-subtitle">Add your work experience, education, and skills</p>#}
+{#                </div>#}
+{##}
+{#                <div class="content-body">#}
+{#                    <div class="form-section">#}
+{#                        <h3 class="section-title">#}
+{#                            <i class="fas fa-building"></i>#}
+{#                            Current Position#}
+{#                        </h3>#}
+{##}
+{#                        <div class="form-row">#}
+{#                            <div class="form-group">#}
+{#                                <label for="current_job_title" class="form-label">Current Job Title</label>#}
+{#                                <input type="text" class="form-control" id="current_job_title" name="current_job_title"#}
+{#                                       value="{{ profile.current_job_title }}" placeholder="e.g., Software Engineer">#}
+{#                            </div>#}
+{#                            <div class="form-group">#}
+{#                                <label for="current_company" class="form-label">Current Company</label>#}
+{#                                <input type="text" class="form-control" id="current_company" name="current_company"#}
+{#                                       value="{{ profile.current_company }}" placeholder="e.g., Tech Corp Inc.">#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                        <div class="form-group">#}
+{#                            <label for="years_experience" class="form-label">Years of Experience</label>#}
+{#                            <select class="form-select" id="years_experience" name="years_experience">#}
+{#                                <option value="">Select experience level</option>#}
+{#                                <option value="0" {% if profile.years_experience == 0 %}selected{% endif %}>Entry Level (0-1 years)</option>#}
+{#                                <option value="2" {% if profile.years_experience == 2 %}selected{% endif %}>Junior (2-3 years)</option>#}
+{#                                <option value="4" {% if profile.years_experience == 4 %}selected{% endif %}>Mid-Level (4-6 years)</option>#}
+{#                                <option value="7" {% if profile.years_experience == 7 %}selected{% endif %}>Senior (7-10 years)</option>#}
+{#                                <option value="11" {% if profile.years_experience >= 11 %}selected{% endif %}>Expert (10+ years)</option>#}
+{#                            </select>#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <div class="form-section">#}
+{#                        <h3 class="section-title">#}
+{#                            <i class="fas fa-graduation-cap"></i>#}
+{#                            Education & Skills#}
+{#                        </h3>#}
+{##}
+{#                        <div class="form-group">#}
+{#                            <label for="education" class="form-label">Education</label>#}
+{#                            <textarea class="form-control" id="education" name="education" rows="3"#}
+{#                                      placeholder="e.g., Bachelor of Science in Computer Science, University Name, 2020">{{ profile.education }}</textarea>#}
+{#                        </div>#}
+{##}
+{#                        <div class="form-group">#}
+{#                            <label for="key_skills" class="form-label">Key Skills</label>#}
+{#                            <div class="skills-input" id="skillsContainer">#}
+{#                                <!-- Dynamic skills will be added here -->#}
+{#                                <input type="text" class="skill-input" placeholder="Add a skill and press Enter" id="skillInput">#}
+{#                            </div>#}
+{#                            <div class="form-text">Add skills relevant to your target jobs. Press Enter after typing each skill.</div>#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <div class="form-section">#}
+{#                        <h3 class="section-title">#}
+{#                            <i class="fas fa-file-upload"></i>#}
+{#                            Resume Upload#}
+{#                        </h3>#}
+{##}
+{#                        <div class="form-group">#}
+{#                            <div class="file-upload" onclick="document.getElementById('resume_file').click()">#}
+{#                                <input type="file" id="resume_file" name="resume_file" accept=".pdf,.doc,.docx">#}
+{#                                <div class="file-upload-content">#}
+{#                                    <div class="file-upload-icon">#}
+{#                                        <i class="fas fa-cloud-upload-alt"></i>#}
+{#                                    </div>#}
+{#                                    <div class="file-upload-text">Upload Resume</div>#}
+{#                                    <div class="file-upload-subtext">PDF, DOC, or DOCX (max 5MB)</div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% if profile.resume_file %}#}
+{#                                <div class="current-file-display">#}
+{#                                    <div class="file-icon">#}
+{#                                        {% if profile.resume_file.name|get_file_extension == '.pdf' %}#}
+{#                                            <i class="fas fa-file-pdf"></i>#}
+{#                                        {% elif profile.resume_file.name|get_file_extension|slice:":4" == '.doc' %}#}
+{#                                            <i class="fas fa-file-word"></i>#}
+{#                                        {% else %}#}
+{#                                            <i class="fas fa-file"></i>#}
+{#                                        {% endif %}#}
+{#                                    </div>#}
+{#                                    <div class="file-details">#}
+{#                                        <div class="file-name">{{ profile.resume_file.name|basename }}</div>#}
+{#                                        <div class="file-meta">#}
+{#                                            {{ profile.resume_file.size|filesize }}#}
+{#                                            {% if profile.resume_file.name|get_file_extension %}#}
+{#                                                • {{ profile.resume_file.name|get_file_extension|upper|slice:"1:" }} file#}
+{#                                            {% endif %}#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <a href="{{ profile.resume_file.url }}" target="_blank" class="btn-secondary" style="font-size: 0.75rem; padding: 0.5rem;">#}
+{#                                        <i class="fas fa-eye"></i>#}
+{#                                        View#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Job Preferences Section -->#}
+{#            <div class="profile-section" id="preferences-section" style="display: none;">#}
+{#                <div class="content-header">#}
+{#                    <h2 class="content-title">#}
+{#                        <i class="fas fa-cog"></i>#}
+{#                        Job Preferences#}
+{#                    </h2>#}
+{#                    <p class="content-subtitle">Set your job search preferences and requirements</p>#}
+{#                </div>#}
+{##}
+{#                <div class="content-body">#}
+{#                    <div class="form-section">#}
+{#                        <h3 class="section-title">#}
+{#                            <i class="fas fa-dollar-sign"></i>#}
+{#                            Salary Expectations#}
+{#                        </h3>#}
+{##}
+{#                        <div class="form-row">#}
+{#                            <div class="form-group">#}
+{#                                <label for="preferred_salary_min" class="form-label">Minimum Salary</label>#}
+{#                                <input type="number" class="form-control" id="preferred_salary_min" name="preferred_salary_min"#}
+{#                                       value="{{ profile.preferred_salary_min }}" placeholder="50000">#}
+{#                            </div>#}
+{#                            <div class="form-group">#}
+{#                                <label for="preferred_salary_max" class="form-label">Maximum Salary</label>#}
+{#                                <input type="number" class="form-control" id="preferred_salary_max" name="preferred_salary_max"#}
+{#                                       value="{{ profile.preferred_salary_max }}" placeholder="100000">#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <div class="form-section">#}
+{#                        <h3 class="section-title">#}
+{#                            <i class="fas fa-map-marker-alt"></i>#}
+{#                            Work Preferences#}
+{#                        </h3>#}
+{##}
+{#                        <div class="form-group">#}
+{#                            <label for="work_type_preference" class="form-label">Work Type</label>#}
+{#                            <select class="form-select" id="work_type_preference" name="work_type_preference">#}
+{#                                <option value="remote" {% if profile.work_type_preference == 'remote' %}selected{% endif %}>Remote</option>#}
+{#                                <option value="hybrid" {% if profile.work_type_preference == 'hybrid' %}selected{% endif %}>Hybrid</option>#}
+{#                                <option value="onsite" {% if profile.work_type_preference == 'onsite' %}selected{% endif %}>On-site</option>#}
+{#                                <option value="flexible" {% if profile.work_type_preference == 'flexible' %}selected{% endif %}>Flexible</option>#}
+{#                            </select>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Security Section -->#}
+{#            <div class="profile-section" id="security-section" style="display: none;">#}
+{#                <div class="content-header">#}
+{#                    <h2 class="content-title">#}
+{#                        <i class="fas fa-shield-alt"></i>#}
+{#                        Security & Privacy#}
+{#                    </h2>#}
+{#                    <p class="content-subtitle">Manage your account security and privacy settings</p>#}
+{#                </div>#}
+{##}
+{#                <div class="content-body">#}
+{#                    <div class="form-section">#}
+{#                        <h3 class="section-title">#}
+{#                            <i class="fas fa-key"></i>#}
+{#                            Password & Authentication#}
+{#                        </h3>#}
+{##}
+{#                        <div class="form-group">#}
+{#                            <label class="form-label">Password</label>#}
+{#                            <div style="display: flex; gap: 1rem; align-items: center;">#}
+{#                                <span class="form-text">••••••••••••</span>#}
+{#                                <a href="{% url 'accounts:password_change' %}" class="btn-secondary">#}
+{#                                    <i class="fas fa-edit"></i>#}
+{#                                    Change Password#}
+{#                                </a>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <div class="danger-zone">#}
+{#                        <h6>#}
+{#                            <i class="fas fa-exclamation-triangle"></i>#}
+{#                            Danger Zone#}
+{#                        </h6>#}
+{#                        <p>#}
+{#                            Once you delete your account, there is no going back. Please be certain.#}
+{#                            All your job applications, follow-ups, and profile data will be permanently deleted.#}
+{#                        </p>#}
+{#                        <button type="button" class="btn-danger" onclick="confirmAccountDeletion()">#}
+{#                            <i class="fas fa-trash-alt"></i>#}
+{#                            Delete Account#}
+{#                        </button>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <div class="form-actions">#}
+{#                <button type="button" class="btn-secondary" onclick="resetForm()">#}
+{#                    <i class="fas fa-undo"></i>#}
+{#                    Reset Changes#}
+{#                </button>#}
+{#                <button type="submit" class="btn-primary" id="saveBtn">#}
+{#                    <i class="fas fa-save"></i>#}
+{#                    <span class="btn-text">Save Profile</span>#}
+{#                </button>#}
+{#            </div>#}
+{#        </form>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#// COMPLETE JavaScript for templates/accounts/profile.html#}
+{#// Replace the entire  section with this:#}
+{##}
+{#document.addEventListener('DOMContentLoaded', function() {#}
+{#    // ==========================================#}
+{#    // 1. NAVIGATION FUNCTIONALITY#}
+{#    // ==========================================#}
+{#    const navItems = document.querySelectorAll('.nav-item[data-section]');#}
+{#    const sections = document.querySelectorAll('.profile-section');#}
+{##}
+{#    navItems.forEach(item => {#}
+{#        item.addEventListener('click', function() {#}
+{#            const sectionId = this.dataset.section;#}
+{##}
+{#            // Update nav active state#}
+{#            navItems.forEach(nav => nav.classList.remove('active'));#}
+{#            this.classList.add('active');#}
+{##}
+{#            // Show corresponding section#}
+{#            sections.forEach(section => {#}
+{#                section.style.display = 'none';#}
+{#            });#}
+{#            const targetSection = document.getElementById(sectionId + '-section');#}
+{#            if (targetSection) {#}
+{#                targetSection.style.display = 'block';#}
+{#            }#}
+{#        });#}
+{#    });#}
+{##}
+{#    // ==========================================#}
+{#    // 2. DYNAMIC SKILLS MANAGEMENT#}
+{#    // ==========================================#}
+{#    let skills = {{ profile.key_skills|default:"[]"|safe }};#}
+{##}
+{#    // Create skills input container#}
+{#    const skillsInputContainer = document.getElementById('skills-input-container');#}
+{#    if (skillsInputContainer) {#}
+{#        skillsInputContainer.innerHTML = `#}
+{#            <div class="form-group">#}
+{#                <label for="dynamic-skills" class="form-label">Skills & Expertise</label>#}
+{#                <div class="skills-input" id="skillsContainer">#}
+{#                    <input type="text" class="skill-input" placeholder="Type any skill and press Enter" id="skillInput">#}
+{#                </div>#}
+{#                <div class="form-text">#}
+{#                    Add any skills relevant to your profession. Examples: JavaScript, Project Management,#}
+{#                    Graphic Design, Customer Service, Excel, Public Speaking, Teaching, Nursing, etc. Press Enter after each skill.#}
+{#                </div>#}
+{#            </div>#}
+{#        `;#}
+{#    }#}
+{##}
+{#    const skillsContainer = document.getElementById('skillsContainer');#}
+{#    const skillInput = document.getElementById('skillInput');#}
+{##}
+{#    if (skillsContainer && skillInput) {#}
+{#        function renderSkills() {#}
+{#            const existingTags = skillsContainer.querySelectorAll('.skill-tag');#}
+{#            existingTags.forEach(tag => tag.remove());#}
+{##}
+{#            skills.forEach((skill, index) => {#}
+{#                const skillTag = document.createElement('div');#}
+{#                skillTag.className = 'skill-tag';#}
+{#                skillTag.innerHTML = `#}
+{#                    ${skill}#}
+{#                    <button type="button" class="skill-remove" onclick="removeSkill(${index})" title="Remove skill">#}
+{#                        <i class="fas fa-times"></i>#}
+{#                    </button>#}
+{#                `;#}
+{#                skillsContainer.insertBefore(skillTag, skillInput);#}
+{#            });#}
+{#        }#}
+{##}
+{#        window.removeSkill = function(index) {#}
+{#            skills.splice(index, 1);#}
+{#            renderSkills();#}
+{#        };#}
+{##}
+{#        skillInput.addEventListener('keypress', function(e) {#}
+{#            if (e.key === 'Enter') {#}
+{#                e.preventDefault();#}
+{#                const skill = this.value.trim();#}
+{#                if (skill && !skills.some(s => s.toLowerCase() === skill.toLowerCase())) {#}
+{#                    skills.push(skill);#}
+{#                    this.value = '';#}
+{#                    renderSkills();#}
+{#                    showSkillAddedFeedback();#}
+{#                } else if (skills.some(s => s.toLowerCase() === skill.toLowerCase())) {#}
+{#                    // Skill already exists#}
+{#                    showSkillExistsFeedback();#}
+{#                    this.value = '';#}
+{#                }#}
+{#            }#}
+{#        });#}
+{##}
+{#        // Skill suggestions for better UX#}
+{#        const commonSkills = [#}
+{#            // Technical Skills#}
+{#            'JavaScript', 'Python', 'Java', 'C++', 'HTML', 'CSS', 'React', 'Node.js', 'SQL', 'Git',#}
+{#            'Data Analysis', 'Machine Learning', 'Web Development', 'Mobile Development',#}
+{#            // Business Skills#}
+{#            'Project Management', 'Leadership', 'Communication', 'Problem Solving', 'Strategic Planning',#}
+{#            'Microsoft Excel', 'PowerPoint', 'Word', 'Google Workspace', 'Salesforce',#}
+{#            // Customer-Facing Skills#}
+{#            'Customer Service', 'Sales', 'Marketing', 'Social Media', 'Public Relations', 'Negotiation',#}
+{#            // Creative Skills#}
+{#            'Graphic Design', 'Adobe Creative Suite', 'Photoshop', 'Illustrator', 'Video Editing',#}
+{#            'Writing', 'Editing', 'Content Creation', 'Copywriting', 'Photography',#}
+{#            // Healthcare Skills#}
+{#            'Nursing', 'Patient Care', 'Medical Records', 'Healthcare Administration', 'CPR',#}
+{#            'Medical Terminology', 'Pharmacy', 'Physical Therapy', 'Mental Health',#}
+{#            // Education Skills#}
+{#            'Teaching', 'Curriculum Development', 'Classroom Management', 'Educational Technology',#}
+{#            'Tutoring', 'Training', 'Public Speaking', 'Presentation Skills',#}
+{#            // Finance/Accounting#}
+{#            'Accounting', 'Bookkeeping', 'Financial Analysis', 'Budgeting', 'Tax Preparation',#}
+{#            'Auditing', 'Investment Analysis', 'QuickBooks', 'Financial Planning',#}
+{#            // Trades/Manual Skills#}
+{#            'Construction', 'Electrical', 'Plumbing', 'Mechanical', 'Welding', 'Carpentry',#}
+{#            'Auto Repair', 'HVAC', 'Landscaping', 'Equipment Operation',#}
+{#            // Hospitality/Service#}
+{#            'Food Service', 'Restaurant Management', 'Event Planning', 'Hotel Management',#}
+{#            'Travel Planning', 'Catering', 'Bar Tending', 'Cleaning Services',#}
+{#            // General Professional Skills#}
+{#            'Research', 'Critical Thinking', 'Time Management', 'Multitasking', 'Team Building',#}
+{#            'Conflict Resolution', 'Decision Making', 'Attention to Detail', 'Adaptability'#}
+{#        ];#}
+{##}
+{#        let suggestionTimeout;#}
+{#        skillInput.addEventListener('input', function() {#}
+{#            clearTimeout(suggestionTimeout);#}
+{#            const input = this.value.toLowerCase();#}
+{##}
+{#            if (input.length >= 2) {#}
+{#                suggestionTimeout = setTimeout(() => {#}
+{#                    const suggestions = commonSkills.filter(skill =>#}
+{#                        skill.toLowerCase().includes(input) &&#}
+{#                        !skills.some(s => s.toLowerCase() === skill.toLowerCase())#}
+{#                    ).slice(0, 5);#}
+{##}
+{#                    showSuggestions(suggestions);#}
+{#                }, 300);#}
+{#            } else {#}
+{#                hideSuggestions();#}
+{#            }#}
+{#        });#}
+{##}
+{#        function showSuggestions(suggestions) {#}
+{#            hideSuggestions();#}
+{##}
+{#            if (suggestions.length === 0) return;#}
+{##}
+{#            const suggestionContainer = document.createElement('div');#}
+{#            suggestionContainer.className = 'skill-suggestions';#}
+{#            suggestionContainer.style.cssText = `#}
+{#                position: absolute;#}
+{#                top: 100%;#}
+{#                left: 0;#}
+{#                right: 0;#}
+{#                background: white;#}
+{#                border: 1px solid #e1e4e8;#}
+{#                border-radius: 6px;#}
+{#                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);#}
+{#                z-index: 1000;#}
+{#                max-height: 200px;#}
+{#                overflow-y: auto;#}
+{#            `;#}
+{##}
+{#            suggestions.forEach(suggestion => {#}
+{#                const item = document.createElement('div');#}
+{#                item.className = 'suggestion-item';#}
+{#                item.textContent = suggestion;#}
+{#                item.style.cssText = `#}
+{#                    padding: 0.5rem 1rem;#}
+{#                    cursor: pointer;#}
+{#                    border-bottom: 1px solid #f6f8fa;#}
+{#                    transition: background-color 0.2s ease;#}
+{#                    font-size: 0.875rem;#}
+{#                `;#}
+{##}
+{#                item.addEventListener('mouseenter', function() {#}
+{#                    this.style.backgroundColor = '#f6f8fa';#}
+{#                });#}
+{##}
+{#                item.addEventListener('mouseleave', function() {#}
+{#                    this.style.backgroundColor = '';#}
+{#                });#}
+{##}
+{#                item.addEventListener('click', function() {#}
+{#                    skills.push(suggestion);#}
+{#                    skillInput.value = '';#}
+{#                    renderSkills();#}
+{#                    hideSuggestions();#}
+{#                    showSkillAddedFeedback();#}
+{#                });#}
+{##}
+{#                suggestionContainer.appendChild(item);#}
+{#            });#}
+{##}
+{#            skillsContainer.style.position = 'relative';#}
+{#            skillsContainer.appendChild(suggestionContainer);#}
+{#        }#}
+{##}
+{#        function hideSuggestions() {#}
+{#            const existing = skillsContainer.querySelector('.skill-suggestions');#}
+{#            if (existing) {#}
+{#                existing.remove();#}
+{#            }#}
+{#        }#}
+{##}
+{#        function showSkillAddedFeedback() {#}
+{#            skillInput.style.borderColor = '#28a745';#}
+{#            setTimeout(() => {#}
+{#                skillInput.style.borderColor = '';#}
+{#            }, 1000);#}
+{#        }#}
+{##}
+{#        function showSkillExistsFeedback() {#}
+{#            skillInput.style.borderColor = '#ffc107';#}
+{#            skillInput.placeholder = 'Skill already added - try another one';#}
+{#            setTimeout(() => {#}
+{#                skillInput.style.borderColor = '';#}
+{#                skillInput.placeholder = 'Type any skill and press Enter';#}
+{#            }, 2000);#}
+{#        }#}
+{##}
+{#        // Hide suggestions when clicking outside#}
+{#        document.addEventListener('click', function(e) {#}
+{#            if (!skillsContainer.contains(e.target)) {#}
+{#                hideSuggestions();#}
+{#            }#}
+{#        });#}
+{##}
+{#        // Initialize skills display#}
+{#        renderSkills();#}
+{#    }#}
+{##}
+{#    // ==========================================#}
+{#    // 3. FILE UPLOAD PREVIEW#}
+{#    // ==========================================#}
+{#    const fileInput = document.getElementById('resume_file');#}
+{#    if (fileInput) {#}
+{#        fileInput.addEventListener('change', function() {#}
+{#            const fileName = this.files[0]?.name;#}
+{#            const fileSize = this.files[0]?.size;#}
+{##}
+{#            if (fileName) {#}
+{#                const uploadText = document.querySelector('.file-upload-text');#}
+{#                if (uploadText) {#}
+{#                    uploadText.textContent = fileName;#}
+{#                }#}
+{##}
+{#                // Show file preview#}
+{#                showFilePreview(fileName, fileSize);#}
+{#            }#}
+{#        });#}
+{#    }#}
+{##}
+{#    function showFilePreview(fileName, fileSize) {#}
+{#        const existingPreview = document.querySelector('.file-preview');#}
+{#        if (existingPreview) {#}
+{#            existingPreview.remove();#}
+{#        }#}
+{##}
+{#        const fileUpload = document.querySelector('.file-upload');#}
+{#        if (fileUpload) {#}
+{#            const preview = document.createElement('div');#}
+{#            preview.className = 'file-preview';#}
+{#            preview.style.cssText = `#}
+{#                margin-top: 1rem;#}
+{#                padding: 1rem;#}
+{#                background: #f8f9fa;#}
+{#                border: 1px solid #e9ecef;#}
+{#                border-radius: 8px;#}
+{#                display: flex;#}
+{#                align-items: center;#}
+{#                gap: 0.75rem;#}
+{#            `;#}
+{##}
+{#            const extension = fileName.split('.').pop().toLowerCase();#}
+{#            let iconClass = 'fa-file';#}
+{#            if (extension === 'pdf') iconClass = 'fa-file-pdf';#}
+{#            else if (['doc', 'docx'].includes(extension)) iconClass = 'fa-file-word';#}
+{##}
+{#            preview.innerHTML = `#}
+{#                <div style="width: 32px; height: 32px; background: #007bff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white;">#}
+{#                    <i class="fas ${iconClass}"></i>#}
+{#                </div>#}
+{#                <div style="flex: 1;">#}
+{#                    <div style="font-weight: 600; color: #333;">${fileName}</div>#}
+{#                    <div style="font-size: 0.75rem; color: #666;">${formatFileSize(fileSize)}</div>#}
+{#                </div>#}
+{#                <button type="button" onclick="clearFileUpload()" style="background: none; border: none; color: #dc3545; cursor: pointer;">#}
+{#                    <i class="fas fa-times"></i>#}
+{#                </button>#}
+{#            `;#}
+{##}
+{#            fileUpload.parentNode.insertBefore(preview, fileUpload.nextSibling);#}
+{#        }#}
+{#    }#}
+{##}
+{#    window.clearFileUpload = function() {#}
+{#        const fileInput = document.getElementById('resume_file');#}
+{#        const preview = document.querySelector('.file-preview');#}
+{#        const uploadText = document.querySelector('.file-upload-text');#}
+{##}
+{#        if (fileInput) fileInput.value = '';#}
+{#        if (preview) preview.remove();#}
+{#        if (uploadText) uploadText.textContent = 'Upload Resume';#}
+{#    };#}
+{##}
+{#    function formatFileSize(bytes) {#}
+{#        if (bytes === 0) return '0 B';#}
+{#        const k = 1024;#}
+{#        const sizes = ['B', 'KB', 'MB', 'GB'];#}
+{#        const i = Math.floor(Math.log(bytes) / Math.log(k));#}
+{#        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];#}
+{#    }#}
+{##}
+{#    // ==========================================#}
+{#    // 4. FORM VALIDATION & SUBMISSION#}
+{#    // ==========================================#}
+{#    const profileForm = document.getElementById('profileForm');#}
+{#    if (profileForm) {#}
+{#        profileForm.addEventListener('submit', function(e) {#}
+{#            const form = this;#}
+{#            const saveBtn = document.getElementById('saveBtn');#}
+{#            const btnText = saveBtn.querySelector('.btn-text');#}
+{##}
+{#            // Validate salary fields#}
+{#            const salaryMin = document.getElementById('preferred_salary_min')?.value;#}
+{#            const salaryMax = document.getElementById('preferred_salary_max')?.value;#}
+{##}
+{#            if (salaryMin && salaryMax && parseInt(salaryMin) >= parseInt(salaryMax)) {#}
+{#                e.preventDefault();#}
+{#                showToast('Minimum salary must be less than maximum salary.', 'error');#}
+{#                return;#}
+{#            }#}
+{##}
+{#            // Add skills to form data#}
+{#            const skillsInput = document.createElement('input');#}
+{#            skillsInput.type = 'hidden';#}
+{#            skillsInput.name = 'key_skills';#}
+{#            skillsInput.value = JSON.stringify(skills);#}
+{#            form.appendChild(skillsInput);#}
+{##}
+{#            // Add loading state#}
+{#            form.classList.add('loading');#}
+{#            if (btnText) btnText.textContent = 'Saving...';#}
+{#            if (saveBtn) saveBtn.disabled = true;#}
+{##}
+{#            // Remove loading state after timeout (fallback)#}
+{#            setTimeout(() => {#}
+{#                form.classList.remove('loading');#}
+{#                if (btnText) btnText.textContent = 'Save Profile';#}
+{#                if (saveBtn) saveBtn.disabled = false;#}
+{#            }, 10000);#}
+{#        });#}
+{#    }#}
+{##}
+{#    // ==========================================#}
+{#    // 5. EMAIL VALIDATION#}
+{#    // ==========================================#}
+{#    const emailField = document.getElementById('id_email');#}
+{#    if (emailField) {#}
+{#        emailField.addEventListener('blur', function() {#}
+{#            const email = this.value.trim();#}
+{#            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;#}
+{##}
+{#            if (email && !emailRegex.test(email)) {#}
+{#                this.classList.add('is-invalid');#}
+{#                showFieldError(this, 'Please enter a valid email address');#}
+{#            } else if (email) {#}
+{#                this.classList.remove('is-invalid');#}
+{#                this.classList.add('is-valid');#}
+{#                hideFieldError(this);#}
+{#            } else {#}
+{#                this.classList.remove('is-invalid', 'is-valid');#}
+{#                hideFieldError(this);#}
+{#            }#}
+{#        });#}
+{#    }#}
+{##}
+{#    // ==========================================#}
+{#    // 6. UTILITY FUNCTIONS#}
+{#    // ==========================================#}
+{#    function showFieldError(field, message) {#}
+{#        hideFieldError(field);#}
+{#        const errorDiv = document.createElement('div');#}
+{#        errorDiv.className = 'field-error';#}
+{#        errorDiv.style.cssText = 'color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;';#}
+{#        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;#}
+{#        field.parentNode.appendChild(errorDiv);#}
+{#    }#}
+{##}
+{#    function hideFieldError(field) {#}
+{#        const existingError = field.parentNode.querySelector('.field-error');#}
+{#        if (existingError) {#}
+{#            existingError.remove();#}
+{#        }#}
+{#    }#}
+{##}
+{#    function showToast(message, type = 'success') {#}
+{#        const toastContainer = getOrCreateToastContainer();#}
+{#        const toast = document.createElement('div');#}
+{#        toast.className = `toast toast-${type}`;#}
+{#        toast.style.cssText = `#}
+{#            background: ${type === 'success' ? '#28a745' : '#dc3545'};#}
+{#            color: white;#}
+{#            padding: 1rem 1.5rem;#}
+{#            border-radius: 8px;#}
+{#            margin-bottom: 0.5rem;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            gap: 0.5rem;#}
+{#            animation: slideInRight 0.3s ease;#}
+{#            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);#}
+{#        `;#}
+{##}
+{#        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';#}
+{#        toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;#}
+{##}
+{#        toastContainer.appendChild(toast);#}
+{##}
+{#        setTimeout(() => {#}
+{#            toast.style.animation = 'slideOutRight 0.3s ease';#}
+{#            setTimeout(() => {#}
+{#                if (toast.parentNode) {#}
+{#                    toast.parentNode.removeChild(toast);#}
+{#                }#}
+{#            }, 300);#}
+{#        }, 3000);#}
+{#    }#}
+{##}
+{#    function getOrCreateToastContainer() {#}
+{#        let container = document.getElementById('toast-container');#}
+{#        if (!container) {#}
+{#            container = document.createElement('div');#}
+{#            container.id = 'toast-container';#}
+{#            container.style.cssText = `#}
+{#                position: fixed;#}
+{#                top: 20px;#}
+{#                right: 20px;#}
+{#                z-index: 9999;#}
+{#                max-width: 400px;#}
+{#            `;#}
+{#            document.body.appendChild(container);#}
+{#        }#}
+{#        return container;#}
+{#    }#}
+{##}
+{#    // ==========================================#}
+{#    // 7. RESET FORM FUNCTIONALITY#}
+{#    // ==========================================#}
+{#    window.resetForm = function() {#}
+{#        if (confirm('Are you sure you want to reset all changes? This cannot be undone.')) {#}
+{#            location.reload();#}
+{#        }#}
+{#    };#}
+{##}
+{#    // ==========================================#}
+{#    // 8. ACCOUNT DELETION FUNCTIONALITY#}
+{#    // ==========================================#}
+{#    window.confirmAccountDeletion = function() {#}
+{#        const steps = [#}
+{#            'Are you absolutely sure you want to delete your account?',#}
+{#            'This action cannot be undone and all your data will be permanently lost.',#}
+{#            'Type DELETE in the prompt to confirm.'#}
+{#        ];#}
+{##}
+{#        let confirmed = true;#}
+{#        for (let i = 0; i < steps.length - 1; i++) {#}
+{#            confirmed = confirmed && confirm(steps[i]);#}
+{#            if (!confirmed) break;#}
+{#        }#}
+{##}
+{#        if (confirmed) {#}
+{#            const confirmation = prompt(steps[steps.length - 1]);#}
+{#            if (confirmation === 'DELETE') {#}
+{#                // Create a form to submit deletion request#}
+{#                const form = document.createElement('form');#}
+{#                form.method = 'POST';#}
+{#                form.action = '/accounts/delete/'; // You'll need to create this URL#}
+{##}
+{#                const csrfInput = document.createElement('input');#}
+{#                csrfInput.type = 'hidden';#}
+{#                csrfInput.name = 'csrfmiddlewaretoken';#}
+{#                csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;#}
+{##}
+{#                form.appendChild(csrfInput);#}
+{#                document.body.appendChild(form);#}
+{#                form.submit();#}
+{#            } else {#}
+{#                showToast('Account deletion cancelled.', 'success');#}
+{#            }#}
+{#        }#}
+{#    };#}
+{##}
+{#    // ==========================================#}
+{#    // 9. KEYBOARD SHORTCUTS#}
+{#    // ==========================================#}
+{#    document.addEventListener('keydown', function(e) {#}
+{#        // Ctrl/Cmd + S to save form#}
+{#        if ((e.ctrlKey || e.metaKey) && e.key === 's') {#}
+{#            e.preventDefault();#}
+{#            const saveBtn = document.getElementById('saveBtn');#}
+{#            if (saveBtn && !saveBtn.disabled) {#}
+{#                saveBtn.click();#}
+{#            }#}
+{#        }#}
+{##}
+{#        // Escape to close suggestions#}
+{#        if (e.key === 'Escape') {#}
+{#            hideSuggestions();#}
+{#        }#}
+{#    });#}
+{##}
+{#    // ==========================================#}
+{#    // 10. FORM PROGRESS TRACKING#}
+{#    // ==========================================#}
+{#    const formFields = document.querySelectorAll('input[required], textarea[required], select[required]');#}
+{#    let completedFields = 0;#}
+{##}
+{#    function updateProgress() {#}
+{#        completedFields = 0;#}
+{#        formFields.forEach(field => {#}
+{#            if (field.value.trim()) {#}
+{#                completedFields++;#}
+{#            }#}
+{#        });#}
+{##}
+{#        const progressPercent = Math.round((completedFields / formFields.length) * 100);#}
+{#        const progressFill = document.querySelector('.progress-fill');#}
+{#        const progressPercentage = document.querySelector('.progress-percentage');#}
+{##}
+{#        if (progressFill) {#}
+{#            progressFill.style.width = progressPercent + '%';#}
+{#        }#}
+{#        if (progressPercentage) {#}
+{#            progressPercentage.textContent = progressPercent + '%';#}
+{#        }#}
+{#    }#}
+{##}
+{#    // Add listeners to track progress#}
+{#    formFields.forEach(field => {#}
+{#        field.addEventListener('input', updateProgress);#}
+{#        field.addEventListener('change', updateProgress);#}
+{#    });#}
+{##}
+{#    // Initial progress calculation#}
+{#    updateProgress();#}
+{##}
+{#    // ==========================================#}
+{#    // 11. AUTO-SAVE DRAFT (Optional)#}
+{#    // ==========================================#}
+{#    let autoSaveTimeout;#}
+{##}
+{#    function autoSaveDraft() {#}
+{#        clearTimeout(autoSaveTimeout);#}
+{#        autoSaveTimeout = setTimeout(() => {#}
+{#            const formData = new FormData(profileForm);#}
+{#            formData.set('key_skills', JSON.stringify(skills));#}
+{##}
+{#            // Save to localStorage as draft#}
+{#            const draftData = {};#}
+{#            for (let [key, value] of formData.entries()) {#}
+{#                draftData[key] = value;#}
+{#            }#}
+{##}
+{#            try {#}
+{#                localStorage.setItem('profile_draft', JSON.stringify(draftData));#}
+{#                console.log('Profile draft auto-saved');#}
+{#            } catch (e) {#}
+{#                console.log('Auto-save failed:', e);#}
+{#            }#}
+{#        }, 2000);#}
+{#    }#}
+{##}
+{#    // Add auto-save listeners#}
+{#    const autoSaveFields = document.querySelectorAll('input, textarea, select');#}
+{#    autoSaveFields.forEach(field => {#}
+{#        field.addEventListener('input', autoSaveDraft);#}
+{#    });#}
+{##}
+{#    console.log('Profile page initialized successfully');#}
+{#});#}
+{##}
+{#// ==========================================#}
+{#// CSS ANIMATIONS (Add to head if needed)#}
+{#// ==========================================#}
+{#const style = document.createElement('style');#}
+{#style.textContent = `#}
+{#    @keyframes slideInRight {#}
+{#        from { transform: translateX(100%); opacity: 0; }#}
+{#        to { transform: translateX(0); opacity: 1; }#}
+{#    }#}
+{##}
+{#    @keyframes slideOutRight {#}
+{#        from { transform: translateX(0); opacity: 1; }#}
+{#        to { transform: translateX(100%); opacity: 0; }#}
+{#    }#}
+{##}
+{#    .skill-tag {#}
+{#        animation: slideInUp 0.2s ease;#}
+{#    }#}
+{##}
+{#    @keyframes slideInUp {#}
+{#        from { transform: translateY(10px); opacity: 0; }#}
+{#        to { transform: translateY(0); opacity: 1; }#}
+{#    }#}
+{#`;#}
+{#document.head.appendChild(style);#}
+{#</script>#}
+{#{% endblock %}#}
+{##}
+{##}
+{#<!-- templates/accounts/profile.html -->#}
+{#{% extends 'base.html' %}#}
+{#{% load crispy_forms_tags %}#}
+{##}
+{#{% block title %}Profile - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="row">#}
+{#    <div class="col-md-8">#}
+{#        <div class="card">#}
+{#            <div class="card-header">#}
+{#                <h5><i class="fas fa-user-edit"></i> Update Profile</h5>#}
+{#            </div>#}
+{#            <div class="card-body">#}
+{#                {% crispy form %}#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="col-md-4">#}
+{#        <div class="card">#}
+{#            <div class="card-header">#}
+{#                <h5><i class="fas fa-chart-pie"></i> Profile Completion</h5>#}
+{#            </div>#}
+{#            <div class="card-body text-center">#}
+{#                <div class="position-relative d-inline-block">#}
+{#                    <canvas id="completionChart" width="150" height="150"></canvas>#}
+{#                    <div class="position-absolute top-50 start-50 translate-middle">#}
+{#                        <h3>{{ completion_percentage }}%</h3>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <p class="mt-3">#}
+{#                    {% if completion_percentage >= 90 %}#}
+{#                        <span class="text-success">Excellent! Your profile is nearly complete.</span>#}
+{#                    {% elif completion_percentage >= 70 %}#}
+{#                        <span class="text-warning">Good progress! A few more details needed.</span>#}
+{#                    {% else %}#}
+{#                        <span class="text-danger">Please complete more sections for better results.</span>#}
+{#                    {% endif %}#}
+{#                </p>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="card mt-3">#}
+{#            <div class="card-header">#}
+{#                <h6><i class="fas fa-lightbulb"></i> Profile Tips</h6>#}
+{#            </div>#}
+{#            <div class="card-body">#}
+{#                <ul class="list-unstyled small">#}
+{#                    <li><i class="fas fa-check text-success"></i> Add a professional photo</li>#}
+{#                    <li><i class="fas fa-check text-success"></i> Complete all required fields</li>#}
+{#                    <li><i class="fas fa-check text-success"></i> Upload an updated resume</li>#}
+{#                    <li><i class="fas fa-check text-success"></i> Include relevant skills</li>#}
+{#                    <li><i class="fas fa-check text-success"></i> Set salary expectations</li>#}
+{#                </ul>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#// Profile completion chart#}
+{#const ctx = document.getElementById('completionChart').getContext('2d');#}
+{#const completionPercentage = {{ completion_percentage }};#}
+{##}
+{#new Chart(ctx, {#}
+{#    type: 'doughnut',#}
+{#    data: {#}
+{#        datasets: [{#}
+{#            data: [completionPercentage, 100 - completionPercentage],#}
+{#            backgroundColor: [#}
+{#                completionPercentage >= 90 ? '#28a745' :#}
+{#                completionPercentage >= 70 ? '#ffc107' : '#dc3545',#}
+{#                '#e9ecef'#}
+{#            ],#}
+{#            borderWidth: 0#}
+{#        }]#}
+{#    },#}
+{#    options: {#}
+{#        cutout: '70%',#}
+{#        plugins: {#}
+{#            legend: {#}
+{#                display: false#}
+{#            }#}
+{#        }#}
+{#    }#}
+{#});#}
+{#</script>#}
+{#{% endblock %}#}

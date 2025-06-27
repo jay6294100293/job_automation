@@ -1,0 +1,198 @@
+# -----------------------------------------------------------------------------
+# General Operating System and IDE Files
+# -----------------------------------------------------------------------------
+# macOS files
+.DS_Store
+
+# Windows thumbnail cache
+Thumbs.db
+
+# PyCharm specific files and folders
+.idea/                 # PyCharm project settings and temporary files
+*.iml                  # IntelliJ IDEA module files
+
+# VS Code specific files and folders
+.vscode/
+
+# Vim swap files
+*.swp
+*.swo
+
+# Atom editor files
+.atom/
+
+# Emacs backup files
+*~
+\#*#
+.#*
+
+# -----------------------------------------------------------------------------
+# Python Specific Files
+# -----------------------------------------------------------------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class               # Jython compiled files
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller / cx_Freeze / PyOxidizer
+# These are often used for creating standalone executables
+*.manifest
+*.spec
+*.pyi
+build.spec
+dist/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# mypy and type checking caches
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook files
+.ipynb_checkpoints
+
+# IPython files
+profile_default/
+ipython_config.py
+
+# Python environments
+# Virtual environment directories
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Conda environments
+.conda/
+.env-conda/
+
+# Poetry environments
+.poetry/
+.env
+.debug_env
+github_key
+github_key.pub
+config.json
+secrets.json
+*.key
+# Pipenv environment
+.pylint.d/
+
+# -----------------------------------------------------------------------------
+# Django Specific Files
+# -----------------------------------------------------------------------------
+*.log                    # Django log files
+db.sqlite3               # Default SQLite database file
+media/                   # User-uploaded media files
+static/                  # Collected static files (e.g., from `collectstatic`)
+staticfiles/             # Another common location for collected static files
+local_settings.py        # Sensitive local settings (though .env is preferred)
+
+# -----------------------------------------------------------------------------
+# Environment Variables & Sensitive Files
+# -----------------------------------------------------------------------------
+.env                     # Main environment variables file
+.env.local               # Local environment overrides
+.env.development
+.env.production
+.debug_env               # As per your specific need
+.flaskenv                # Flask environment file
+
+# API Keys & Secrets (explicitly named files)
+github_key               # Your GitHub/SSH private key
+github_key.pub           # Your GitHub/SSH public key (less sensitive, but often ignored for consistency)
+config.json              # Generic config that might contain secrets
+secrets.json             # Explicit secrets file
+*.key                    # Any file ending with .key (e.g., other private keys, API keys)
+*.pem                    # Certificate files that might contain private keys
+*.crt                    # Certificate files (if they contain private data)
+*.p12                    # PKCS#12 archive file
+*.jks                    # Java KeyStore file
+.htpasswd                # Apache HTTP Server password file
+.netrc                   # Network authentication data
+*.auth                   # Generic authentication files
+.ssh/                    # The entire SSH directory (if it's accidentally inside the project)
+
+# -----------------------------------------------------------------------------
+# Other Common Exclusions
+# -----------------------------------------------------------------------------
+# Editor/IDE auto-save or backup files
+*.bak
+*.tmp
+*.orig
+*.swp
+*~
+#*#
+
+# Test results
+.pytest_cache/
+test_results/
+
+# Database files (other than default sqlite3)
+*.sqlite
+*.sqlite3-journal
+
+# Compiled objects for other languages
+*.obj
+*.exe
+*.dll
+*.lib
+*.so
+*.dylib
+
+# Vagrant
+.vagrant/
+
+# Node.js (if also present in project)
+node_modules/
+npm-debug.log
+yarn-debug.log
+
+# Logs and debug files
+debug.log
+error.log
+logs/

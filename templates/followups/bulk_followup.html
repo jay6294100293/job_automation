@@ -1,0 +1,225 @@
+<!-- templates/followups/bulk_followup.html -->
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Bulk Follow-up - Job Automation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    .followup-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        margin-bottom: var(--space-xl);
+        border: 1px solid var(--border-primary);
+        overflow: hidden;
+    }
+
+    .followup-header {
+        padding: var(--space-md) var(--space-lg);
+        border-bottom: 1px solid var(--border-primary);
+        background: var(--bg-elevated);
+    }
+
+    .followup-body {
+        padding: var(--space-lg);
+    }
+
+    .form-section {
+        margin-bottom: var(--space-xl);
+    }
+
+    .form-section-title {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-md);
+        display: flex;
+        align-items: center;
+    }
+
+    .form-section-title i {
+        margin-right: var(--space-sm);
+        color: var(--primary-500);
+    }
+
+    .select-actions {
+        display: flex;
+        margin-bottom: var(--space-md);
+    }
+
+    .select-action-btn {
+        background: transparent;
+        border: none;
+        color: var(--primary-400);
+        padding: 0;
+        margin-right: var(--space-md);
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .select-action-btn:hover {
+        color: var(--primary-300);
+        text-decoration: underline;
+    }
+
+    .template-card {
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-primary);
+        margin-bottom: var(--space-md);
+        background: var(--bg-tertiary);
+        transition: var(--transition-fast);
+    }
+
+    .template-card:hover {
+        border-color: var(--primary-400);
+        background: var(--bg-elevated);
+    }
+
+    .template-card.selected {
+        border-color: var(--primary-500);
+        background: rgba(79, 70, 229, 0.1);
+    }
+
+    .template-title {
+        font-weight: 500;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+    }
+
+    .template-preview {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
+
+    .template-radio {
+        margin-right: var(--space-sm);
+    }
+
+    /* Enhance form styling */
+    .form-check-input:checked {
+        background-color: var(--primary-500);
+        border-color: var(--primary-600);
+    }
+
+    .form-select {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-primary);
+    }
+
+    .form-control {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-primary);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-500);
+        box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    .form-check-label {
+        color: var(--text-secondary);
+    }
+
+    .form-text {
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="followup-card">
+                <div class="followup-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-paper-plane text-primary me-2"></i>
+                        Bulk Follow-up
+                    </h4>
+                </div>
+
+                <div class="followup-body">
+                    {% if form.applications.choices %}
+                        <form method="post" action="{% url 'followups:bulk_followup' %}">
+                            {% csrf_token %}
+                            {% crispy form %}
+                        </form>
+                    {% else %}
+                        <div class="empty-state text-center py-5">
+                            <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
+                            <h5>No Applications Need Follow-up</h5>
+                            <p class="text-muted">You're all caught up! There are no applications that need follow-up right now.</p>
+                            <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary mt-3">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Return to Dashboard
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Select/deselect all applications
+        $('#select-all').click(function() {
+            $('input[name="applications"]').prop('checked', true);
+        });
+
+        $('#deselect-all').click(function() {
+            $('input[name="applications"]').prop('checked', false);
+        });
+
+        // Show/hide scheduled date based on send_now
+        $('#id_send_now').change(function() {
+            if ($(this).is(':checked')) {
+                $('#div_id_scheduled_date').fadeOut();
+            } else {
+                $('#div_id_scheduled_date').fadeIn();
+            }
+        });
+
+        // Trigger initially
+        $('#id_send_now').trigger('change');
+
+        // Template selection styling
+        $('input[name="template"]').change(function() {
+            $('.template-card').removeClass('selected');
+            $(this).closest('.template-card').addClass('selected');
+        });
+
+        // Add template cards styling for radio buttons
+        $('input[name="template"]').each(function() {
+            const $input = $(this);
+            const $label = $input.next('label');
+            const templateId = $input.val();
+            const templateName = $label.text();
+
+            // Create template card structure
+            const $card = $('<div class="template-card"></div>');
+            if ($input.is(':checked')) {
+                $card.addClass('selected');
+            }
+
+            $input.addClass('template-radio');
+
+            // Wrap the input and label in the card
+            $input.add($label).wrapAll($card);
+        });
+    });
+</script>
+{% endblock %}

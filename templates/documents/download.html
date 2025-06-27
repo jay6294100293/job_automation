@@ -1,0 +1,1437 @@
+{% extends 'dashboard/../base_dashboard.html' %}
+
+{% block title %}Download Documents - Job Automation{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Download page specific styles */
+    .download-header {
+        margin-bottom: var(--space-xl);
+        animation: slideUp 0.5s ease forwards;
+    }
+
+    .download-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--space-sm);
+        letter-spacing: -0.025em;
+    }
+
+    .download-subtitle {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-lg);
+    }
+
+    /* Download Option Cards */
+    .download-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--space-xl);
+        margin-bottom: var(--space-xl);
+    }
+
+    .download-option-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        transition: all var(--transition-slow);
+        position: relative;
+    }
+
+    .download-option-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent-primary);
+    }
+
+    .download-option-card.primary {
+        border-color: var(--accent-primary);
+    }
+
+    .download-option-card.success {
+        border-color: var(--success-500);
+    }
+
+    .download-card-header {
+        padding: var(--space-lg);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .download-card-header.primary {
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--primary-600) 100%);
+        color: white;
+    }
+
+    .download-card-header.success {
+        background: linear-gradient(135deg, var(--success-500) 0%, var(--success-600) 100%);
+        color: white;
+    }
+
+    .download-card-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-sm);
+    }
+
+    .download-card-body {
+        padding: var(--space-xl);
+        text-align: center;
+    }
+
+    .download-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto var(--space-lg);
+        background: linear-gradient(135deg, var(--accent-light) 0%, var(--info-50) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        transition: all var(--transition-slow);
+    }
+
+    .download-icon.primary {
+        color: var(--accent-primary);
+    }
+
+    .download-icon.success {
+        color: var(--success-500);
+    }
+
+    .download-option-card:hover .download-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .download-description {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--space-sm);
+    }
+
+    .download-details {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-lg);
+        line-height: 1.5;
+    }
+
+    .features-list {
+        text-align: left;
+        margin-bottom: var(--space-lg);
+    }
+
+    .features-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .features-list li {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-xs) 0;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+    }
+
+    .features-list li i {
+        color: var(--success-500);
+        width: 16px;
+    }
+
+    /* Application Cards */
+    .applications-section {
+        margin-bottom: var(--space-xl);
+    }
+
+    .applications-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--space-lg);
+    }
+
+    .application-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        transition: all var(--transition-slow);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .application-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--accent-primary);
+    }
+
+    .application-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--space-md);
+    }
+
+    .application-info {
+        flex: 1;
+    }
+
+    .application-title {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--space-xs);
+    }
+
+    .application-company {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-xs);
+    }
+
+    .application-date {
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .application-status {
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-top: var(--space-xs);
+    }
+
+    .application-status.ready {
+        background: var(--success-50);
+        color: var(--success-500);
+    }
+
+    .application-status.pending {
+        background: var(--warning-50);
+        color: var(--warning-500);
+    }
+
+    .application-actions {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .btn-action {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-normal);
+        text-decoration: none;
+        text-align: center;
+        border: 1px solid transparent;
+        cursor: pointer;
+        background: none;
+    }
+
+    .btn-action.primary {
+        background: var(--accent-light);
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+
+    .btn-action.primary:hover {
+        background: var(--accent-primary);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-action.success {
+        background: var(--success-50);
+        color: var(--success-500);
+        border-color: var(--success-500);
+    }
+
+    .btn-action.success:hover {
+        background: var(--success-500);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-action.warning {
+        background: var(--warning-50);
+        color: var(--warning-500);
+        border-color: var(--warning-500);
+    }
+
+    .btn-action.warning:hover {
+        background: var(--warning-500);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Statistics Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+    }
+
+    .stat-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        text-align: center;
+        transition: all var(--transition-slow);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--space-xs);
+    }
+
+    .stat-value.primary { color: var(--accent-primary); }
+    .stat-value.success { color: var(--success-500); }
+    .stat-value.warning { color: var(--warning-500); }
+    .stat-value.info { color: var(--info-500); }
+
+    .stat-label {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+    }
+
+    .quick-action-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        text-align: center;
+        transition: all var(--transition-slow);
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .quick-action-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent-primary);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: var(--space-2xl);
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-lg);
+        margin: var(--space-lg) 0;
+    }
+
+    .empty-state i {
+        font-size: 3.5rem;
+        margin-bottom: var(--space-md);
+        opacity: 0.3;
+        color: var(--accent-primary);
+    }
+
+    .empty-state h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: var(--space-sm);
+        color: var(--text-primary);
+    }
+
+    .empty-state p {
+        margin-bottom: var(--space-lg);
+        color: var(--text-secondary);
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .modal-content {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        padding: var(--space-lg) var(--space-xl);
+        border-bottom: 1px solid var(--border-primary);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .modal-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-tertiary);
+        cursor: pointer;
+        padding: var(--space-xs);
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-normal);
+    }
+
+    .modal-close:hover {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+    }
+
+    .modal-body {
+        padding: var(--space-xl);
+    }
+
+    .bulk-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-lg);
+    }
+
+    .bulk-option {
+        text-align: center;
+        padding: var(--space-lg);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-slow);
+        cursor: pointer;
+    }
+
+    .bulk-option:hover {
+        background: var(--accent-light);
+        border-color: var(--accent-primary);
+        transform: translateY(-2px);
+    }
+
+    .bulk-option i {
+        font-size: 2.5rem;
+        margin-bottom: var(--space-md);
+    }
+
+    .bulk-option.primary i { color: var(--accent-primary); }
+    .bulk-option.success i { color: var(--success-500); }
+    .bulk-option.warning i { color: var(--warning-500); }
+    .bulk-option.info i { color: var(--info-500); }
+
+    .bulk-option h6 {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--space-sm);
+    }
+
+    .bulk-option p {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-md);
+        line-height: 1.4;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .download-options {
+            grid-template-columns: 1fr;
+        }
+
+        .applications-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .bulk-options {
+            grid-template-columns: 1fr;
+        }
+
+        .application-header {
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .application-actions {
+            flex-direction: row;
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Download Header -->
+<div class="download-header">
+    <h1 class="download-title">
+        <i class="fas fa-download"></i>
+        Download Documents
+    </h1>
+    <p class="download-subtitle">
+        Choose how you'd like to download your job application documents
+    </p>
+</div>
+
+<!-- Download Options -->
+<div class="download-options">
+    <!-- Individual Documents -->
+    <div class="download-option-card primary">
+        <div class="download-card-header primary">
+            <h3 class="download-card-title">
+                <i class="fas fa-file"></i>
+                Individual Documents
+            </h3>
+        </div>
+        <div class="download-card-body">
+            <div class="download-icon primary">
+                <i class="fas fa-file-download"></i>
+            </div>
+            <div class="download-description">Download Specific Documents</div>
+            <div class="download-details">
+                Browse and download individual documents like resumes, cover letters, or email templates.
+            </div>
+            <div class="features-list">
+                <ul>
+                    <li><i class="fas fa-check"></i>Choose specific document types</li>
+                    <li><i class="fas fa-check"></i>Preview before downloading</li>
+                    <li><i class="fas fa-check"></i>Quick access to frequently used docs</li>
+                </ul>
+            </div>
+            <a href="{% url 'documents:list' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-list"></i> Browse Documents
+            </a>
+        </div>
+    </div>
+
+    <!-- Bulk Download -->
+    <div class="download-option-card success">
+        <div class="download-card-header success">
+            <h3 class="download-card-title">
+                <i class="fas fa-archive"></i>
+                Bulk Download
+            </h3>
+        </div>
+        <div class="download-card-body">
+            <div class="download-icon success">
+                <i class="fas fa-download"></i>
+            </div>
+            <div class="download-description">Download Complete Job Packages</div>
+            <div class="download-details">
+                Get all documents for specific job applications or your entire portfolio in one ZIP file.
+            </div>
+            <div class="features-list">
+                <ul>
+                    <li><i class="fas fa-check"></i>Complete job application packages</li>
+                    <li><i class="fas fa-check"></i>Organized folder structure</li>
+                    <li><i class="fas fa-check"></i>Ready for immediate use</li>
+                </ul>
+            </div>
+            <button class="btn btn-success btn-lg" onclick="showBulkDownloadOptions()">
+                <i class="fas fa-archive"></i> Bulk Download
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Applications -->
+<div class="applications-section">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-clock"></i>
+                Recent Job Applications
+            </h3>
+            <p class="card-subtitle">Quick access to your latest applications</p>
+        </div>
+        <div class="card-body">
+            {% if recent_applications %}
+            <div class="applications-grid">
+                {% for application in recent_applications %}
+                <div class="application-card">
+                    <div class="application-header">
+                        <div class="application-info">
+                            <div class="application-title">{{ application.job_title }}</div>
+                            <div class="application-company">{{ application.company_name }}</div>
+                            <div class="application-date">
+                                <i class="fas fa-calendar"></i>
+                                {{ application.created_at|date:"M d, Y" }}
+                            </div>
+                            {% if application.documents_generated %}
+                            <div class="application-status ready">Documents Ready</div>
+                            {% else %}
+                            <div class="application-status pending">No Documents</div>
+                            {% endif %}
+                        </div>
+                        <div class="application-actions">
+                            {% if application.documents_generated %}
+                            <a href="{% url 'documents:application_documents' application.pk %}" class="btn-action primary">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <button class="btn-action success" onclick="downloadApplicationDocs({{ application.pk }})">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            {% else %}
+                            <button class="btn-action warning" onclick="generateDocs({{ application.pk }})">
+                                <i class="fas fa-cog"></i> Generate
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <h4>No Job Applications Yet</h4>
+                <p>Start by creating a job search configuration and finding jobs.</p>
+                <a href="{% url 'jobs:search_config' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Search Configuration
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Document Statistics -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value primary">{{ total_documents|default:0 }}</div>
+        <p class="stat-label">Total Documents</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value success">{{ total_applications|default:0 }}</div>
+        <p class="stat-label">Job Applications</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value warning">{{ document_types|default:0 }}</div>
+        <p class="stat-label">Document Types</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value info">{{ storage_used_mb|default:0 }}MB</div>
+        <p class="stat-label">Storage Used</p>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-bolt"></i>
+            Quick Actions
+        </h3>
+        <p class="card-subtitle">Common document operations</p>
+    </div>
+    <div class="card-body">
+        <div class="quick-actions">
+            <div class="quick-action-card" onclick="downloadAllDocuments()">
+                <div class="quick-action-icon">
+                    <i class="fas fa-download"></i>
+                </div>
+                <div class="quick-action-title">Download All Documents</div>
+                <div class="quick-action-desc">Get your complete document archive</div>
+            </div>
+            <a href="{% url 'documents:stats' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="quick-action-title">Document Statistics</div>
+                <div class="quick-action-desc">View detailed analytics</div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Download Modal -->
+<div class="modal-overlay" id="bulkDownloadModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-archive"></i>
+                Bulk Download Options
+            </h3>
+            <button class="modal-close" onclick="closeBulkDownloadModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="bulk-options">
+                <div class="bulk-option primary" onclick="selectApplicationsForDownload()">
+                    <i class="fas fa-briefcase"></i>
+                    <h6>By Job Application</h6>
+                    <p>Download all documents for specific job applications</p>
+                    <button class="btn btn-sm btn-primary">
+                        <i class="fas fa-briefcase"></i> Select Applications
+                    </button>
+                </div>
+                <div class="bulk-option success" onclick="selectDocumentTypesForDownload()">
+                    <i class="fas fa-file-alt"></i>
+                    <h6>By Document Type</h6>
+                    <p>Download all documents of specific types (resumes, cover letters, etc.)</p>
+                    <button class="btn btn-sm btn-success">
+                        <i class="fas fa-file-alt"></i> Select Types
+                    </button>
+                </div>
+                <div class="bulk-option warning" onclick="selectDateRangeForDownload()">
+                    <i class="fas fa-calendar"></i>
+                    <h6>By Date Range</h6>
+                    <p>Download documents created within a specific time period</p>
+                    <button class="btn btn-sm btn-warning">
+                        <i class="fas fa-calendar"></i> Select Dates
+                    </button>
+                </div>
+                <div class="bulk-option info" onclick="downloadAllDocuments()">
+                    <i class="fas fa-globe"></i>
+                    <h6>Everything</h6>
+                    <p>Download your complete document portfolio</p>
+                    <button class="btn btn-sm btn-info">
+                        <i class="fas fa-download"></i> Download All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showBulkDownloadOptions() {
+    document.getElementById('bulkDownloadModal').style.display = 'flex';
+}
+
+function closeBulkDownloadModal() {
+    document.getElementById('bulkDownloadModal').style.display = 'none';
+}
+
+function downloadApplicationDocs(applicationId) {
+    // Show loading notification
+    dashboard.showNotification('Preparing download...', 'info', 2000);
+
+    // Create form and submit
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{% url "documents:bulk_download" %}';
+
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = getCookie('csrftoken');
+
+    const appInput = document.createElement('input');
+    appInput.type = 'hidden';
+    appInput.name = 'application_id';
+    appInput.value = applicationId;
+
+    form.appendChild(csrfInput);
+    form.appendChild(appInput);
+    document.body.appendChild(form);
+
+    form.submit();
+    document.body.removeChild(form);
+
+    setTimeout(() => {
+        dashboard.showNotification('Download started!', 'success');
+    }, 1000);
+}
+
+function generateDocs(applicationId) {
+    if (confirm('Generate documents for this job application?')) {
+        dashboard.showNotification('Generating documents...', 'info');
+
+        fetch(`/documents/generate/${applicationId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                dashboard.showNotification('Document generation started!', 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                dashboard.showNotification('Failed to generate documents', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            dashboard.showNotification('An error occurred', 'error');
+        });
+    }
+}
+
+function selectApplicationsForDownload() {
+    dashboard.showNotification('Feature coming soon: Application-specific bulk download', 'info');
+    closeBulkDownloadModal();
+}
+
+function selectDocumentTypesForDownload() {
+    dashboard.showNotification('Feature coming soon: Document type filtering', 'info');
+    closeBulkDownloadModal();
+}
+
+function selectDateRangeForDownload() {
+    dashboard.showNotification('Feature coming soon: Date range filtering', 'info');
+    closeBulkDownloadModal();
+}
+
+function downloadAllDocuments() {
+    if (confirm('Download all your documents? This may take a few minutes for large collections.')) {
+        dashboard.showNotification('Creating document archive...', 'info');
+
+        // Create form for all documents download
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "documents:bulk_download" %}';
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = getCookie('csrftoken');
+
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+
+        form.submit();
+        document.body.removeChild(form);
+
+        closeBulkDownloadModal();
+
+        setTimeout(() => {
+            dashboard.showNotification('Download started! Check your downloads folder.', 'success');
+        }, 2000);
+    }
+}
+
+// Close modal when clicking outside
+document.getElementById('bulkDownloadModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeBulkDownloadModal();
+    }
+});
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Animate stats on load
+document.addEventListener('DOMContentLoaded', function() {
+    const statValues = document.querySelectorAll('.stat-value');
+    statValues.forEach((stat, index) => {
+        const textContent = stat.textContent;
+        const numericValue = parseInt(textContent.replace(/[^\d]/g, '')) || 0;
+
+        if (numericValue > 0) {
+            let currentValue = 0;
+            const increment = numericValue / 30;
+
+            setTimeout(() => {
+                const timer = setInterval(() => {
+                    currentValue += increment;
+                    if (currentValue >= numericValue) {
+                        currentValue = numericValue;
+                        clearInterval(timer);
+                    }
+
+                    if (textContent.includes('MB')) {
+                        stat.textContent = Math.round(currentValue) + 'MB';
+                    } else {
+                        stat.textContent = Math.round(currentValue);
+                    }
+                }, 30);
+            }, index * 200);
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{#{% extends 'base.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Download Documents - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container">#}
+{#    <div class="row justify-content-center">#}
+{#        <div class="col-lg-10">#}
+{#            <!-- Header -->#}
+{#            <div class="text-center mb-5">#}
+{#                <h2 class="display-6 fw-bold text-primary">#}
+{#                    <i class="fas fa-download"></i> Download Documents#}
+{#                </h2>#}
+{#                <p class="lead text-muted">#}
+{#                    Choose how you'd like to download your job application documents#}
+{#                </p>#}
+{#            </div>#}
+{##}
+{#            <!-- Download Options -->#}
+{#            <div class="row mb-5">#}
+{#                <!-- Single Document Download -->#}
+{#                <div class="col-lg-6 mb-4">#}
+{#                    <div class="card h-100 border-primary">#}
+{#                        <div class="card-header bg-primary text-white text-center">#}
+{#                            <h5 class="mb-0">#}
+{#                                <i class="fas fa-file"></i> Individual Documents#}
+{#                            </h5>#}
+{#                        </div>#}
+{#                        <div class="card-body text-center">#}
+{#                            <div class="download-icon mb-3">#}
+{#                                <i class="fas fa-file-download fa-4x text-primary"></i>#}
+{#                            </div>#}
+{#                            <h6>Download Specific Documents</h6>#}
+{#                            <p class="text-muted">#}
+{#                                Browse and download individual documents like resumes, cover letters, or email templates.#}
+{#                            </p>#}
+{#                            <div class="features-list text-start">#}
+{#                                <ul class="list-unstyled">#}
+{#                                    <li><i class="fas fa-check text-success me-2"></i>Choose specific document types</li>#}
+{#                                    <li><i class="fas fa-check text-success me-2"></i>Preview before downloading</li>#}
+{#                                    <li><i class="fas fa-check text-success me-2"></i>Quick access to frequently used docs</li>#}
+{#                                </ul>#}
+{#                            </div>#}
+{#                            <a href="{% url 'documents:list' %}" class="btn btn-primary btn-lg">#}
+{#                                <i class="fas fa-list"></i> Browse Documents#}
+{#                            </a>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <!-- Bulk Download -->#}
+{#                <div class="col-lg-6 mb-4">#}
+{#                    <div class="card h-100 border-success">#}
+{#                        <div class="card-header bg-success text-white text-center">#}
+{#                            <h5 class="mb-0">#}
+{#                                <i class="fas fa-archive"></i> Bulk Download#}
+{#                            </h5>#}
+{#                        </div>#}
+{#                        <div class="card-body text-center">#}
+{#                            <div class="download-icon mb-3">#}
+{#                                <i class="fas fa-download fa-4x text-success"></i>#}
+{#                            </div>#}
+{#                            <h6>Download Complete Job Packages</h6>#}
+{#                            <p class="text-muted">#}
+{#                                Get all documents for specific job applications or your entire portfolio in one ZIP file.#}
+{#                            </p>#}
+{#                            <div class="features-list text-start">#}
+{#                                <ul class="list-unstyled">#}
+{#                                    <li><i class="fas fa-check text-success me-2"></i>Complete job application packages</li>#}
+{#                                    <li><i class="fas fa-check text-success me-2"></i>Organized folder structure</li>#}
+{#                                    <li><i class="fas fa-check text-success me-2"></i>Ready for immediate use</li>#}
+{#                                </ul>#}
+{#                            </div>#}
+{#                            <button class="btn btn-success btn-lg" onclick="showBulkDownloadOptions()">#}
+{#                                <i class="fas fa-archive"></i> Bulk Download#}
+{#                            </button>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Recent Applications -->#}
+{#            <div class="card shadow-sm mb-5">#}
+{#                <div class="card-header bg-info text-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-clock"></i> Recent Job Applications#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="row">#}
+{#                        {% for application in recent_applications %}#}
+{#                        <div class="col-lg-6 mb-3">#}
+{#                            <div class="application-card p-3 border rounded">#}
+{#                                <div class="d-flex justify-content-between align-items-start">#}
+{#                                    <div>#}
+{#                                        <h6 class="fw-bold text-primary">{{ application.job_title }}</h6>#}
+{#                                        <p class="text-muted mb-1">{{ application.company_name }}</p>#}
+{#                                        <small class="text-muted">#}
+{#                                            <i class="fas fa-calendar"></i>#}
+{#                                            {{ application.created_at|date:"M d, Y" }}#}
+{#                                        </small>#}
+{#                                        {% if application.documents_generated %}#}
+{#                                            <br><span class="badge bg-success">Documents Ready</span>#}
+{#                                        {% else %}#}
+{#                                            <br><span class="badge bg-warning">No Documents</span>#}
+{#                                        {% endif %}#}
+{#                                    </div>#}
+{#                                    <div class="btn-group-vertical btn-group-sm">#}
+{#                                        {% if application.documents_generated %}#}
+{#                                            <a href="{% url 'documents:application_documents' application.pk %}"#}
+{#                                               class="btn btn-outline-primary btn-sm">#}
+{#                                                <i class="fas fa-eye"></i> View#}
+{#                                            </a>#}
+{#                                            <button class="btn btn-outline-success btn-sm"#}
+{#                                                    onclick="downloadApplicationDocs({{ application.pk }})">#}
+{#                                                <i class="fas fa-download"></i> Download#}
+{#                                            </button>#}
+{#                                        {% else %}#}
+{#                                            <button class="btn btn-outline-warning btn-sm"#}
+{#                                                    onclick="generateDocs({{ application.pk }})">#}
+{#                                                <i class="fas fa-cog"></i> Generate#}
+{#                                            </button>#}
+{#                                        {% endif %}#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        {% empty %}#}
+{#                        <div class="col-12 text-center">#}
+{#                            <div class="empty-state py-5">#}
+{#                                <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>#}
+{#                                <h5 class="text-muted">No Job Applications Yet</h5>#}
+{#                                <p class="text-muted">Start by creating a job search configuration and finding jobs.</p>#}
+{#                                <a href="{% url 'jobs:search_config' %}" class="btn btn-primary">#}
+{#                                    <i class="fas fa-plus"></i> Create Search Configuration#}
+{#                                </a>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        {% endfor %}#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Document Statistics -->#}
+{#            <div class="row mb-5">#}
+{#                <div class="col-md-3">#}
+{#                    <div class="stat-card text-center p-4 border rounded">#}
+{#                        <h3 class="text-primary">{{ total_documents|default:0 }}</h3>#}
+{#                        <p class="text-muted mb-0">Total Documents</p>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="col-md-3">#}
+{#                    <div class="stat-card text-center p-4 border rounded">#}
+{#                        <h3 class="text-success">{{ total_applications|default:0 }}</h3>#}
+{#                        <p class="text-muted mb-0">Job Applications</p>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="col-md-3">#}
+{#                    <div class="stat-card text-center p-4 border rounded">#}
+{#                        <h3 class="text-warning">{{ document_types|default:0 }}</h3>#}
+{#                        <p class="text-muted mb-0">Document Types</p>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="col-md-3">#}
+{#                    <div class="stat-card text-center p-4 border rounded">#}
+{#                        <h3 class="text-info">{{ storage_used_mb|default:0 }}MB</h3>#}
+{#                        <p class="text-muted mb-0">Storage Used</p>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Quick Actions -->#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-secondary text-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-bolt"></i> Quick Actions#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="row">#}
+{#                        <div class="col-md-6 mb-3">#}
+{#                            <div class="d-grid">#}
+{#                                <button class="btn btn-outline-primary btn-lg" onclick="downloadAllDocuments()">#}
+{#                                    <i class="fas fa-download"></i> Download All My Documents#}
+{#                                </button>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="col-md-6 mb-3">#}
+{#                            <div class="d-grid">#}
+{#                                <a href="{% url 'documents:stats' %}" class="btn btn-outline-info btn-lg">#}
+{#                                    <i class="fas fa-chart-bar"></i> View Document Statistics#}
+{#                                </a>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Bulk Download Modal -->#}
+{#<div class="modal fade" id="bulkDownloadModal" tabindex="-1">#}
+{#    <div class="modal-dialog modal-lg">#}
+{#        <div class="modal-content">#}
+{#            <div class="modal-header">#}
+{#                <h5 class="modal-title">#}
+{#                    <i class="fas fa-archive"></i> Bulk Download Options#}
+{#                </h5>#}
+{#                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>#}
+{#            </div>#}
+{#            <div class="modal-body">#}
+{#                <div class="row">#}
+{#                    <div class="col-md-6">#}
+{#                        <div class="bulk-option text-center p-4 border rounded mb-3">#}
+{#                            <i class="fas fa-briefcase fa-3x text-primary mb-3"></i>#}
+{#                            <h6>By Job Application</h6>#}
+{#                            <p class="text-muted small">Download all documents for specific job applications</p>#}
+{#                            <button class="btn btn-primary" onclick="selectApplicationsForDownload()">#}
+{#                                <i class="fas fa-briefcase"></i> Select Applications#}
+{#                            </button>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="col-md-6">#}
+{#                        <div class="bulk-option text-center p-4 border rounded mb-3">#}
+{#                            <i class="fas fa-file-alt fa-3x text-success mb-3"></i>#}
+{#                            <h6>By Document Type</h6>#}
+{#                            <p class="text-muted small">Download all documents of specific types (resumes, cover letters, etc.)</p>#}
+{#                            <button class="btn btn-success" onclick="selectDocumentTypesForDownload()">#}
+{#                                <i class="fas fa-file-alt"></i> Select Types#}
+{#                            </button>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="row">#}
+{#                    <div class="col-md-6">#}
+{#                        <div class="bulk-option text-center p-4 border rounded">#}
+{#                            <i class="fas fa-calendar fa-3x text-warning mb-3"></i>#}
+{#                            <h6>By Date Range</h6>#}
+{#                            <p class="text-muted small">Download documents created within a specific time period</p>#}
+{#                            <button class="btn btn-warning" onclick="selectDateRangeForDownload()">#}
+{#                                <i class="fas fa-calendar"></i> Select Dates#}
+{#                            </button>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="col-md-6">#}
+{#                        <div class="bulk-option text-center p-4 border rounded">#}
+{#                            <i class="fas fa-globe fa-3x text-info mb-3"></i>#}
+{#                            <h6>Everything</h6>#}
+{#                            <p class="text-muted small">Download your complete document portfolio</p>#}
+{#                            <button class="btn btn-info" onclick="downloadAllDocuments()">#}
+{#                                <i class="fas fa-download"></i> Download All#}
+{#                            </button>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.download-icon {#}
+{#    background: linear-gradient(135deg, #f8f9fa, #e9ecef);#}
+{#    border-radius: 50%;#}
+{#    width: 120px;#}
+{#    height: 120px;#}
+{#    display: flex;#}
+{#    align-items: center;#}
+{#    justify-content: center;#}
+{#    margin: 0 auto;#}
+{#    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);#}
+{#}#}
+{##}
+{#.features-list {#}
+{#    margin: 20px 0;#}
+{#}#}
+{##}
+{#.application-card {#}
+{#    transition: all 0.3s ease;#}
+{#    background-color: #f8f9fa;#}
+{#}#}
+{##}
+{#.application-card:hover {#}
+{#    background-color: #e9ecef;#}
+{#    transform: translateY(-2px);#}
+{#    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);#}
+{#}#}
+{##}
+{#.stat-card {#}
+{#    transition: all 0.3s ease;#}
+{#    margin-bottom: 20px;#}
+{#}#}
+{##}
+{#.stat-card:hover {#}
+{#    transform: translateY(-2px);#}
+{#    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);#}
+{#}#}
+{##}
+{#.stat-card h3 {#}
+{#    margin-bottom: 10px;#}
+{#    font-weight: bold;#}
+{#}#}
+{##}
+{#.bulk-option {#}
+{#    transition: all 0.3s ease;#}
+{#    cursor: pointer;#}
+{#}#}
+{##}
+{#.bulk-option:hover {#}
+{#    background-color: #f8f9fa;#}
+{#    transform: translateY(-2px);#}
+{#    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);#}
+{#}#}
+{##}
+{#.empty-state {#}
+{#    background-color: #f8f9fa;#}
+{#    border-radius: 10px;#}
+{#    margin: 20px 0;#}
+{#}#}
+{##}
+{#.card {#}
+{#    border-radius: 15px;#}
+{#    transition: all 0.3s ease;#}
+{#}#}
+{##}
+{#.card:hover {#}
+{#    transform: translateY(-2px);#}
+{#    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);#}
+{#}#}
+{##}
+{#@media (max-width: 768px) {#}
+{#    .btn-group-vertical .btn {#}
+{#        font-size: 0.8rem;#}
+{#        padding: 0.25rem 0.5rem;#}
+{#    }#}
+{##}
+{#    .stat-card {#}
+{#        margin-bottom: 15px;#}
+{#    }#}
+{##}
+{#    .download-icon {#}
+{#        width: 80px;#}
+{#        height: 80px;#}
+{#    }#}
+{##}
+{#    .download-icon i {#}
+{#        font-size: 2rem;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#function showBulkDownloadOptions() {#}
+{#    $('#bulkDownloadModal').modal('show');#}
+{#}#}
+{##}
+{#function downloadApplicationDocs(applicationId) {#}
+{#    // Show loading#}
+{#    Swal.fire({#}
+{#        title: 'Preparing Download',#}
+{#        text: 'Creating ZIP file with all documents...',#}
+{#        allowOutsideClick: false,#}
+{#        showConfirmButton: false,#}
+{#        willOpen: () => {#}
+{#            Swal.showLoading();#}
+{#        }#}
+{#    });#}
+{##}
+{#    // Create form and submit#}
+{#    const form = document.createElement('form');#}
+{#    form.method = 'POST';#}
+{#    form.action = '{% url "documents:bulk_download" %}';#}
+{##}
+{#    const csrfInput = document.createElement('input');#}
+{#    csrfInput.type = 'hidden';#}
+{#    csrfInput.name = 'csrfmiddlewaretoken';#}
+{#    csrfInput.value = $('[name=csrfmiddlewaretoken]').val();#}
+{##}
+{#    const appInput = document.createElement('input');#}
+{#    appInput.type = 'hidden';#}
+{#    appInput.name = 'application_id';#}
+{#    appInput.value = applicationId;#}
+{##}
+{#    form.appendChild(csrfInput);#}
+{#    form.appendChild(appInput);#}
+{#    document.body.appendChild(form);#}
+{##}
+{#    form.submit();#}
+{#    document.body.removeChild(form);#}
+{##}
+{#    // Hide loading after a delay#}
+{#    setTimeout(() => {#}
+{#        Swal.close();#}
+{#    }, 2000);#}
+{#}#}
+{##}
+{#function generateDocs(applicationId) {#}
+{#    Swal.fire({#}
+{#        title: 'Generate Documents?',#}
+{#        text: 'This will create personalized documents for this job application.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Generate',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            $.post(`/documents/generate/${applicationId}/`, {#}
+{#                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()#}
+{#            }).done(function(response) {#}
+{#                Swal.fire('Success!', 'Document generation started. You will be notified when complete.', 'success')#}
+{#                .then(() => {#}
+{#                    setTimeout(() => location.reload(), 2000);#}
+{#                });#}
+{#            }).fail(function() {#}
+{#                Swal.fire('Error!', 'Failed to start document generation.', 'error');#}
+{#            });#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function selectApplicationsForDownload() {#}
+{#    // In a real implementation, this would show a modal with application checkboxes#}
+{#    Swal.fire({#}
+{#        title: 'Feature Coming Soon',#}
+{#        text: 'Application-specific bulk download will be available soon.',#}
+{#        icon: 'info'#}
+{#    });#}
+{#}#}
+{##}
+{#function selectDocumentTypesForDownload() {#}
+{#    // In a real implementation, this would show a modal with document type checkboxes#}
+{#    Swal.fire({#}
+{#        title: 'Feature Coming Soon',#}
+{#        text: 'Document type filtering will be available soon.',#}
+{#        icon: 'info'#}
+{#    });#}
+{#}#}
+{##}
+{#function selectDateRangeForDownload() {#}
+{#    // In a real implementation, this would show a date range picker#}
+{#    Swal.fire({#}
+{#        title: 'Feature Coming Soon',#}
+{#        text: 'Date range filtering will be available soon.',#}
+{#        icon: 'info'#}
+{#    });#}
+{#}#}
+{##}
+{#function downloadAllDocuments() {#}
+{#    Swal.fire({#}
+{#        title: 'Download All Documents?',#}
+{#        text: 'This will create a ZIP file with all your documents. It may take a few minutes.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Download All',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            // Show loading#}
+{#            Swal.fire({#}
+{#                title: 'Creating Archive',#}
+{#                text: 'Please wait while we prepare your complete document archive...',#}
+{#                allowOutsideClick: false,#}
+{#                showConfirmButton: false,#}
+{#                willOpen: () => {#}
+{#                    Swal.showLoading();#}
+{#                }#}
+{#            });#}
+{##}
+{#            // Submit form for all documents#}
+{#            const form = document.createElement('form');#}
+{#            form.method = 'POST';#}
+{#            form.action = '{% url "documents:bulk_download" %}';#}
+{##}
+{#            const csrfInput = document.createElement('input');#}
+{#            csrfInput.type = 'hidden';#}
+{#            csrfInput.name = 'csrfmiddlewaretoken';#}
+{#            csrfInput.value = $('[name=csrfmiddlewaretoken]').val();#}
+{##}
+{#            form.appendChild(csrfInput);#}
+{#            document.body.appendChild(form);#}
+{##}
+{#            form.submit();#}
+{#            document.body.removeChild(form);#}
+{##}
+{#            // Hide loading after delay#}
+{#            setTimeout(() => {#}
+{#                Swal.close();#}
+{#            }, 3000);#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Initialize tooltips#}
+{#document.addEventListener('DOMContentLoaded', function() {#}
+{#    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));#}
+{#    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {#}
+{#        return new bootstrap.Tooltip(tooltipTriggerEl);#}
+{#    });#}
+{#});#}
+{#</script>#}
+{#{% endblock %}#}

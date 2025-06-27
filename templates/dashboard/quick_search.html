@@ -1,0 +1,155 @@
+<!-- templates/dashboard/quick_search.html -->
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Quick Job Search - Job Automation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    .search-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-xl);
+        border: 1px solid var(--border-primary);
+    }
+
+    .search-header {
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .form-section {
+        margin-bottom: var(--space-xl);
+    }
+
+    .form-section-title {
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-md);
+        display: flex;
+        align-items: center;
+    }
+
+    .form-section-title i {
+        margin-right: var(--space-sm);
+        color: var(--primary-500);
+    }
+
+    .search-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: var(--space-xl);
+    }
+
+    .cancel-btn {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-secondary);
+        padding: var(--space-sm) var(--space-lg);
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition-normal);
+    }
+
+    .cancel-btn:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    /* Enhance form styling */
+    .form-check-input:checked {
+        background-color: var(--primary-500);
+        border-color: var(--primary-600);
+    }
+
+    .form-select {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-primary);
+    }
+
+    .form-control {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-primary);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-500);
+        box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    .form-check-label {
+        color: var(--text-secondary);
+    }
+
+    .form-text {
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="search-card">
+                <div class="search-header">
+                    <h3 class="text-center mb-2">
+                        <i class="fas fa-bolt text-warning me-2"></i>
+                        Quick Job Search
+                    </h3>
+                    <p class="text-center text-muted">
+                        Quickly find job opportunities across multiple platforms
+                    </p>
+                </div>
+
+                <form method="post" action="{% url 'dashboard:quick_search' %}">
+                    {% csrf_token %}
+
+                    {% crispy form %}
+
+                    <div class="search-actions">
+                        <a href="{% url 'dashboard:dashboard' %}" class="cancel-btn">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Show/hide new status field based on action selection
+        $('#id_config').change(function() {
+            if ($(this).val()) {
+                // Hide the override fields if a config is selected
+                $('#div_id_job_categories, #div_id_locations, #div_id_remote_only, #div_id_salary_min').fadeOut();
+            } else {
+                // Show the override fields if no config is selected
+                $('#div_id_job_categories, #div_id_locations, #div_id_remote_only, #div_id_salary_min').fadeIn();
+            }
+        });
+
+        // Trigger initially to set correct state
+        $('#id_config').trigger('change');
+
+        // Enhance select controls
+        $('.form-select').select2({
+            theme: 'dark',
+            dropdownParent: $('body')
+        });
+    });
+</script>
+{% endblock %}

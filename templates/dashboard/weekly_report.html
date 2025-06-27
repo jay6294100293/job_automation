@@ -1,0 +1,160 @@
+<!-- ================================== -->
+<!-- templates/dashboard/weekly_report.html -->
+<!-- ================================== -->
+
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Weekly Report - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="display-6 fw-bold text-primary">
+                <i class="fas fa-chart-bar"></i> Weekly Performance Report
+            </h2>
+            <p class="text-muted">Week of {{ week_start|date:"M d" }} - {{ week_end|date:"M d, Y" }}</p>
+        </div>
+    </div>
+
+    <!-- Weekly Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ this_week.applications }}</h3>
+                    <p class="text-muted mb-1">Applications</p>
+                    {% if changes.applications > 0 %}
+                        <small class="text-success">+{{ changes.applications }}% from last week</small>
+                    {% elif changes.applications < 0 %}
+                        <small class="text-danger">{{ changes.applications }}% from last week</small>
+                    {% else %}
+                        <small class="text-muted">No change from last week</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ this_week.responses }}</h3>
+                    <p class="text-muted mb-1">Responses</p>
+                    {% if changes.responses > 0 %}
+                        <small class="text-success">+{{ changes.responses }}% from last week</small>
+                    {% elif changes.responses < 0 %}
+                        <small class="text-danger">{{ changes.responses }}% from last week</small>
+                    {% else %}
+                        <small class="text-muted">No change from last week</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ this_week.interviews }}</h3>
+                    <p class="text-muted mb-1">Interviews</p>
+                    {% if changes.interviews > 0 %}
+                        <small class="text-success">+{{ changes.interviews }}% from last week</small>
+                    {% elif changes.interviews < 0 %}
+                        <small class="text-danger">{{ changes.interviews }}% from last week</small>
+                    {% else %}
+                        <small class="text-muted">No change from last week</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-info">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ this_week.offers }}</h3>
+                    <p class="text-muted mb-1">Offers</p>
+                    {% if changes.offers > 0 %}
+                        <small class="text-success">+{{ changes.offers }}% from last week</small>
+                    {% elif changes.offers < 0 %}
+                        <small class="text-danger">{{ changes.offers }}% from last week</small>
+                    {% else %}
+                        <small class="text-muted">No change from last week</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goal Progress -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-bullseye"></i> Weekly Goals Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for metric, achievement in achievements.items %}
+                        <div class="col-md-3 mb-3">
+                            <h6>{{ metric|title }}</h6>
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar {% if achievement >= 100 %}bg-success{% elif achievement >= 75 %}bg-warning{% else %}bg-danger{% endif %}"
+                                     role="progressbar" style="width: {{ achievement }}%">
+                                    {{ achievement }}%
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ this_week|getattr:metric }}/{{ goals|getattr:metric }} goal</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Applications -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> This Week's Applications</h5>
+                </div>
+                <div class="card-body">
+                    {% for app in weekly_applications %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <div>
+                            <strong>{{ app.company_name }}</strong>
+                            <br><small class="text-muted">{{ app.job_title }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-{% if app.application_status == 'applied' %}primary{% elif app.application_status == 'responded' %}success{% elif app.application_status == 'interview' %}warning{% elif app.application_status == 'offer' %}info{% else %}secondary{% endif %}">
+                                {{ app.application_status|title }}
+                            </span>
+                            <br><small class="text-muted">{{ app.created_at|date:"M d" }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No applications this week.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Companies -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5><i class="fas fa-building"></i> Top Companies</h5>
+                </div>
+                <div class="card-body">
+                    {% for company in top_companies %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ company.company_name }}</span>
+                        <span class="badge bg-secondary">{{ company.count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No applications to analyze.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

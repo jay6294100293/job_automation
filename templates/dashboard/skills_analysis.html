@@ -1,0 +1,116 @@
+<!-- templates/dashboard/skills_analysis.html -->
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Skills Analysis - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="display-6 fw-bold text-primary">
+                <i class="fas fa-chart-line"></i> Skills Analysis & Development
+            </h2>
+            <p class="text-muted">Analyze your skills against market demand and get personalized recommendations</p>
+        </div>
+    </div>
+
+    <!-- Skills Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ skills_you_have|length }}</h3>
+                    <p class="text-muted mb-0">Skills You Have</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ skills_to_develop|length }}</h3>
+                    <p class="text-muted mb-0">Skills to Develop</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card border-info">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ total_applications_analyzed }}</h3>
+                    <p class="text-muted mb-0">Applications Analyzed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Skills You Have -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-check-circle"></i> Skills to Highlight</h5>
+                </div>
+                <div class="card-body">
+                    {% for skill in skills_you_have %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-success">{{ skill.skill|title }}</span>
+                        <small class="text-muted">{{ skill.demand }} job(s) require this</small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No matching skills found in recent applications.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills to Develop -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-white">
+                    <h5><i class="fas fa-graduation-cap"></i> Skills to Develop</h5>
+                </div>
+                <div class="card-body">
+                    {% for skill in skills_to_develop %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-warning">{{ skill.skill|title }}</span>
+                        <small class="text-muted">{{ skill.demand }} job(s) require this</small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">Great! You have all the skills required for your recent applications.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommended Certifications -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-certificate"></i> Recommended Certifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for cert in recommended_certifications %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">{{ cert }}</h6>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">Learn More</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <p class="text-muted">No specific certifications recommended at this time.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

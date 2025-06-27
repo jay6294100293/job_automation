@@ -1,0 +1,608 @@
+{
+  "name": "Django Deployment & Server Monitoring",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "deployment-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-deployment",
+      "name": "Deployment Status Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 200],
+      "webhookId": "deployment-status-webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST", 
+        "path": "test-results",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-tests",
+      "name": "Test Results Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 400],
+      "webhookId": "test-results-webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "server-metrics",
+        "responseMode": "responseNode", 
+        "options": {}
+      },
+      "id": "webhook-metrics",
+      "name": "Server Metrics Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 600],
+      "webhookId": "server-metrics-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse deployment status and enrich data\nconst deploymentData = items[0].json;\n\n// Add timestamp and format data\ndeploymentData.received_at = new Date().toISOString();\ndeploymentData.status_emoji = deploymentData.status === 'success' ? '✅' : \n                             deploymentData.status === 'failed' ? '❌' : \n                             deploymentData.status === 'in_progress' ? '🔄' : '⚠️';\n\n// Determine severity\ndeploymentData.severity = deploymentData.status === 'failed' ? 'high' : \n                         deploymentData.status === 'success' ? 'low' : 'medium';\n\n// Create notification message\ndeploymentData.notification_message = `${deploymentData.status_emoji} Deployment ${deploymentData.status.toUpperCase()}\n📦 Repository: ${deploymentData.repository || 'job_automation'}\n🌿 Branch: ${deploymentData.branch || 'main'}\n📝 Commit: ${deploymentData.commit_sha?.substring(0, 8) || 'unknown'}\n⏱️ Duration: ${deploymentData.duration || 'N/A'}\n🔗 URL: ${deploymentData.deployment_url || 'https://ai.jobautomation.me'}`;\n\nreturn [deploymentData];"
+      },
+      "id": "process-deployment",
+      "name": "Process Deployment Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse test results and calculate metrics\nconst testData = items[0].json;\n\n// Add timestamp\ntestData.received_at = new Date().toISOString();\n\n// Calculate test metrics\nconst totalTests = (testData.passed || 0) + (testData.failed || 0) + (testData.skipped || 0);\nconst passRate = totalTests > 0 ? ((testData.passed || 0) / totalTests * 100).toFixed(2) : 0;\n\ntestData.total_tests = totalTests;\ntestData.pass_rate = passRate;\ntestData.status_emoji = testData.failed > 0 ? '❌' : testData.passed > 0 ? '✅' : '⚠️';\n\n// Determine test health\ntestData.health_status = testData.failed > 0 ? 'unhealthy' : \n                        passRate < 80 ? 'warning' : 'healthy';\n\n// Create test summary\ntestData.summary = `${testData.status_emoji} Tests: ${testData.passed}✅ ${testData.failed}❌ ${testData.skipped}⏭️\n📊 Pass Rate: ${passRate}%\n⏱️ Duration: ${testData.duration || 'N/A'}\n📋 Coverage: ${testData.coverage || 'N/A'}%`;\n\nreturn [testData];"
+      },
+      "id": "process-tests",
+      "name": "Process Test Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse server metrics and analyze health\nconst metricsData = items[0].json;\n\n// Add timestamp\nmetricsData.received_at = new Date().toISOString();\n\n// Analyze resource usage\nconst cpuUsage = parseFloat(metricsData.cpu_usage || 0);\nconst memoryUsage = parseFloat(metricsData.memory_usage || 0);\nconst diskUsage = parseFloat(metricsData.disk_usage || 0);\n\n// Determine health status\nmetricsData.cpu_status = cpuUsage > 90 ? 'critical' : cpuUsage > 70 ? 'warning' : 'normal';\nmetricsData.memory_status = memoryUsage > 90 ? 'critical' : memoryUsage > 80 ? 'warning' : 'normal';\nmetricsData.disk_status = diskUsage > 90 ? 'critical' : diskUsage > 80 ? 'warning' : 'normal';\n\n// Overall health\nconst statuses = [metricsData.cpu_status, metricsData.memory_status, metricsData.disk_status];\nmetricsData.overall_health = statuses.includes('critical') ? 'critical' : \n                            statuses.includes('warning') ? 'warning' : 'healthy';\n\n// Create metrics summary\nmetricsData.summary = `🖥️ Server Health: ${metricsData.overall_health.toUpperCase()}\n💾 CPU: ${cpuUsage}% | Memory: ${memoryUsage}% | Disk: ${diskUsage}%\n🐳 Containers: ${metricsData.containers_running || 0}/${metricsData.containers_total || 0}\n📊 Load: ${metricsData.load_average || 'N/A'}\n🌐 Uptime: ${metricsData.uptime || 'N/A'}`;\n\nreturn [metricsData];"
+      },
+      "id": "process-metrics",
+      "name": "Process Server Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "deployment-critical",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "check-deployment-status",
+      "name": "Check Deployment Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "tests-failed",
+              "leftValue": "={{ $json.failed }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "check-test-results",
+      "name": "Check Test Results",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "server-critical",
+              "leftValue": "={{ $json.overall_health }}",
+              "rightValue": "critical",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "check-server-health",
+      "name": "Check Server Health", 
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [800, 600]
+    },
+    {
+      "parameters": {
+        "url": "https://discord.com/api/webhooks/YOUR_DISCORD_WEBHOOK",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "🚨 **CRITICAL DEPLOYMENT FAILURE** 🚨"
+            },
+            {
+              "name": "embeds",
+              "value": "=[{\n  \"title\": \"Deployment Failed\",\n  \"description\": \"{{ $json.notification_message }}\",\n  \"color\": 15158332,\n  \"timestamp\": \"{{ $json.received_at }}\",\n  \"fields\": [\n    {\n      \"name\": \"Repository\",\n      \"value\": \"{{ $json.repository || 'job_automation' }}\",\n      \"inline\": true\n    },\n    {\n      \"name\": \"Branch\",\n      \"value\": \"{{ $json.branch || 'main' }}\",\n      \"inline\": true\n    },\n    {\n      \"name\": \"Error\",\n      \"value\": \"{{ $json.error_message || 'Deployment failed' }}\",\n      \"inline\": false\n    }\n  ]\n}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "alert-deployment-failure",
+      "name": "Alert: Deployment Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 100]
+    },
+    {
+      "parameters": {
+        "url": "https://discord.com/api/webhooks/YOUR_DISCORD_WEBHOOK",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type", 
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "❌ **TEST FAILURES DETECTED** ❌"
+            },
+            {
+              "name": "embeds",
+              "value": "=[{\n  \"title\": \"Test Failures\",\n  \"description\": \"{{ $json.summary }}\",\n  \"color\": 15105570,\n  \"timestamp\": \"{{ $json.received_at }}\",\n  \"fields\": [\n    {\n      \"name\": \"Failed Tests\",\n      \"value\": \"{{ $json.failed }}\",\n      \"inline\": true\n    },\n    {\n      \"name\": \"Pass Rate\",\n      \"value\": \"{{ $json.pass_rate }}%\",\n      \"inline\": true\n    },\n    {\n      \"name\": \"Coverage\",\n      \"value\": \"{{ $json.coverage || 'N/A' }}%\",\n      \"inline\": true\n    }\n  ]\n}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "alert-test-failure",
+      "name": "Alert: Test Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://discord.com/api/webhooks/YOUR_DISCORD_WEBHOOK",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "🚨 **CRITICAL SERVER ALERT** 🚨"
+            },
+            {
+              "name": "embeds",
+              "value": "=[{\n  \"title\": \"Server Health Critical\",\n  \"description\": \"{{ $json.summary }}\",\n  \"color\": 10038562,\n  \"timestamp\": \"{{ $json.received_at }}\",\n  \"fields\": [\n    {\n      \"name\": \"CPU Usage\",\n      \"value\": \"{{ $json.cpu_usage }}% ({{ $json.cpu_status }})\",\n      \"inline\": true\n    },\n    {\n      \"name\": \"Memory Usage\",\n      \"value\": \"{{ $json.memory_usage }}% ({{ $json.memory_status }})\",\n      \"inline\": true\n    },\n    {\n      \"name\": \"Disk Usage\",\n      \"value\": \"{{ $json.disk_usage }}% ({{ $json.disk_status }})\",\n      \"inline\": true\n    }\n  ]\n}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "alert-server-critical",
+      "name": "Alert: Server Critical",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 500]
+    },
+    {
+      "parameters": {
+        "url": "https://ai.jobautomation.me/api/monitoring/deployment/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-Key",
+              "value": "={{ $credentials.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "deployment_status"
+            },
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify($json) }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $json.received_at }}"
+            },
+            {
+              "name": "severity",
+              "value": "={{ $json.severity }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "store-deployment-data",
+      "name": "Store Deployment Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 700]
+    },
+    {
+      "parameters": {
+        "url": "https://ai.jobautomation.me/api/monitoring/tests/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-Key",
+              "value": "={{ $credentials.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "test_results"
+            },
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify($json) }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $json.received_at }}"
+            },
+            {
+              "name": "health_status",
+              "value": "={{ $json.health_status }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "store-test-data",
+      "name": "Store Test Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 900]
+    },
+    {
+      "parameters": {
+        "url": "https://ai.jobautomation.me/api/monitoring/metrics/",
+        "authentication": "genericCredentialType", 
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-Key",
+              "value": "={{ $credentials.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "server_metrics"
+            },
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify($json) }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $json.received_at }}"
+            },
+            {
+              "name": "overall_health",
+              "value": "={{ $json.overall_health }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "store-metrics-data",
+      "name": "Store Metrics Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 1100]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  \"status\": \"received\",\n  \"event_type\": \"deployment_status\",\n  \"processed_at\": new Date().toISOString(),\n  \"severity\": $json.severity,\n  \"message\": \"Deployment status processed successfully\"\n}) }}"
+      },
+      "id": "respond-deployment",
+      "name": "Respond: Deployment",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1400, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  \"status\": \"received\",\n  \"event_type\": \"test_results\",\n  \"processed_at\": new Date().toISOString(),\n  \"health_status\": $json.health_status,\n  \"message\": \"Test results processed successfully\"\n}) }}"
+      },
+      "id": "respond-tests",
+      "name": "Respond: Tests",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1400, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  \"status\": \"received\",\n  \"event_type\": \"server_metrics\",\n  \"processed_at\": new Date().toISOString(),\n  \"overall_health\": $json.overall_health,\n  \"message\": \"Server metrics processed successfully\"\n}) }}"
+      },
+      "id": "respond-metrics",
+      "name": "Respond: Metrics",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1400, 600]
+    }
+  ],
+  "connections": {
+    "Deployment Status Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Deployment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Results Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Test Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Server Metrics Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Server Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Deployment Data": {
+      "main": [
+        [
+          {
+            "node": "Check Deployment Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Store Deployment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Test Results": {
+      "main": [
+        [
+          {
+            "node": "Check Test Results",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Store Test Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Server Metrics": {
+      "main": [
+        [
+          {
+            "node": "Check Server Health",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Store Metrics Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Deployment Status": {
+      "main": [
+        [
+          {
+            "node": "Alert: Deployment Failure",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Test Results": {
+      "main": [
+        [
+          {
+            "node": "Alert: Test Failure",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Tests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Server Health": {
+      "main": [
+        [
+          {
+            "node": "Alert: Server Critical",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Deployment Data": {
+      "main": [
+        [
+          {
+            "node": "Respond: Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Test Data": {
+      "main": [
+        [
+          {
+            "node": "Respond: Tests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Metrics Data": {
+      "main": [
+        [
+          {
+            "node": "Respond: Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,2595 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Job Automation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+}
+
+.container-fluid {
+    padding: var(--space-xl);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ===============================================
+   HEADER SECTION
+   =============================================== */
+.dashboard-header {
+    margin-bottom: var(--space-2xl);
+    animation: slideUp 0.6s ease forwards;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+}
+
+.header-text h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-sm) 0;
+    letter-spacing: -0.025em;
+}
+
+.header-text p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+/* ===============================================
+   STATISTICS CARDS
+   =============================================== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.6s ease forwards;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-500), var(--info-500));
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-secondary);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-md);
+}
+
+.stat-info h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 var(--space-xs) 0;
+    color: var(--text-primary);
+}
+
+.stat-info p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 500;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-left: auto;
+}
+
+.stat-icon.primary { background: rgba(79, 70, 229, 0.1); color: var(--primary-500); }
+.stat-icon.success { background: rgba(16, 185, 129, 0.1); color: var(--success-500); }
+.stat-icon.warning { background: rgba(245, 158, 11, 0.1); color: var(--warning-500); }
+.stat-icon.info { background: rgba(14, 165, 233, 0.1); color: var(--info-500); }
+
+.stat-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.stat-footer i {
+    font-size: 0.875rem;
+}
+
+/* ===============================================
+   CARDS AND CONTENT
+   =============================================== */
+.dashboard-card,
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-card::before,
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%);
+}
+
+.dashboard-card:hover,
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-primary);
+}
+
+.card-header {
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    font-weight: 700;
+    backdrop-filter: blur(15px);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 1.5rem;
+}
+
+.card-header h1,
+.card-header h2,
+.card-header h3,
+.card-header h4,
+.card-header h5,
+.card-header h6 {
+    color: var(--text-primary);
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.card-body {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 1.5rem;
+    backdrop-filter: blur(15px);
+}
+
+.card-body h1,
+.card-body h2,
+.card-body h3,
+.card-body h4,
+.card-body h5,
+.card-body h6 {
+    color: var(--text-primary);
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    margin-bottom: 0.75rem;
+}
+
+.card-body p {
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+}
+
+/* ===============================================
+   MAIN CONTENT GRID
+   =============================================== */
+.main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-2xl);
+}
+
+/* ===============================================
+   PIPELINE VISUALIZATION
+   =============================================== */
+.pipeline-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: slideUp 0.8s ease forwards;
+}
+
+.pipeline-header {
+    background: var(--bg-elevated);
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pipeline-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.pipeline-content {
+    padding: var(--space-lg);
+}
+
+.pipeline-stages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.pipeline-stage {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    text-align: center;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.pipeline-stage::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    transition: opacity var(--transition-normal);
+    opacity: 0;
+}
+
+.pipeline-stage:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.pipeline-stage:hover::before {
+    opacity: 1;
+}
+
+.pipeline-stage.found::before { background: var(--text-muted); }
+.pipeline-stage.applied::before { background: var(--primary-500); }
+.pipeline-stage.responded::before { background: var(--success-500); }
+.pipeline-stage.interview::before { background: var(--warning-500); }
+.pipeline-stage.offer::before { background: var(--info-500); }
+
+.stage-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+}
+
+.stage-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.found .stage-number { color: var(--text-muted); }
+.applied .stage-number { color: var(--primary-500); }
+.responded .stage-number { color: var(--success-500); }
+.interview .stage-number { color: var(--warning-500); }
+.offer .stage-number { color: var(--info-500); }
+
+/* ===============================================
+   RECENT APPLICATIONS
+   =============================================== */
+.recent-applications {
+    margin-top: var(--space-xl);
+}
+
+.applications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+}
+
+.applications-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.application-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+    transition: all var(--transition-normal);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.application-item:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(2px);
+}
+
+.application-info h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 var(--space-xs) 0;
+    color: var(--text-primary);
+}
+
+.application-info p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.application-meta {
+    text-align: right;
+}
+
+.status-badge {
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+    display: inline-block;
+}
+
+.status-badge.applied { background: rgba(79, 70, 229, 0.1); color: var(--primary-500); }
+.status-badge.responded { background: rgba(16, 185, 129, 0.1); color: var(--success-500); }
+.status-badge.interview { background: rgba(245, 158, 11, 0.1); color: var(--warning-500); }
+.status-badge.offer { background: rgba(14, 165, 233, 0.1); color: var(--info-500); }
+
+.application-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ===============================================
+   SIDEBAR CONTENT
+   =============================================== */
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
+/* ===============================================
+   PROFILE HEALTH CARD
+   =============================================== */
+.profile-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: slideUp 1s ease forwards;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, var(--success-500), var(--success-600));
+    padding: var(--space-lg);
+    color: white;
+}
+
+.profile-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.profile-content {
+    padding: var(--space-lg);
+    text-align: center;
+}
+
+.progress-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: conic-gradient(var(--success-500) 0deg, var(--success-500) 270deg, var(--bg-elevated) 270deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-md);
+    position: relative;
+}
+
+.progress-circle::before {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--bg-card);
+}
+
+.progress-percentage {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 1;
+}
+
+.profile-status {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-lg);
+    font-weight: 500;
+}
+
+.missing-fields {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--warning-500);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    text-align: left;
+}
+
+.missing-fields h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--warning-500);
+    margin: 0 0 var(--space-sm) 0;
+}
+
+.missing-fields ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.missing-fields li {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: var(--space-xs) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.missing-fields li::before {
+    content: '•';
+    color: var(--warning-500);
+    font-weight: bold;
+}
+
+/* ===============================================
+   NOTIFICATIONS CARD
+   =============================================== */
+.notifications-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: slideUp 1.2s ease forwards;
+    height: fit-content;
+}
+
+.notifications-header {
+    background: var(--bg-elevated);
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notifications-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.notification-badge {
+    background: var(--danger-500);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+.notifications-content {
+    padding: var(--space-lg);
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+.notifications-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.notifications-empty i {
+    font-size: 2rem;
+    margin-bottom: var(--space-md);
+    opacity: 0.5;
+}
+
+/* ===============================================
+   QUICK ACTIONS
+   =============================================== */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.quick-action {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all var(--transition-normal);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    animation: slideUp 0.6s ease forwards;
+}
+
+.quick-action:hover {
+    background: var(--bg-elevated);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.quick-action-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all var(--transition-normal);
+}
+
+.quick-action:nth-child(1) .quick-action-icon {
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary-500);
+}
+
+.quick-action:nth-child(2) .quick-action-icon {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-500);
+}
+
+.quick-action:nth-child(3) .quick-action-icon {
+    background: rgba(14, 165, 233, 0.1);
+    color: var(--info-500);
+}
+
+.quick-action:nth-child(4) .quick-action-icon {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-500);
+}
+
+.quick-action:nth-child(5) .quick-action-icon {
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--purple-500);
+}
+
+.quick-action:nth-child(6) .quick-action-icon {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-500);
+}
+
+.quick-action:hover .quick-action-icon {
+    transform: scale(1.1);
+}
+
+.quick-action-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.quick-action-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* ===============================================
+   BUTTONS
+   =============================================== */
+.btn {
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    transition: all var(--transition-normal);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: var(--primary-500);
+    color: white;
+    border-color: var(--primary-500);
+}
+
+.btn-primary:hover {
+    background: var(--primary-600);
+    border-color: var(--primary-600);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-outline-primary {
+    background: transparent;
+    color: var(--primary-500);
+    border-color: var(--primary-500);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-500);
+    color: white;
+}
+
+.btn-success {
+    background: var(--success-500);
+    color: white;
+    border-color: var(--success-500);
+}
+
+.btn-success:hover {
+    background: var(--success-600);
+    border-color: var(--success-600);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-sm {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.75rem;
+}
+
+/* ===============================================
+   TEXT AND TYPOGRAPHY
+   =============================================== */
+.text-light,
+.text-white {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+    font-weight: 500;
+}
+
+.text-primary {
+    color: var(--primary-500) !important;
+    font-weight: 700;
+}
+
+.text-success {
+    color: var(--success-500) !important;
+    font-weight: 700;
+}
+
+.text-warning {
+    color: var(--warning-500) !important;
+    font-weight: 700;
+}
+
+.text-info {
+    color: var(--info-500) !important;
+    font-weight: 700;
+}
+
+small,
+.small {
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* ===============================================
+   BADGES AND STATUS
+   =============================================== */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.8rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.badge.bg-primary {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+}
+.badge.bg-success {
+    background: linear-gradient(135deg, var(--success-500) 0%, var(--success-600) 100%);
+}
+.badge.bg-warning {
+    background: linear-gradient(135deg, var(--warning-500) 0%, var(--warning-600) 100%);
+}
+.badge.bg-info {
+    background: linear-gradient(135deg, var(--info-500) 0%, var(--info-600) 100%);
+}
+.badge.bg-secondary {
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, #6c757d 100%);
+}
+
+/* ===============================================
+   ANIMATIONS
+   =============================================== */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* ===============================================
+   RESPONSIVE DESIGN
+   =============================================== */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: var(--space-md);
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .header-actions {
+        justify-content: center;
+    }
+
+    .main-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-md);
+    }
+
+    .pipeline-stages {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: var(--space-sm);
+    }
+
+    .quick-actions-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: var(--space-sm);
+    }
+
+    .quick-action {
+        padding: var(--space-md);
+    }
+
+    .quick-action-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-text h1 {
+        font-size: 1.5rem;
+    }
+
+    .stat-card {
+        padding: var(--space-md);
+    }
+
+    .stat-info h3 {
+        font-size: 1.5rem;
+    }
+
+    .pipeline-card,
+    .profile-card,
+    .notifications-card {
+        margin-bottom: var(--space-lg);
+    }
+}
+
+/* ===============================================
+   UTILITY CLASSES
+   =============================================== */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.justify-content-between { justify-content: space-between; }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }
+
+.mb-0 { margin-bottom: 0; }
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.mb-xl { margin-bottom: var(--space-xl); }
+
+.mt-auto { margin-top: auto; }
+.ml-auto { margin-left: auto; }
+
+.w-100 { width: 100%; }
+.h-100 { height: 100%; }
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="header-text">
+                <h1>Welcome back, {{ user.first_name|default:user.username }}! 👋</h1>
+                <p>Here's your job search progress and what needs your attention</p>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'dashboard:quick_search' %}" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Emergency Search
+                </a>
+                <a href="{% url 'jobs:applications' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-project-diagram"></i>
+                    View Pipeline
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card" style="animation-delay: 0.1s;">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>{{ total_applications|default:0 }}</h3>
+                    <p>Total Applications</p>
+                </div>
+                <div class="stat-icon primary">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <i class="fas fa-arrow-up"></i>
+                <span>{{ applications_this_week|default:0 }} this week</span>
+            </div>
+        </div>
+
+        <div class="stat-card" style="animation-delay: 0.2s;">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>{{ response_rate|floatformat:1|default:0.0 }}%</h3>
+                    <p>Response Rate</p>
+                </div>
+                <div class="stat-icon success">
+                    <i class="fas fa-reply"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <i class="fas fa-chart-line"></i>
+                <span>Industry avg: 2-5%</span>
+            </div>
+        </div>
+
+        <div class="stat-card" style="animation-delay: 0.3s;">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>{{ interviews_scheduled|default:0 }}</h3>
+                    <p>Interviews Scheduled</p>
+                </div>
+                <div class="stat-icon warning">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <i class="fas fa-clock"></i>
+                <span>Prepare now</span>
+            </div>
+        </div>
+
+        <div class="stat-card" style="animation-delay: 0.4s;">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>{{ applications_this_month|default:0 }}</h3>
+                    <p>This Month</p>
+                </div>
+                <div class="stat-icon info">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <i class="fas fa-target"></i>
+                <span>Goal: 30/month</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="main-grid">
+        <!-- Pipeline Visualization -->
+        <div class="pipeline-card">
+            <div class="pipeline-header">
+                <h2>
+                    <i class="fas fa-project-diagram"></i>
+                    Application Pipeline
+                </h2>
+                <a href="{% url 'dashboard:pipeline_visualization' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-expand"></i>
+                    View Full Pipeline
+                </a>
+            </div>
+            <div class="pipeline-content">
+                <!-- Pipeline Stages -->
+                <div class="pipeline-stages">
+                    <div class="pipeline-stage found">
+                        <div class="stage-number">{{ pipeline_data.found|default:0 }}</div>
+                        <div class="stage-label">Found</div>
+                    </div>
+                    <div class="pipeline-stage applied">
+                        <div class="stage-number">{{ pipeline_data.applied|default:0 }}</div>
+                        <div class="stage-label">Applied</div>
+                    </div>
+                    <div class="pipeline-stage responded">
+                        <div class="stage-number">{{ pipeline_data.responded|default:0 }}</div>
+                        <div class="stage-label">Responded</div>
+                    </div>
+                    <div class="pipeline-stage interview">
+                        <div class="stage-number">{{ pipeline_data.interview|default:0 }}</div>
+                        <div class="stage-label">Interview</div>
+                    </div>
+                    <div class="pipeline-stage offer">
+                        <div class="stage-number">{{ pipeline_data.offer|default:0 }}</div>
+                        <div class="stage-label">Offer</div>
+                    </div>
+                </div>
+
+                <!-- Recent Applications -->
+                <div class="recent-applications">
+                    <div class="applications-header">
+                        <h3>Recent Applications</h3>
+                        <a href="{% url 'jobs:applications' %}" class="btn btn-sm btn-outline-primary">
+                            View All
+                        </a>
+                    </div>
+
+                    {% for app in recent_applications|slice:":5" %}
+                    <div class="application-item">
+                        <div class="application-info">
+                            <h4>{{ app.company_name }}</h4>
+                            <p>{{ app.job_title }}</p>
+                        </div>
+                        <div class="application-meta">
+                            <div class="status-badge {{ app.application_status }}">
+                                {{ app.application_status|title }}
+                            </div>
+                            <div class="application-time">{{ app.created_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center" style="padding: var(--space-xl); color: var(--text-muted);">
+                        <i class="fas fa-clipboard-list" style="font-size: 2rem; margin-bottom: var(--space-md); opacity: 0.5;"></i>
+                        <p style="margin-bottom: var(--space-md);">No applications yet.</p>
+                        <a href="{% url 'jobs:job_list' %}" class="btn btn-primary btn-sm">
+                            Start your first search!
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Content -->
+        <div class="sidebar-content">
+            <!-- Profile Health -->
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h2>
+                        <i class="fas fa-user-check"></i>
+                        Profile Health
+                    </h2>
+                </div>
+                <div class="profile-content">
+                    <div class="progress-circle">
+                        <span class="progress-percentage">{{ profile.calculate_completion_percentage|default:75 }}%</span>
+                    </div>
+                    <div class="profile-status">Profile Completion</div>
+
+                    <div class="missing-fields">
+                        <h4>Missing:</h4>
+                        <ul>
+                            <li>Phone number</li>
+                            <li>Skills section</li>
+                            <li>Portfolio links</li>
+                        </ul>
+                    </div>
+
+                    <a href="{% url 'accounts:profile' %}" class="btn btn-success w-100">
+                        <i class="fas fa-edit"></i>
+                        Update Profile
+                    </a>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="notifications-card">
+                <div class="notifications-header">
+                    <h2>
+                        <i class="fas fa-bell"></i>
+                        Notifications
+                    </h2>
+                    <div class="position-relative">
+                        <a href="{% url 'dashboard:notifications' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-bell"></i>
+                        </a>
+                        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+                    </div>
+                </div>
+                <div class="notifications-content">
+                    <div id="notifications-list">
+                        <div class="notifications-empty" id="notifications-empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No new notifications.</p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-auto">
+                        <a href="{% url 'dashboard:notifications' %}" class="btn btn-sm btn-outline-primary w-100">
+                            View All Notifications
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions-grid">
+        <a href="{% url 'dashboard:quick_search' %}" class="quick-action" style="animation-delay: 0.1s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="quick-action-title">Emergency Search</div>
+            <div class="quick-action-desc">Find jobs instantly</div>
+        </a>
+
+        <a href="{% url 'followups:bulk_followup' %}" class="quick-action" style="animation-delay: 0.2s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <div class="quick-action-title">Send Follow-ups</div>
+            <div class="quick-action-desc">Automated follow-up emails</div>
+        </a>
+
+        <a href="{% url 'dashboard:bulk_download' %}" class="quick-action" style="animation-delay: 0.3s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-download"></i>
+            </div>
+            <div class="quick-action-title">Download Docs</div>
+            <div class="quick-action-desc">Get all your documents</div>
+        </a>
+
+        <a href="{% url 'dashboard:skills_analysis' %}" class="quick-action" style="animation-delay: 0.4s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="quick-action-title">Skills Analysis</div>
+            <div class="quick-action-desc">Improve your profile</div>
+        </a>
+
+        <a href="{% url 'dashboard:interview_prep' %}" class="quick-action" style="animation-delay: 0.5s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="quick-action-title">Interview Prep</div>
+            <div class="quick-action-desc">Get ready for interviews</div>
+        </a>
+
+        <a href="{% url 'dashboard:market_intelligence' %}" class="quick-action" style="animation-delay: 0.6s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="quick-action-title">Market Intel</div>
+            <div class="quick-action-desc">Industry insights</div>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Enhanced loading states
+    $('.quick-action, .btn').on('click', function(e) {
+        const href = $(this).attr('href');
+        if (href && href !== '#' && !$(this).hasClass('no-loading-state')) {
+            const $element = $(this);
+            $element.addClass('loading');
+
+            setTimeout(() => {
+                $element.removeClass('loading');
+            }, 2000);
+        }
+    });
+
+    // Notifications system
+    function fetchNotifications() {
+        $.ajax({
+            url: "{% url 'dashboard:notifications_api' %}",
+            method: 'GET',
+            success: function(data) {
+                const notificationsList = $('#notifications-list');
+                const notificationCountBadge = $('#notification-count');
+                const notificationsEmptyState = $('#notifications-empty-state');
+
+                notificationsList.empty();
+
+                if (data.notifications && data.notifications.length > 0) {
+                    notificationsEmptyState.hide();
+                    data.notifications.slice(0, 3).forEach(notification => {
+                        const notificationHtml = `
+                            <div class="application-item" style="margin-bottom: var(--space-sm); background: var(--bg-elevated);">
+                                <div class="application-info">
+                                    <h4 style="font-size: 0.75rem;">${notification.title}</h4>
+                                    <p style="font-size: 0.7rem;">${notification.message}</p>
+                                </div>
+                                <div class="application-meta">
+                                    <div class="application-time">${timeSince(notification.created_at)} ago</div>
+                                </div>
+                            </div>
+                        `;
+                        notificationsList.append(notificationHtml);
+                    });
+                } else {
+                    notificationsList.append(notificationsEmptyState);
+                    notificationsEmptyState.show();
+                }
+
+                if (data.unread_count > 0) {
+                    notificationCountBadge.text(data.unread_count).show();
+                } else {
+                    notificationCountBadge.hide();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error fetching notifications:", error);
+            }
+        });
+    }
+
+    function timeSince(dateString) {
+        const now = new Date();
+        const date = new Date(dateString);
+        const seconds = Math.floor((now - date) / 1000);
+
+        let interval = seconds / 31536000;
+        if (interval > 1) { return Math.floor(interval) + "y"; }
+        interval = seconds / 2592000;
+        if (interval > 1) { return Math.floor(interval) + "mo"; }
+        interval = seconds / 86400;
+        if (interval > 1) { return Math.floor(interval) + "d"; }
+        interval = seconds / 3600;
+        if (interval > 1) { return Math.floor(interval) + "h"; }
+        interval = seconds / 60;
+        if (interval > 1) { return Math.floor(interval) + "m"; }
+        return Math.floor(seconds) + "s";
+    }
+
+    // Initialize notifications
+    fetchNotifications();
+    setInterval(fetchNotifications, 60000);
+
+    // Animate progress circle
+    const progressCircle = document.querySelector('.progress-circle');
+    if (progressCircle) {
+        const percentage = parseInt(progressCircle.querySelector('.progress-percentage').textContent);
+        const degrees = (percentage / 100) * 360;
+
+        setTimeout(() => {
+            progressCircle.style.background = `conic-gradient(var(--success-500) 0deg, var(--success-500) ${degrees}deg, var(--bg-elevated) ${degrees}deg)`;
+        }, 1000);
+    }
+
+    console.log('Enhanced elegant dashboard loaded successfully');
+});
+</script>
+{% endblock %}
+
+{#{% extends 'base_dashboard.html' %}#}
+{##}
+{#{% block title %}Follow-up Dashboard - Job Automation{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#    /* Card Grid Layout */#}
+{#    .stats-grid {#}
+{#        display: grid;#}
+{#        grid-template-columns: repeat(4, 1fr);#}
+{#        gap: 16px;#}
+{#        margin-bottom: 24px;#}
+{#    }#}
+{##}
+{#    @media (max-width: 1200px) {#}
+{#        .stats-grid {#}
+{#            grid-template-columns: repeat(2, 1fr);#}
+{#        }#}
+{#    }#}
+{##}
+{#    @media (max-width: 640px) {#}
+{#        .stats-grid {#}
+{#            grid-template-columns: 1fr;#}
+{#        }#}
+{#    }#}
+{##}
+{#    /* Stat Card Styling */#}
+{#    .stat-card {#}
+{#        background: var(--bg-secondary);#}
+{#        border-radius: var(--radius-lg);#}
+{#        overflow: hidden;#}
+{#        transition: all var(--transition-normal);#}
+{#        box-shadow: var(--shadow-md);#}
+{#        position: relative;#}
+{#        border: 1px solid var(--border-primary);#}
+{#        display: flex;#}
+{#        flex-direction: column;#}
+{#    }#}
+{##}
+{#    .stat-card:hover {#}
+{#        transform: translateY(-4px);#}
+{#        box-shadow: var(--shadow-lg);#}
+{#        border-color: var(--border-secondary);#}
+{#    }#}
+{##}
+{#    .stat-card-header {#}
+{#        padding: 16px 20px;#}
+{#        border-bottom: 1px solid var(--border-primary);#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: space-between;#}
+{#    }#}
+{##}
+{#    .stat-card-title {#}
+{#        font-size: 0.9rem;#}
+{#        font-weight: 500;#}
+{#        color: var(--text-secondary);#}
+{#        margin: 0;#}
+{#        letter-spacing: 0.02em;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 8px;#}
+{#    }#}
+{##}
+{#    .stat-card-icon {#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: center;#}
+{#        width: 28px;#}
+{#        height: 28px;#}
+{#        border-radius: var(--radius-md);#}
+{#        font-size: 0.9rem;#}
+{#    }#}
+{##}
+{#    .stat-card-body {#}
+{#        padding: 16px 20px;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: space-between;#}
+{#    }#}
+{##}
+{#    .stat-card-value {#}
+{#        font-size: 2.5rem;#}
+{#        font-weight: 700;#}
+{#        margin: 0;#}
+{#        line-height: 1;#}
+{#    }#}
+{##}
+{#    .stat-card-badge {#}
+{#        font-size: 0.75rem;#}
+{#        font-weight: 600;#}
+{#        padding: 4px 8px;#}
+{#        border-radius: 20px;#}
+{#        display: inline-flex;#}
+{#        align-items: center;#}
+{#        gap: 6px;#}
+{#    }#}
+{##}
+{#    /* Card color variants */#}
+{#    .stat-card.warning {#}
+{#        background: linear-gradient(145deg, var(--bg-secondary), #171e2e);#}
+{#    }#}
+{##}
+{#    .stat-card.warning::after {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        top: 0;#}
+{#        left: 0;#}
+{#        right: 0;#}
+{#        height: 3px;#}
+{#        background: linear-gradient(90deg, #f39c12, transparent);#}
+{#    }#}
+{##}
+{#    .stat-card.warning .stat-card-icon {#}
+{#        background: rgba(243, 156, 18, 0.15);#}
+{#        color: #f39c12;#}
+{#    }#}
+{##}
+{#    .stat-card.warning .stat-card-value {#}
+{#        color: #f39c12;#}
+{#    }#}
+{##}
+{#    .stat-card.info {#}
+{#        background: linear-gradient(145deg, var(--bg-secondary), #162232);#}
+{#    }#}
+{##}
+{#    .stat-card.info::after {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        top: 0;#}
+{#        left: 0;#}
+{#        right: 0;#}
+{#        height: 3px;#}
+{#        background: linear-gradient(90deg, #3498db, transparent);#}
+{#    }#}
+{##}
+{#    .stat-card.info .stat-card-icon {#}
+{#        background: rgba(52, 152, 219, 0.15);#}
+{#        color: #3498db;#}
+{#    }#}
+{##}
+{#    .stat-card.info .stat-card-value {#}
+{#        color: #3498db;#}
+{#    }#}
+{##}
+{#    .stat-card.success {#}
+{#        background: linear-gradient(145deg, var(--bg-secondary), #162028);#}
+{#    }#}
+{##}
+{#    .stat-card.success::after {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        top: 0;#}
+{#        left: 0;#}
+{#        right: 0;#}
+{#        height: 3px;#}
+{#        background: linear-gradient(90deg, #2ecc71, transparent);#}
+{#    }#}
+{##}
+{#    .stat-card.success .stat-card-icon {#}
+{#        background: rgba(46, 204, 113, 0.15);#}
+{#        color: #2ecc71;#}
+{#    }#}
+{##}
+{#    .stat-card.success .stat-card-value {#}
+{#        color: #2ecc71;#}
+{#    }#}
+{##}
+{#    .stat-card.primary {#}
+{#        background: linear-gradient(145deg, var(--bg-secondary), #19192e);#}
+{#    }#}
+{##}
+{#    .stat-card.primary::after {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        top: 0;#}
+{#        left: 0;#}
+{#        right: 0;#}
+{#        height: 3px;#}
+{#        background: linear-gradient(90deg, var(--accent-primary), transparent);#}
+{#    }#}
+{##}
+{#    .stat-card.primary .stat-card-icon {#}
+{#        background: rgba(94, 106, 210, 0.15);#}
+{#        color: var(--accent-primary);#}
+{#    }#}
+{##}
+{#    .stat-card.primary .stat-card-value {#}
+{#        color: var(--accent-primary);#}
+{#    }#}
+{##}
+{#    /* Additional styling for improved UI */#}
+{#    .content-section {#}
+{#        margin-bottom: 24px;#}
+{#    }#}
+{##}
+{#    .section-header {#}
+{#        display: flex;#}
+{#        justify-content: space-between;#}
+{#        align-items: center;#}
+{#        margin-bottom: 16px;#}
+{#    }#}
+{##}
+{#    .section-title {#}
+{#        font-size: 1.25rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--text-primary);#}
+{#        margin: 0;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 8px;#}
+{#    }#}
+{##}
+{#    /* Templates & Recent Activity Cards */#}
+{#    .content-grid {#}
+{#        display: grid;#}
+{#        grid-template-columns: repeat(2, 1fr);#}
+{#        gap: 20px;#}
+{#        margin-bottom: 24px;#}
+{#    }#}
+{##}
+{#    @media (max-width: 992px) {#}
+{#        .content-grid {#}
+{#            grid-template-columns: 1fr;#}
+{#        }#}
+{#    }#}
+{##}
+{#    .content-card {#}
+{#        background: var(--bg-secondary);#}
+{#        border-radius: var(--radius-lg);#}
+{#        border: 1px solid var(--border-primary);#}
+{#        box-shadow: var(--shadow-md);#}
+{#        overflow: hidden;#}
+{#        transition: all var(--transition-normal);#}
+{#    }#}
+{##}
+{#    .content-card:hover {#}
+{#        box-shadow: var(--shadow-lg);#}
+{#        border-color: var(--border-secondary);#}
+{#    }#}
+{##}
+{#    .content-card-header {#}
+{#        padding: 16px 20px;#}
+{#        border-bottom: 1px solid var(--border-primary);#}
+{#        background: linear-gradient(145deg, var(--bg-secondary), var(--bg-tertiary));#}
+{#        display: flex;#}
+{#        justify-content: space-between;#}
+{#        align-items: center;#}
+{#    }#}
+{##}
+{#    .content-card-title {#}
+{#        font-size: 1.1rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--text-primary);#}
+{#        margin: 0;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 8px;#}
+{#    }#}
+{##}
+{#    .content-card-subtitle {#}
+{#        color: var(--text-secondary);#}
+{#        font-size: 0.85rem;#}
+{#        margin-top: 4px;#}
+{#    }#}
+{##}
+{#    .content-card-body {#}
+{#        padding: 20px;#}
+{#    }#}
+{##}
+{#    /* Template Item Styling */#}
+{#    .template-item {#}
+{#        position: relative;#}
+{#        border: 1px solid var(--border-primary);#}
+{#        background: rgba(255, 255, 255, 0.02);#}
+{#        border-radius: var(--radius-md);#}
+{#        padding: 12px 16px;#}
+{#        margin-bottom: 12px;#}
+{#        transition: all var(--transition-normal);#}
+{#    }#}
+{##}
+{#    .template-item:last-child {#}
+{#        margin-bottom: 0;#}
+{#    }#}
+{##}
+{#    .template-item:hover {#}
+{#        border-color: var(--border-secondary);#}
+{#        transform: translateY(-2px) translateX(3px);#}
+{#        box-shadow: var(--shadow-md);#}
+{#        background: rgba(255, 255, 255, 0.03);#}
+{#    }#}
+{##}
+{#    /* Activity Timeline */#}
+{#    .activity-timeline {#}
+{#        position: relative;#}
+{#    }#}
+{##}
+{#    .activity-timeline::before {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        top: 0;#}
+{#        bottom: 0;#}
+{#        left: 19px;#}
+{#        width: 2px;#}
+{#        background: var(--border-primary);#}
+{#        z-index: 0;#}
+{#    }#}
+{##}
+{#    .activity-item {#}
+{#        position: relative;#}
+{#        z-index: 1;#}
+{#        margin-bottom: 16px;#}
+{#    }#}
+{##}
+{#    .activity-item:last-child {#}
+{#        margin-bottom: 0;#}
+{#    }#}
+{##}
+{#    .activity-icon {#}
+{#        width: 40px;#}
+{#        height: 40px;#}
+{#        border-radius: 50%;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: center;#}
+{#        z-index: 2;#}
+{#        border: 2px solid var(--bg-secondary);#}
+{#        box-shadow: var(--shadow-sm);#}
+{#        background: var(--bg-tertiary);#}
+{#    }#}
+{##}
+{#    /* Badge Styling */#}
+{#    .badge {#}
+{#        display: inline-flex;#}
+{#        align-items: center;#}
+{#        justify-content: center;#}
+{#        padding: 0.35em 0.75em;#}
+{#        font-size: 0.75rem;#}
+{#        font-weight: 600;#}
+{#        border-radius: 30px;#}
+{#        letter-spacing: 0.02em;#}
+{#        gap: 0.3em;#}
+{#        box-shadow: var(--shadow-sm);#}
+{#    }#}
+{##}
+{#    .badge-success {#}
+{#        background: rgba(26, 127, 55, 0.15);#}
+{#        color: #2ecc71;#}
+{#        border: 1px solid rgba(26, 127, 55, 0.2);#}
+{#    }#}
+{##}
+{#    .badge-warning {#}
+{#        background: rgba(176, 136, 0, 0.15);#}
+{#        color: #f39c12;#}
+{#        border: 1px solid rgba(176, 136, 0, 0.2);#}
+{#    }#}
+{##}
+{#    .badge-info {#}
+{#        background: rgba(9, 105, 218, 0.15);#}
+{#        color: #3498db;#}
+{#        border: 1px solid rgba(9, 105, 218, 0.2);#}
+{#    }#}
+{##}
+{#    .badge-secondary {#}
+{#        background: rgba(160, 174, 192, 0.1);#}
+{#        color: #a0aec0;#}
+{#        border: 1px solid rgba(160, 174, 192, 0.15);#}
+{#    }#}
+{##}
+{#    .badge-danger {#}
+{#        background: rgba(207, 34, 46, 0.15);#}
+{#        color: #e74c3c;#}
+{#        border: 1px solid rgba(207, 34, 46, 0.2);#}
+{#    }#}
+{##}
+{#    /* Custom Form Elements */#}
+{#    .application-selector {#}
+{#        max-height: 200px;#}
+{#        overflow-y: auto;#}
+{#        border: 1px solid var(--border-primary);#}
+{#        border-radius: var(--radius-md);#}
+{#        background: rgba(255, 255, 255, 0.02);#}
+{#        padding: 12px;#}
+{#        scrollbar-width: thin;#}
+{#        scrollbar-color: var(--border-secondary) var(--bg-tertiary);#}
+{#    }#}
+{##}
+{#    .form-check-input {#}
+{#        width: 18px;#}
+{#        height: 18px;#}
+{#        background-color: var(--bg-tertiary);#}
+{#        border: 1px solid var(--border-secondary);#}
+{#        border-radius: 4px;#}
+{#        transition: all var(--transition-fast);#}
+{#        cursor: pointer;#}
+{#        position: relative;#}
+{#    }#}
+{##}
+{#    .form-check-input:checked {#}
+{#        background-color: var(--accent-primary);#}
+{#        border-color: var(--accent-primary);#}
+{#    }#}
+{##}
+{#    .form-check-input:checked::after {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        top: 4px;#}
+{#        left: 7px;#}
+{#        width: 4px;#}
+{#        height: 8px;#}
+{#        border: solid white;#}
+{#        border-width: 0 2px 2px 0;#}
+{#        transform: rotate(45deg);#}
+{#    }#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="animate-fade-in">#}
+{#    <!-- Page Header -->#}
+{#    <div class="section-header">#}
+{#        <div>#}
+{#            <h1 class="text-2xl font-bold mb-1">#}
+{#                <i class="fas fa-envelope-open-text mr-2 text-accent"></i>Follow-up Dashboard#}
+{#            </h1>#}
+{#            <p class="text-secondary">Manage your follow-up emails and increase response rates</p>#}
+{#        </div>#}
+{#        <div class="flex gap-3">#}
+{#            <a href="{% url 'followups:create_template' %}" class="btn btn-secondary">#}
+{#                <i class="fas fa-plus"></i> New Template#}
+{#            </a>#}
+{#            <button class="btn btn-primary" onclick="sendBulkFollowup()">#}
+{#                <i class="fas fa-paper-plane"></i> Bulk Follow-up#}
+{#            </button>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Stats Grid -->#}
+{#    <div class="stats-grid animate-fade-in">#}
+{#        <!-- Due Today Card -->#}
+{#        <div class="stat-card warning animate-slide-up" style="animation-delay: 0.1s;">#}
+{#            <div class="stat-card-header">#}
+{#                <h3 class="stat-card-title">#}
+{#                    <div class="stat-card-icon">#}
+{#                        <i class="fas fa-clock"></i>#}
+{#                    </div>#}
+{#                    Due Today#}
+{#                </h3>#}
+{#            </div>#}
+{#            <div class="stat-card-body">#}
+{#                <h2 class="stat-card-value">{{ due_followups.count|default:"0" }}</h2>#}
+{#                {% if due_followups.count > 0 %}#}
+{#                <span class="stat-card-badge badge-warning">#}
+{#                    <i class="fas fa-exclamation-circle"></i> Action needed#}
+{#                </span>#}
+{#                {% endif %}#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Sent This Week Card -->#}
+{#        <div class="stat-card info animate-slide-up" style="animation-delay: 0.2s;">#}
+{#            <div class="stat-card-header">#}
+{#                <h3 class="stat-card-title">#}
+{#                    <div class="stat-card-icon">#}
+{#                        <i class="fas fa-paper-plane"></i>#}
+{#                    </div>#}
+{#                    Sent This Week#}
+{#                </h3>#}
+{#            </div>#}
+{#            <div class="stat-card-body">#}
+{#                <h2 class="stat-card-value">{{ recent_followups.count|default:"0" }}</h2>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Active Templates Card -->#}
+{#        <div class="stat-card success animate-slide-up" style="animation-delay: 0.3s;">#}
+{#            <div class="stat-card-header">#}
+{#                <h3 class="stat-card-title">#}
+{#                    <div class="stat-card-icon">#}
+{#                        <i class="fas fa-file-alt"></i>#}
+{#                    </div>#}
+{#                    Active Templates#}
+{#                </h3>#}
+{#            </div>#}
+{#            <div class="stat-card-body">#}
+{#                <h2 class="stat-card-value">{{ templates.count|default:"0" }}</h2>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Response Rate Card -->#}
+{#        <div class="stat-card primary animate-slide-up" style="animation-delay: 0.4s;">#}
+{#            <div class="stat-card-header">#}
+{#                <h3 class="stat-card-title">#}
+{#                    <div class="stat-card-icon">#}
+{#                        <i class="fas fa-chart-line"></i>#}
+{#                    </div>#}
+{#                    Response Rate#}
+{#                </h3>#}
+{#            </div>#}
+{#            <div class="stat-card-body">#}
+{#                <h2 class="stat-card-value">27.5%</h2>#}
+{#                <span class="stat-card-badge" style="background: rgba(94, 106, 210, 0.15); color: var(--accent-primary); border: 1px solid rgba(94, 106, 210, 0.2);">#}
+{#                    <i class="fas fa-check-circle"></i> Good#}
+{#                </span>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Due Follow-ups Section -->#}
+{#    {% if due_followups %}#}
+{#    <div class="content-section animate-slide-up" style="animation-delay: 0.5s;">#}
+{#        <div class="content-card">#}
+{#            <div class="content-card-header">#}
+{#                <div>#}
+{#                    <h2 class="content-card-title">#}
+{#                        <i class="fas fa-exclamation-triangle mr-2" style="color: #f39c12;"></i>#}
+{#                        Follow-ups Due Today#}
+{#                    </h2>#}
+{#                    <div class="content-card-subtitle">{{ due_followups.count }} applications need follow-up</div>#}
+{#                </div>#}
+{#                <button class="btn btn-sm" style="background-color: rgba(243, 156, 18, 0.15); color: #f39c12; border: 1px solid rgba(243, 156, 18, 0.3);" onclick="sendAllDueFollowups()">#}
+{#                    <i class="fas fa-paper-plane mr-1"></i> Send All Due#}
+{#                </button>#}
+{#            </div>#}
+{#            <div class="content-card-body p-0">#}
+{#                <div class="overflow-x-auto">#}
+{#                    <table class="w-full">#}
+{#                        <thead>#}
+{#                            <tr>#}
+{#                                <th style="width: 40px; padding: 12px 16px;">#}
+{#                                    <input type="checkbox" id="selectAllDue" class="form-check-input">#}
+{#                                </th>#}
+{#                                <th style="padding: 12px 16px;">Job Details</th>#}
+{#                                <th style="padding: 12px 16px;">Company</th>#}
+{#                                <th style="padding: 12px 16px;">Days Since Applied</th>#}
+{#                                <th style="padding: 12px 16px;">Follow-up Count</th>#}
+{#                                <th style="padding: 12px 16px; text-align: right;">Actions</th>#}
+{#                            </tr>#}
+{#                        </thead>#}
+{#                        <tbody>#}
+{#                            {% for app in due_followups %}#}
+{#                            <tr>#}
+{#                                <td style="padding: 12px 16px;">#}
+{#                                    <input type="checkbox" class="form-check-input due-app-checkbox" value="{{ app.id }}">#}
+{#                                </td>#}
+{#                                <td style="padding: 12px 16px;">#}
+{#                                    <div class="flex items-center gap-3">#}
+{#                                        <div style="width: 40px; height: 40px; background: rgba(94, 106, 210, 0.1); color: var(--accent-primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">#}
+{#                                            <i class="fas fa-briefcase"></i>#}
+{#                                        </div>#}
+{#                                        <div>#}
+{#                                            <div class="font-semibold text-primary">{{ app.job_title }}</div>#}
+{#                                            <div class="text-sm text-secondary">Applied: {{ app.applied_date|date:"M d, Y" }}</div>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </td>#}
+{#                                <td style="padding: 12px 16px;">#}
+{#                                    <div class="font-medium text-primary">{{ app.company_name }}</div>#}
+{#                                </td>#}
+{#                                <td style="padding: 12px 16px;">#}
+{#                                    {% if app.applied_date %}#}
+{#                                        <span class="badge badge-warning">#}
+{#                                            <i class="fas fa-clock mr-1"></i> {{ app.applied_date|timesince }} ago#}
+{#                                        </span>#}
+{#                                    {% else %}#}
+{#                                        <span class="badge badge-danger">#}
+{#                                            <i class="fas fa-times-circle mr-1"></i> Not applied#}
+{#                                        </span>#}
+{#                                    {% endif %}#}
+{#                                </td>#}
+{#                                <td style="padding: 12px 16px;">#}
+{#                                    <span class="badge badge-secondary">#}
+{#                                        {{ app.follow_up_count }}#}
+{#                                    </span>#}
+{#                                </td>#}
+{#                                <td style="padding: 12px 16px; text-align: right;">#}
+{#                                    <div class="flex gap-2 justify-end">#}
+{#                                        <button class="btn btn-sm" style="background-color: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3);" onclick="sendSingleFollowup({{ app.id }})" title="Send Follow-up">#}
+{#                                            <i class="fas fa-paper-plane"></i>#}
+{#                                        </button>#}
+{#                                        <button class="btn btn-sm btn-secondary" onclick="scheduleFollowup({{ app.id }})" title="Schedule Follow-up">#}
+{#                                            <i class="fas fa-calendar"></i>#}
+{#                                        </button>#}
+{#                                        <a href="{% url 'jobs:application_detail' app.pk %}" class="btn btn-sm btn-secondary" title="View Details">#}
+{#                                            <i class="fas fa-eye"></i>#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                </td>#}
+{#                            </tr>#}
+{#                            {% endfor %}#}
+{#                        </tbody>#}
+{#                    </table>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#    {% endif %}#}
+{##}
+{#    <!-- Templates & Activity Grid -->#}
+{#    <div class="content-grid">#}
+{#        <!-- Follow-up Templates -->#}
+{#        <div class="content-card animate-slide-up" style="animation-delay: 0.6s;">#}
+{#            <div class="content-card-header">#}
+{#                <div>#}
+{#                    <h2 class="content-card-title">#}
+{#                        <i class="fas fa-file-alt mr-2"></i>#}
+{#                        Your Templates#}
+{#                    </h2>#}
+{#                    <div class="content-card-subtitle">{{ templates.count }} active templates</div>#}
+{#                </div>#}
+{#                <a href="{% url 'followups:templates' %}" class="btn btn-secondary btn-sm">#}
+{#                    <i class="fas fa-cog mr-1"></i> Manage All#}
+{#                </a>#}
+{#            </div>#}
+{#            <div class="content-card-body">#}
+{#                {% if templates %}#}
+{#                    <div class="space-y-4">#}
+{#                        {% for template in templates %}#}
+{#                        <div class="template-item">#}
+{#                            <div class="flex justify-between items-start">#}
+{#                                <div class="flex-1 min-w-0">#}
+{#                                    <div class="flex items-center gap-2 mb-2">#}
+{#                                        <h3 class="font-semibold text-primary">{{ template.template_name }}</h3>#}
+{#                                        {% if template.is_default %}#}
+{#                                            <span class="badge badge-warning">#}
+{#                                                Default#}
+{#                                            </span>#}
+{#                                        {% endif %}#}
+{#                                    </div>#}
+{#                                    <div class="space-y-1">#}
+{#                                        <div class="text-sm text-secondary">#}
+{#                                            <i class="fas fa-clock mr-2"></i>#}
+{#                                            {{ template.days_after_application }} days after application#}
+{#                                        </div>#}
+{#                                        <div class="text-sm text-secondary">#}
+{#                                            <i class="fas fa-chart-line mr-2"></i>#}
+{#                                            {{ template.success_rate }}% success rate ({{ template.times_used }} uses)#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="relative">#}
+{#                                    <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">#}
+{#                                        <i class="fas fa-ellipsis-v"></i>#}
+{#                                    </button>#}
+{#                                    <div class="dropdown-menu dropdown-menu-end">#}
+{#                                        <a class="dropdown-item" href="{% url 'followups:edit_template' template.pk %}">#}
+{#                                            <i class="fas fa-edit mr-2"></i> Edit#}
+{#                                        </a>#}
+{#                                        <a class="dropdown-item" href="#" onclick="duplicateTemplate({{ template.id }})">#}
+{#                                            <i class="fas fa-copy mr-2"></i> Duplicate#}
+{#                                        </a>#}
+{#                                        <div class="dropdown-divider"></div>#}
+{#                                        <a class="dropdown-item text-danger" href="#" onclick="deleteTemplate({{ template.id }})">#}
+{#                                            <i class="fas fa-trash mr-2"></i> Delete#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        {% endfor %}#}
+{#                    </div>#}
+{#                {% else %}#}
+{#                    <div class="text-center py-6">#}
+{#                        <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.03); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">#}
+{#                            <i class="fas fa-file-alt text-2xl text-tertiary"></i>#}
+{#                        </div>#}
+{#                        <h3 class="text-lg font-semibold text-primary mb-2">No Templates Yet</h3>#}
+{#                        <p class="text-secondary mb-4">Create your first follow-up template</p>#}
+{#                        <a href="{% url 'followups:create_template' %}" class="btn btn-primary">#}
+{#                            <i class="fas fa-plus mr-2"></i> Create Template#}
+{#                        </a>#}
+{#                    </div>#}
+{#                {% endif %}#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Recent Follow-up Activity -->#}
+{#        <div class="content-card animate-slide-up" style="animation-delay: 0.7s;">#}
+{#            <div class="content-card-header">#}
+{#                <div>#}
+{#                    <h2 class="content-card-title">#}
+{#                        <i class="fas fa-history mr-2"></i>#}
+{#                        Recent Activity#}
+{#                    </h2>#}
+{#                    <div class="content-card-subtitle">Latest follow-up communications</div>#}
+{#                </div>#}
+{#                <a href="{% url 'followups:history' %}" class="btn btn-secondary btn-sm">#}
+{#                    <i class="fas fa-list mr-1"></i> View All#}
+{#                </a>#}
+{#            </div>#}
+{#            <div class="content-card-body">#}
+{#                {% if recent_followups %}#}
+{#                    <div class="activity-timeline">#}
+{#                        {% for followup in recent_followups %}#}
+{#                        <div class="activity-item flex gap-4">#}
+{#                            <div class="activity-icon" style="background-color: {% if followup.response_received %}rgba(46, 204, 113, 0.15){% else %}rgba(52, 152, 219, 0.15){% endif %}">#}
+{#                                {% if followup.response_received %}#}
+{#                                    <i class="fas fa-reply" style="color: #2ecc71;"></i>#}
+{#                                {% else %}#}
+{#                                    <i class="fas fa-paper-plane" style="color: #3498db;"></i>#}
+{#                                {% endif %}#}
+{#                            </div>#}
+{#                            <div class="flex-1 min-w-0">#}
+{#                                <div class="flex justify-between items-start mb-1">#}
+{#                                    <div class="font-semibold text-primary">{{ followup.application.job_title }}</div>#}
+{#                                    <div class="text-xs text-secondary">{{ followup.sent_date|timesince }} ago</div>#}
+{#                                </div>#}
+{#                                <div class="text-sm text-secondary mb-2">{{ followup.application.company_name }}</div>#}
+{#                                <div class="flex gap-2 flex-wrap">#}
+{#                                    {% if followup.response_received %}#}
+{#                                        <span class="badge badge-success">#}
+{#                                            <i class="fas fa-check mr-1"></i> Response Received#}
+{#                                        </span>#}
+{#                                        <span class="badge badge-secondary">#}
+{#                                            {{ followup.get_response_type_display }}#}
+{#                                        </span>#}
+{#                                    {% else %}#}
+{#                                        <span class="badge badge-info">#}
+{#                                            <i class="fas fa-paper-plane mr-1"></i> Follow-up Sent#}
+{#                                        </span>#}
+{#                                    {% endif %}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        {% endfor %}#}
+{#                    </div>#}
+{#                {% else %}#}
+{#                    <div class="text-center py-6">#}
+{#                        <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.03); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">#}
+{#                            <i class="fas fa-inbox text-2xl text-tertiary"></i>#}
+{#                        </div>#}
+{#                        <h3 class="text-lg font-semibold text-primary mb-2">No Recent Activity</h3>#}
+{#                        <p class="text-secondary">Follow-up history will appear here</p>#}
+{#                    </div>#}
+{#                {% endif %}#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Bulk Follow-up Section -->#}
+{#    <div class="content-card mt-6 animate-slide-up" style="animation-delay: 0.8s;">#}
+{#        <div class="content-card-header">#}
+{#            <div>#}
+{#                <h2 class="content-card-title">#}
+{#                    <i class="fas fa-envelope mr-2"></i>#}
+{#                    Bulk Follow-up Actions#}
+{#                </h2>#}
+{#                <div class="content-card-subtitle">Send follow-ups to multiple applications at once</div>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="content-card-body">#}
+{#            <form method="post" action="{% url 'followups:bulk_followup' %}" id="bulkFollowupForm">#}
+{#                {% csrf_token %}#}
+{#                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">#}
+{#                    <div>#}
+{#                        <label class="form-label font-medium">Select Template</label>#}
+{#                        <select name="template_id" class="form-select" required>#}
+{#                            <option value="">Choose template...</option>#}
+{#                            {% for template in templates %}#}
+{#                                <option value="{{ template.id }}">{{ template.template_name }}</option>#}
+{#                            {% endfor %}#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div>#}
+{#                        <label class="form-label font-medium">Select Applications</label>#}
+{#                        <div class="application-selector">#}
+{#                            {% for app in due_followups %}#}
+{#                            <div class="flex items-center mb-2">#}
+{#                                <input class="form-check-input bulk-app-checkbox" type="checkbox" name="applications" value="{{ app.id }}" id="bulkApp{{ app.id }}">#}
+{#                                <label class="form-check-label ml-2 text-sm" for="bulkApp{{ app.id }}">#}
+{#                                    <div class="font-medium text-primary">{{ app.job_title }}</div>#}
+{#                                    <div class="text-xs text-secondary">{{ app.company_name }}</div>#}
+{#                                </label>#}
+{#                            </div>#}
+{#                            {% endfor %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div>#}
+{#                        <button type="submit" class="btn btn-success w-full">#}
+{#                            <i class="fas fa-paper-plane mr-1"></i> Send Bulk Follow-up#}
+{#                        </button>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </form>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Toast Container for Notifications -->#}
+{#    <div id="toastContainer" class="toast-container"></div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#// Create a toast notification system#}
+{#const toastSystem = {#}
+{#    container: document.getElementById('toastContainer') || (() => {#}
+{#        const container = document.createElement('div');#}
+{#        container.id = 'toastContainer';#}
+{#        container.className = 'toast-container';#}
+{#        container.style.cssText = `#}
+{#            position: fixed;#}
+{#            bottom: 24px;#}
+{#            right: 24px;#}
+{#            z-index: 9999;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            gap: 12px;#}
+{#        `;#}
+{#        document.body.appendChild(container);#}
+{#        return container;#}
+{#    })(),#}
+{##}
+{#    show: function(message, type = 'info', duration = 5000) {#}
+{#        const toast = document.createElement('div');#}
+{#        toast.className = 'toast';#}
+{#        toast.style.cssText = `#}
+{#            background: var(--bg-secondary);#}
+{#            border: 1px solid var(--border-primary);#}
+{#            border-radius: var(--radius-md);#}
+{#            padding: 16px;#}
+{#            min-width: 300px;#}
+{#            max-width: 400px;#}
+{#            box-shadow: var(--shadow-lg);#}
+{#            animation: toastSlideIn 0.3s ease forwards;#}
+{#            position: relative;#}
+{#            overflow: hidden;#}
+{#        `;#}
+{##}
+{#        // Add type-specific styling#}
+{#        let iconClass = 'info-circle';#}
+{#        let iconColor = '#3498db';#}
+{#        let borderColor = 'rgba(52, 152, 219, 0.3)';#}
+{##}
+{#        if (type === 'success') {#}
+{#            iconClass = 'check-circle';#}
+{#            iconColor = '#2ecc71';#}
+{#            borderColor = 'rgba(46, 204, 113, 0.3)';#}
+{#        } else if (type === 'warning') {#}
+{#            iconClass = 'exclamation-triangle';#}
+{#            iconColor = '#f39c12';#}
+{#            borderColor = 'rgba(243, 156, 18, 0.3)';#}
+{#        } else if (type === 'danger') {#}
+{#            iconClass = 'times-circle';#}
+{#            iconColor = '#e74c3c';#}
+{#            borderColor = 'rgba(231, 76, 60, 0.3)';#}
+{#        }#}
+{##}
+{#        toast.style.borderLeft = `4px solid ${borderColor}`;#}
+{##}
+{#        toast.innerHTML = `#}
+{#            <div style="display: flex; align-items: center; gap: 12px;">#}
+{#                <div style="color: ${iconColor}; font-size: 1.25rem;">#}
+{#                    <i class="fas fa-${iconClass}"></i>#}
+{#                </div>#}
+{#                <div style="flex: 1;">#}
+{#                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${type.charAt(0).toUpperCase() + type.slice(1)}</div>#}
+{#                    <div style="color: var(--text-secondary); font-size: 0.875rem;">${message}</div>#}
+{#                </div>#}
+{#                <button style="background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 4px;" onclick="this.parentElement.parentElement.remove()">#}
+{#                    <i class="fas fa-times"></i>#}
+{#                </button>#}
+{#            </div>#}
+{#        `;#}
+{##}
+{#        this.container.appendChild(toast);#}
+{##}
+{#        // Auto-remove after duration#}
+{#        setTimeout(() => {#}
+{#            toast.style.animation = 'toastSlideOut 0.3s ease forwards';#}
+{#            setTimeout(() => {#}
+{#                if (toast.parentElement) {#}
+{#                    toast.parentElement.removeChild(toast);#}
+{#                }#}
+{#            }, 300);#}
+{#        }, duration);#}
+{##}
+{#        return toast;#}
+{#    }#}
+{#};#}
+{##}
+{#// Create modal system#}
+{#const modalSystem = {#}
+{#    show: function(options) {#}
+{#        const { title, content, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel' } = options;#}
+{##}
+{#        // Create backdrop#}
+{#        const backdrop = document.createElement('div');#}
+{#        backdrop.className = 'modal-backdrop';#}
+{#        backdrop.style.cssText = `#}
+{#            position: fixed;#}
+{#            top: 0;#}
+{#            left: 0;#}
+{#            width: 100%;#}
+{#            height: 100%;#}
+{#            background: rgba(0, 0, 0, 0.7);#}
+{#            backdrop-filter: blur(3px);#}
+{#            z-index: 1000;#}
+{#            display: flex;#}
+{#            align-items: center;#}
+{#            justify-content: center;#}
+{#            animation: fadeIn 0.2s ease forwards;#}
+{#        `;#}
+{##}
+{#        // Create modal#}
+{#        const modal = document.createElement('div');#}
+{#        modal.className = 'modal-content';#}
+{#        modal.style.cssText = `#}
+{#            background: var(--bg-secondary);#}
+{#            border: 1px solid var(--border-primary);#}
+{#            border-radius: var(--radius-lg);#}
+{#            width: 95%;#}
+{#            max-width: 500px;#}
+{#            box-shadow: var(--shadow-xl);#}
+{#            animation: modalSlideUp 0.3s ease forwards;#}
+{#            overflow: hidden;#}
+{#        `;#}
+{##}
+{#        modal.innerHTML = `#}
+{#            <div style="padding: 20px; border-bottom: 1px solid var(--border-primary); background: linear-gradient(145deg, var(--bg-secondary), var(--bg-tertiary)); display: flex; justify-content: space-between; align-items: center;">#}
+{#                <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--text-primary); margin: 0;">${title}</h3>#}
+{#                <button type="button" style="background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 4px;" id="closeModalBtn">#}
+{#                    <i class="fas fa-times"></i>#}
+{#                </button>#}
+{#            </div>#}
+{#            <div style="padding: 24px;">#}
+{#                ${content}#}
+{#            </div>#}
+{#            <div style="padding: 16px 20px; border-top: 1px solid var(--border-primary); display: flex; justify-content: flex-end; gap: 12px;">#}
+{#                <button type="button" class="btn btn-secondary" id="cancelModalBtn">${cancelText}</button>#}
+{#                <button type="button" class="btn btn-primary" id="confirmModalBtn">${confirmText}</button>#}
+{#            </div>#}
+{#        `;#}
+{##}
+{#        backdrop.appendChild(modal);#}
+{#        document.body.appendChild(backdrop);#}
+{##}
+{#        // Add event listeners#}
+{#        document.getElementById('closeModalBtn').addEventListener('click', () => {#}
+{#            this.close(backdrop);#}
+{#        });#}
+{##}
+{#        document.getElementById('cancelModalBtn').addEventListener('click', () => {#}
+{#            this.close(backdrop);#}
+{#        });#}
+{##}
+{#        document.getElementById('confirmModalBtn').addEventListener('click', () => {#}
+{#            if (typeof onConfirm === 'function') {#}
+{#                onConfirm();#}
+{#            }#}
+{#            this.close(backdrop);#}
+{#        });#}
+{##}
+{#        // Close on Escape key#}
+{#        document.addEventListener('keydown', function escHandler(e) {#}
+{#            if (e.key === 'Escape') {#}
+{#                document.removeEventListener('keydown', escHandler);#}
+{#                modalSystem.close(backdrop);#}
+{#            }#}
+{#        });#}
+{##}
+{#        // Close on backdrop click#}
+{#        backdrop.addEventListener('click', function(e) {#}
+{#            if (e.target === backdrop) {#}
+{#                modalSystem.close(backdrop);#}
+{#            }#}
+{#        });#}
+{##}
+{#        return backdrop;#}
+{#    },#}
+{##}
+{#    close: function(backdrop) {#}
+{#        backdrop.style.opacity = '0';#}
+{#        setTimeout(() => {#}
+{#            if (backdrop.parentElement) {#}
+{#                backdrop.parentElement.removeChild(backdrop);#}
+{#            }#}
+{#        }, 200);#}
+{#    }#}
+{#};#}
+{##}
+{#// Add animations#}
+{#const style = document.createElement('style');#}
+{#style.textContent = `#}
+{#    @keyframes toastSlideIn {#}
+{#        from { transform: translateX(100%); opacity: 0; }#}
+{#        to { transform: translateX(0); opacity: 1; }#}
+{#    }#}
+{##}
+{#    @keyframes toastSlideOut {#}
+{#        from { transform: translateX(0); opacity: 1; }#}
+{#        to { transform: translateX(100%); opacity: 0; }#}
+{#    }#}
+{##}
+{#    @keyframes modalSlideUp {#}
+{#        from { transform: translateY(50px); opacity: 0; }#}
+{#        to { transform: translateY(0); opacity: 1; }#}
+{#    }#}
+{##}
+{#    @keyframes fadeIn {#}
+{#        from { opacity: 0; }#}
+{#        to { opacity: 1; }#}
+{#    }#}
+{##}
+{#    @keyframes pulseEffect {#}
+{#        0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4); }#}
+{#        70% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }#}
+{#        100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }#}
+{#    }#}
+{#`;#}
+{#document.head.appendChild(style);#}
+{##}
+{#// Send single follow-up#}
+{#function sendSingleFollowup(applicationId) {#}
+{#    modalSystem.show({#}
+{#        title: 'Send Follow-up',#}
+{#        content: `#}
+{#            <p style="margin-bottom: 16px; color: var(--text-secondary);">This will send a follow-up email using your default template.</p>#}
+{#            <div style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-primary);">#}
+{#                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">#}
+{#                    <i class="fas fa-info-circle" style="color: var(--accent-primary);"></i>#}
+{#                    <span style="font-weight: 500; color: var(--text-primary);">Ready to send follow-up</span>#}
+{#                </div>#}
+{#                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">The recipient will receive your email immediately.</p>#}
+{#            </div>#}
+{#        `,#}
+{#        confirmText: 'Send Follow-up',#}
+{#        onConfirm: () => {#}
+{#            // Show sending notification#}
+{#            toastSystem.show('Sending follow-up email...', 'info');#}
+{##}
+{#            // Simulate API call#}
+{#            setTimeout(() => {#}
+{#                toastSystem.show('Follow-up email sent successfully!', 'success');#}
+{#                setTimeout(() => location.reload(), 1500);#}
+{#            }, 2000);#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Schedule follow-up#}
+{#function scheduleFollowup(applicationId) {#}
+{#    const content = `#}
+{#        <div style="display: grid; gap: 16px;">#}
+{#            <div>#}
+{#                <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px;">Follow-up Date</label>#}
+{#                <input type="date" class="form-control" id="followupDate" min="${new Date().toISOString().split('T')[0]}" style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-primary); color: var(--text-primary); border-radius: 8px;">#}
+{#            </div>#}
+{#            <div>#}
+{#                <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px;">Template</label>#}
+{#                <select class="form-select" id="templateId" style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-primary); color: var(--text-primary); border-radius: 8px;">#}
+{#                    {% for template in templates %}#}
+{#                        <option value="{{ template.id }}">{{ template.template_name }}</option>#}
+{#                    {% endfor %}#}
+{#                </select>#}
+{#            </div>#}
+{#        </div>#}
+{#    `;#}
+{##}
+{#    modalSystem.show({#}
+{#        title: 'Schedule Follow-up',#}
+{#        content: content,#}
+{#        confirmText: 'Schedule',#}
+{#        onConfirm: () => {#}
+{#            const date = document.getElementById('followupDate').value;#}
+{#            const templateId = document.getElementById('templateId').value;#}
+{##}
+{#            if (!date || !templateId) {#}
+{#                toastSystem.show('Please fill all fields', 'warning');#}
+{#                return;#}
+{#            }#}
+{##}
+{#            toastSystem.show('Follow-up scheduled successfully for ' + new Date(date).toLocaleDateString(), 'success');#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Send all due follow-ups#}
+{#function sendAllDueFollowups() {#}
+{#    const checkedBoxes = document.querySelectorAll('.due-app-checkbox:checked');#}
+{##}
+{#    if (checkedBoxes.length === 0) {#}
+{#        toastSystem.show('Please select at least one application', 'warning');#}
+{#        return;#}
+{#    }#}
+{##}
+{#    modalSystem.show({#}
+{#        title: 'Confirm Bulk Follow-up',#}
+{#        content: `#}
+{#            <p style="margin-bottom: 16px; color: var(--text-secondary);">You are about to send follow-ups for <strong>${checkedBoxes.length}</strong> selected applications.</p>#}
+{#            <div style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-primary);">#}
+{#                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">#}
+{#                    <i class="fas fa-info-circle" style="color: var(--accent-primary);"></i>#}
+{#                    <span style="font-weight: 500; color: var(--text-primary);">Bulk follow-up will use your default template</span>#}
+{#                </div>#}
+{#                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">All recipients will receive your email immediately.</p>#}
+{#            </div>#}
+{#        `,#}
+{#        confirmText: 'Send All',#}
+{#        onConfirm: () => {#}
+{#            // Show sending notification#}
+{#            toastSystem.show('Sending bulk follow-ups...', 'info');#}
+{##}
+{#            // Simulate API call#}
+{#            setTimeout(() => {#}
+{#                toastSystem.show(`Successfully sent ${checkedBoxes.length} follow-up emails!`, 'success');#}
+{#                setTimeout(() => location.reload(), 1500);#}
+{#            }, 3000);#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Bulk follow-up from form#}
+{#function sendBulkFollowup() {#}
+{#    const form = document.getElementById('bulkFollowupForm');#}
+{#    const selectedApps = form.querySelectorAll('input[name="applications"]:checked');#}
+{##}
+{#    if (selectedApps.length === 0) {#}
+{#        toastSystem.show('Please select at least one application', 'warning');#}
+{#        return;#}
+{#    }#}
+{##}
+{#    if (!form.querySelector('select[name="template_id"]').value) {#}
+{#        toastSystem.show('Please select a follow-up template', 'warning');#}
+{#        return;#}
+{#    }#}
+{##}
+{#    modalSystem.show({#}
+{#        title: 'Confirm Bulk Follow-up',#}
+{#        content: `#}
+{#            <p style="margin-bottom: 16px; color: var(--text-secondary);">You are about to send follow-ups for <strong>${selectedApps.length}</strong> applications.</p>#}
+{#            <div style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-primary);">#}
+{#                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">#}
+{#                    <i class="fas fa-info-circle" style="color: var(--accent-primary);"></i>#}
+{#                    <span style="font-weight: 500; color: var(--text-primary);">Ready to send follow-ups</span>#}
+{#                </div>#}
+{#                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">All recipients will receive your email immediately.</p>#}
+{#            </div>#}
+{#        `,#}
+{#        confirmText: 'Send Follow-ups',#}
+{#        onConfirm: () => {#}
+{#            // Show sending notification#}
+{#            toastSystem.show('Sending bulk follow-ups...', 'info');#}
+{##}
+{#            // Simulate API call#}
+{#            setTimeout(() => {#}
+{#                toastSystem.show(`Successfully sent ${selectedApps.length} follow-up emails!`, 'success');#}
+{#                setTimeout(() => location.reload(), 1500);#}
+{#            }, 3000);#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Template management#}
+{#function duplicateTemplate(templateId) {#}
+{#    modalSystem.show({#}
+{#        title: 'Duplicate Template',#}
+{#        content: `#}
+{#            <div>#}
+{#                <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px;">New Template Name</label>#}
+{#                <input type="text" class="form-control" id="newTemplateName" placeholder="Enter name for the duplicated template" style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-primary); color: var(--text-primary); border-radius: 8px;">#}
+{#            </div>#}
+{#        `,#}
+{#        confirmText: 'Duplicate',#}
+{#        onConfirm: () => {#}
+{#            const templateName = document.getElementById('newTemplateName').value;#}
+{##}
+{#            if (!templateName) {#}
+{#                toastSystem.show('Please enter a template name', 'warning');#}
+{#                return;#}
+{#            }#}
+{##}
+{#            toastSystem.show('Template duplicated successfully!', 'success');#}
+{#            setTimeout(() => location.reload(), 1500);#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function deleteTemplate(templateId) {#}
+{#    modalSystem.show({#}
+{#        title: 'Delete Template',#}
+{#        content: `#}
+{#            <div style="background: rgba(231, 76, 60, 0.1); padding: 16px; border-radius: 8px; border: 1px solid rgba(231, 76, 60, 0.3); text-align: center; margin-bottom: 16px;">#}
+{#                <i class="fas fa-exclamation-triangle" style="color: #e74c3c; font-size: 1.5rem; margin-bottom: 8px;"></i>#}
+{#                <p style="color: #e74c3c; font-weight: 500; margin: 0;">This action cannot be undone.</p>#}
+{#            </div>#}
+{#            <p style="color: var(--text-secondary);">Are you sure you want to delete this template? Any scheduled follow-ups using this template will be cancelled.</p>#}
+{#        `,#}
+{#        confirmText: 'Delete Template',#}
+{#        onConfirm: () => {#}
+{#            toastSystem.show('Template deleted successfully!', 'success');#}
+{#            setTimeout(() => location.reload(), 1500);#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Select all functionality#}
+{#document.getElementById('selectAllDue')?.addEventListener('change', function() {#}
+{#    const checkboxes = document.querySelectorAll('.due-app-checkbox');#}
+{#    checkboxes.forEach(checkbox => {#}
+{#        checkbox.checked = this.checked;#}
+{#    });#}
+{#});#}
+{##}
+{#// Form submission handler#}
+{#document.getElementById('bulkFollowupForm')?.addEventListener('submit', function(e) {#}
+{#    e.preventDefault();#}
+{#    sendBulkFollowup();#}
+{#});#}
+{##}
+{#// Initialize dashboard functionality#}
+{#document.addEventListener('DOMContentLoaded', function() {#}
+{#    // Add hover effects to table rows#}
+{#    const tableRows = document.querySelectorAll('tbody tr');#}
+{#    tableRows.forEach(row => {#}
+{#        row.addEventListener('mouseenter', () => {#}
+{#            row.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';#}
+{#        });#}
+{#        row.addEventListener('mouseleave', () => {#}
+{#            row.style.backgroundColor = '';#}
+{#        });#}
+{#    });#}
+{##}
+{#    // Add hover effects to stat cards#}
+{#    const statCards = document.querySelectorAll('.stat-card');#}
+{#    statCards.forEach(card => {#}
+{#        card.addEventListener('mouseenter', () => {#}
+{#            card.style.transform = 'translateY(-4px)';#}
+{#            card.style.boxShadow = 'var(--shadow-lg)';#}
+{#        });#}
+{#        card.addEventListener('mouseleave', () => {#}
+{#            card.style.transform = '';#}
+{#            card.style.boxShadow = 'var(--shadow-md)';#}
+{#        });#}
+{#    });#}
+{##}
+{#    // Add ripple effect to buttons#}
+{#    const buttons = document.querySelectorAll('.btn');#}
+{#    buttons.forEach(button => {#}
+{#        button.addEventListener('click', function(e) {#}
+{#            const x = e.clientX - e.target.getBoundingClientRect().left;#}
+{#            const y = e.clientY - e.target.getBoundingClientRect().top;#}
+{##}
+{#            const ripple = document.createElement('span');#}
+{#            ripple.style.cssText = `#}
+{#                position: absolute;#}
+{#                background: rgba(255, 255, 255, 0.3);#}
+{#                border-radius: 50%;#}
+{#                transform: scale(0);#}
+{#                animation: ripple 0.6s linear;#}
+{#                top: ${y}px;#}
+{#                left: ${x}px;#}
+{#            `;#}
+{##}
+{#            button.appendChild(ripple);#}
+{##}
+{#            setTimeout(() => {#}
+{#                ripple.remove();#}
+{#            }, 600);#}
+{#        });#}
+{#    });#}
+{#});#}
+{##}
+{#// CSRF token for Django requests#}
+{#const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||#}
+{#                 document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');#}
+{#</script>#}
+{#{% endblock %}#}

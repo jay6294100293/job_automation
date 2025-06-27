@@ -1,0 +1,141 @@
+<!-- ================================== -->
+<!-- templates/dashboard/pipeline_visualization.html -->
+<!-- ================================== -->
+
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Pipeline Visualization - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="display-6 fw-bold text-primary">
+                <i class="fas fa-project-diagram"></i> Application Pipeline
+            </h2>
+            <p class="text-muted">Visualize your application journey and conversion rates</p>
+        </div>
+    </div>
+
+    <!-- Pipeline Flow -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="pipeline-flow d-flex justify-content-between align-items-center">
+                        {% for stage in pipeline_stages %}
+                        <div class="pipeline-stage text-center">
+                            <div class="stage-circle bg-{% if stage == 'found' %}secondary{% elif stage == 'applied' %}primary{% elif stage == 'responded' %}success{% elif stage == 'interview' %}warning{% elif stage == 'offer' %}info{% elif stage == 'hired' %}success{% else %}danger{% endif %}">
+                                {{ pipeline_data|getattr:stage }}
+                            </div>
+                            <h6 class="mt-2">{{ stage|title }}</h6>
+                            {% if not forloop.last %}
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversion Rates -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5><i class="fas fa-percentage"></i> Conversion Rates</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for conversion, rate in conversion_rates.items %}
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>{{ conversion|replace:"_to_":" → "|replace:"_":" "|title }}</span>
+                                <strong class="{% if rate >= 20 %}text-success{% elif rate >= 10 %}text-warning{% else %}text-danger{% endif %}">{{ rate }}%</strong>
+                            </div>
+                            <div class="progress mt-1" style="height: 5px;">
+                                <div class="progress-bar {% if rate >= 20 %}bg-success{% elif rate >= 10 %}bg-warning{% else %}bg-danger{% endif %}"
+                                     style="width: {{ rate }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications by Stage -->
+    <div class="row">
+        {% for stage, apps in applications_by_stage.items %}
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">{{ stage|title }} ({{ pipeline_data|getattr:stage }})</h6>
+                    <span class="badge bg-{% if stage == 'found' %}secondary{% elif stage == 'applied' %}primary{% elif stage == 'responded' %}success{% elif stage == 'interview' %}warning{% elif stage == 'offer' %}info{% elif stage == 'hired' %}success{% else %}danger{% endif %}">
+                        {{ apps|length }}
+                    </span>
+                </div>
+                <div class="card-body p-2">
+                    {% for app in apps %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                        <div class="small">
+                            <strong>{{ app.company_name }}</strong>
+                            <br><span class="text-muted">{{ app.job_title|truncatechars:30 }}</span>
+                        </div>
+                        <small class="text-muted">{{ app.updated_at|date:"M d" }}</small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No applications in this stage</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% if forloop.counter|divisibleby:3 %}
+        </div><div class="row">
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.pipeline-flow {
+    flex-wrap: wrap;
+}
+
+.pipeline-stage {
+    flex: 1;
+    min-width: 120px;
+}
+
+.stage-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2em;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .pipeline-flow {
+        flex-direction: column;
+    }
+
+    .pipeline-stage {
+        margin-bottom: 1rem;
+    }
+
+    .pipeline-stage .fas.fa-arrow-right {
+        transform: rotate(90deg);
+    }
+}
+</style>
+{% endblock %}

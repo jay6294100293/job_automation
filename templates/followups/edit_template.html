@@ -1,0 +1,1479 @@
+{% extends 'base_dashboard.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Edit Template - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'followups:dashboard' %}">Follow-ups</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'followups:templates' %}">Templates</a></li>
+                            <li class="breadcrumb-item active">Edit Template</li>
+                        </ol>
+                    </nav>
+                    <h2 class="display-6 fw-bold text-primary mb-0">
+                        <i class="fas fa-edit"></i> Edit Follow-up Template
+                    </h2>
+                    <p class="text-muted">Update your email template to maximize response rates</p>
+                </div>
+                <div>
+                    <a href="{% url 'followups:templates' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Back to Templates
+                    </a>
+                    <button type="button" class="btn btn-info" onclick="previewTemplate()">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Edit Form -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i> Template Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="templateForm">
+                        {% csrf_token %}
+
+                        <!-- Template Basic Info -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-tag"></i> Template Name *
+                                </label>
+                                {{ form.template_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-list"></i> Template Type *
+                                </label>
+                                {{ form.template_type|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <!-- Timing and Settings -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-calendar"></i> Days After Application *
+                                </label>
+                                {{ form.days_after_application|as_crispy_field }}
+                                <small class="form-text text-muted">When to send this follow-up automatically</small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mt-4">
+                                    {{ form.is_default|as_crispy_field }}
+                                    <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
+                                        <strong>Set as Default Template</strong>
+                                        <br><small class="text-muted">This will be used when no specific template is selected</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Content -->
+                        <div class="card border-info mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-envelope"></i> Email Content
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Subject Line -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-text-width"></i> Subject Line *
+                                    </label>
+                                    {{ form.subject_template|as_crispy_field }}
+                                    <small class="form-text text-muted">
+                                        Available variables: <code>{{job_title}}</code>, <code>{{company_name}}</code>, <code>{{user_name}}</code>
+                                    </small>
+                                </div>
+
+                                <!-- Email Body -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-align-left"></i> Email Body *
+                                    </label>
+                                    {{ form.body_template|as_crispy_field }}
+                                    <small class="form-text text-muted">
+                                        Available variables: <code>{{user_name}}</code>, <code>{{company_name}}</code>,
+                                        <code>{{job_title}}</code>, <code>{{hiring_manager}}</code>, <code>{{days_since_application}}</code>
+                                    </small>
+                                </div>
+
+                                <!-- Variable Helper -->
+                                <div class="alert alert-light border">
+                                    <h6><i class="fas fa-lightbulb"></i> Variable Helper</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="insertVariable('{{user_name}}')">User Name</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="insertVariable('{{company_name}}')">Company</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="insertVariable('{{job_title}}')">Job Title</button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="insertVariable('{{hiring_manager}}')">Hiring Manager</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="insertVariable('{{days_since_application}}')">Days Since</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-danger" onclick="deleteTemplate()">
+                                    <i class="fas fa-trash"></i> Delete Template
+                                </button>
+                            </div>
+                            <div>
+                                <a href="{% url 'followups:templates' %}" class="btn btn-secondary me-2">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Update Template
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Analytics & Preview -->
+        <div class="col-lg-4">
+            <!-- Analytics Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Template Performance
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h3 class="text-success">{{ object.success_rate|floatformat:1 }}%</h3>
+                        <p class="text-muted mb-0">Success Rate</p>
+                    </div>
+
+                    <hr>
+
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-primary">{{ object.times_used }}</h5>
+                            <small class="text-muted">Times Used</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-info">{{ object.responses_received }}</h5>
+                            <small class="text-muted">Responses</small>
+                        </div>
+                    </div>
+
+                    {% if object.times_used > 0 %}
+                    <div class="progress mt-3">
+                        <div class="progress-bar bg-success"
+                             style="width: {{ object.success_rate }}%"
+                             role="progressbar">
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Based on {{ object.times_used }} use{{ object.times_used|pluralize }}
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary" onclick="previewTemplate()">
+                            <i class="fas fa-eye"></i> Preview Template
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="duplicateTemplate()">
+                            <i class="fas fa-copy"></i> Duplicate Template
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="testTemplate()">
+                            <i class="fas fa-paper-plane"></i> Send Test Email
+                        </button>
+                        <hr>
+                        <a href="{% url 'followups:create_template' %}" class="btn btn-outline-success">
+                            <i class="fas fa-plus"></i> Create New Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Template Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="email-preview">
+                    <div class="mb-3">
+                        <strong>Subject:</strong>
+                        <div class="border rounded p-2 bg-light" id="preview-subject">
+                            <!-- Subject will be populated here -->
+                        </div>
+                    </div>
+                    <div>
+                        <strong>Body:</strong>
+                        <div class="border rounded p-3 bg-light" id="preview-body">
+                            <!-- Body will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="testTemplate()">
+                    <i class="fas fa-paper-plane"></i> Send Test Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Insert variable at cursor position
+function insertVariable(variable) {
+    const bodyTextarea = document.getElementById('{{ form.body_template.id_for_label }}');
+    const cursorPos = bodyTextarea.selectionStart;
+    const textBefore = bodyTextarea.value.substring(0, cursorPos);
+    const textAfter = bodyTextarea.value.substring(cursorPos);
+
+    bodyTextarea.value = textBefore + variable + textAfter;
+    bodyTextarea.focus();
+    bodyTextarea.setSelectionRange(cursorPos + variable.length, cursorPos + variable.length);
+}
+
+// Preview template with sample data
+function previewTemplate() {
+    const subject = document.getElementById('{{ form.subject_template.id_for_label }}').value;
+    const body = document.getElementById('{{ form.body_template.id_for_label }}').value;
+
+    // Sample data for preview
+    const sampleData = {
+        '{{user_name}}': 'John Doe',
+        '{{company_name}}': 'Tech Solutions Inc.',
+        '{{job_title}}': 'Senior Software Engineer',
+        '{{hiring_manager}}': 'Sarah Johnson',
+        '{{days_since_application}}': '7'
+    };
+
+    // Replace variables with sample data
+    let previewSubject = subject;
+    let previewBody = body;
+
+    for (const [variable, value] of Object.entries(sampleData)) {
+        const regex = new RegExp(variable.replace(/[{}]/g, '\\$&'), 'g');
+        previewSubject = previewSubject.replace(regex, value);
+        previewBody = previewBody.replace(regex, value);
+    }
+
+    // Show in modal
+    document.getElementById('preview-subject').textContent = previewSubject;
+    document.getElementById('preview-body').innerHTML = previewBody.replace(/\n/g, '<br>');
+
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+}
+
+// Duplicate template
+function duplicateTemplate() {
+    if (confirm('Create a copy of this template?')) {
+        // This would need a backend endpoint
+        alert('Duplicate functionality would be implemented with a backend endpoint');
+    }
+}
+
+// Test template
+function testTemplate() {
+    if (confirm('Send a test email to yourself with this template?')) {
+        // This would need a backend endpoint
+        alert('Test email functionality would be implemented with a backend endpoint');
+    }
+}
+
+// Delete template
+function deleteTemplate() {
+    if (confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+        // Submit delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "followups:delete_template" object.pk %}';
+
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        form.appendChild(csrfToken);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Auto-save draft (optional enhancement)
+let autoSaveTimer;
+function autoSaveDraft() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        // Auto-save logic would go here
+        console.log('Auto-saving template draft...');
+    }, 5000);
+}
+
+// Bind auto-save to form changes
+document.querySelectorAll('#templateForm input, #templateForm textarea, #templateForm select').forEach(element => {
+    element.addEventListener('input', autoSaveDraft);
+});
+</script>
+{% endblock %}
+{#{% load crispy_forms_tags %}#}
+{##}
+{#{% block title %}Edit Follow-up Template - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="animate-fade-in">#}
+{#    <!-- Page Header -->#}
+{#    <div class="flex justify-between items-center mb-5">#}
+{#        <div>#}
+{#            <h1 class="text-2xl font-bold text-primary mb-1">#}
+{#                <i class="fas fa-edit text-accent"></i> Edit Follow-up Template#}
+{#            </h1>#}
+{#            <p class="text-secondary">Update your email template: "{{ object.template_name }}"</p>#}
+{#        </div>#}
+{#        <div>#}
+{#            <a href="{% url 'followups:templates' %}" class="btn btn-secondary">#}
+{#                <i class="fas fa-arrow-left"></i> Back to Templates#}
+{#            </a>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">#}
+{#        <!-- Main Form - Takes 2/3 width on large screens -->#}
+{#        <div class="lg:col-span-2">#}
+{#            <div class="card animate-slide-up">#}
+{#                <div class="card-header">#}
+{#                    <h2 class="card-title">#}
+{#                        <i class="fas fa-envelope"></i>#}
+{#                        Template Settings#}
+{#                    </h2>#}
+{#                    <p class="card-subtitle">Configure your follow-up email template</p>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <form method="post" id="templateForm">#}
+{#                        {% csrf_token %}#}
+{##}
+{#                        <!-- Template Name -->#}
+{#                        <div class="mb-4">#}
+{#                            <label class="form-label font-semibold text-primary">#}
+{#                                <i class="fas fa-tag"></i> Template Name#}
+{#                            </label>#}
+{#                            {{ form.template_name|as_crispy_field }}#}
+{#                        </div>#}
+{##}
+{#                        <!-- Template Type & Timing -->#}
+{#                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">#}
+{#                            <div>#}
+{#                                <label class="form-label font-semibold text-primary">#}
+{#                                    <i class="fas fa-category"></i> Template Type#}
+{#                                </label>#}
+{#                                {{ form.template_type|as_crispy_field }}#}
+{#                            </div>#}
+{#                            <div>#}
+{#                                <label class="form-label font-semibold text-primary">#}
+{#                                    <i class="fas fa-calendar"></i> Days After Application#}
+{#                                </label>#}
+{#                                {{ form.days_after_application|as_crispy_field }}#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                        <!-- Default Template -->#}
+{#                        <div class="mb-4">#}
+{#                            <div class="card bg-tertiary border-accent">#}
+{#                                <div class="card-body p-4">#}
+{#                                    <div class="flex items-center gap-3">#}
+{#                                        <div class="form-check form-switch">#}
+{#                                            {{ form.is_default }}#}
+{#                                        </div>#}
+{#                                        <div>#}
+{#                                            <label class="form-check-label font-semibold" for="{{ form.is_default.id_for_label }}">#}
+{#                                                <i class="fas fa-star text-warning"></i> Set as Default Template#}
+{#                                            </label>#}
+{#                                            <p class="text-xs text-secondary mb-0 mt-1">#}
+{#                                                Default templates are used for automatic follow-ups#}
+{#                                            </p>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                        <!-- Email Subject -->#}
+{#                        <div class="mb-4">#}
+{#                            <label class="form-label font-semibold text-primary">#}
+{#                                <i class="fas fa-subject"></i> Email Subject#}
+{#                            </label>#}
+{#                            {{ form.subject_template|as_crispy_field }}#}
+{#                            <div class="flex gap-2 mt-2 flex-wrap">#}
+{#                                <button type="button" class="btn btn-sm bg-info text-white" onclick="insertVariable('subject', '{{company_name}}')">#}
+{#                                    Company#}
+{#                                </button>#}
+{#                                <button type="button" class="btn btn-sm bg-info text-white" onclick="insertVariable('subject', '{{job_title}}')">#}
+{#                                    Job Title#}
+{#                                </button>#}
+{#                                <button type="button" class="btn btn-sm bg-info text-white" onclick="insertVariable('subject', '{{user_name}}')">#}
+{#                                    Your Name#}
+{#                                </button>#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                        <!-- Email Body -->#}
+{#                        <div class="mb-4">#}
+{#                            <label class="form-label font-semibold text-primary">#}
+{#                                <i class="fas fa-envelope-open-text"></i> Email Body#}
+{#                            </label>#}
+{#                            {{ form.body_template|as_crispy_field }}#}
+{##}
+{#                            <!-- Variable Buttons -->#}
+{#                            <div class="mt-3">#}
+{#                                <p class="text-sm text-secondary mb-2">Quick Insert Variables:</p>#}
+{#                                <div class="flex flex-wrap gap-2 mb-3">#}
+{#                                    <button type="button" class="btn btn-sm" onclick="insertVariable('body', '{{user_name}}')">Your Name</button>#}
+{#                                    <button type="button" class="btn btn-sm" onclick="insertVariable('body', '{{company_name}}')">Company</button>#}
+{#                                    <button type="button" class="btn btn-sm" onclick="insertVariable('body', '{{job_title}}')">Job Title</button>#}
+{#                                    <button type="button" class="btn btn-sm" onclick="insertVariable('body', '{{hiring_manager}}')">Hiring Manager</button>#}
+{#                                </div>#}
+{#                                <div class="flex flex-wrap gap-2 mb-3">#}
+{#                                    <button type="button" class="btn btn-sm btn-secondary" onclick="insertVariable('body', '{{days_since_application}}')">Days Since App</button>#}
+{#                                    <button type="button" class="btn btn-sm btn-secondary" onclick="insertVariable('body', '{{current_title}}')">Your Title</button>#}
+{#                                    <button type="button" class="btn btn-sm btn-secondary" onclick="insertVariable('body', '{{years_experience}}')">Experience</button>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <!-- Variable Guide -->#}
+{#                            <div class="card bg-info-50 border border-info-500/20 mt-4">#}
+{#                                <div class="card-body p-4">#}
+{#                                    <h6 class="font-semibold text-info-500 mb-3">#}
+{#                                        <i class="fas fa-info-circle"></i> Available Variables#}
+{#                                    </h6>#}
+{#                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">#}
+{#                                        <div>#}
+{#                                            <ul class="space-y-1">#}
+{#                                                <li><code class="bg-gray-100 px-2 py-1 rounded">{{user_name}}</code> - Your full name</li>#}
+{#                                                <li><code class="bg-gray-100 px-2 py-1 rounded">{{company_name}}</code> - Company name</li>#}
+{#                                                <li><code class="bg-gray-100 px-2 py-1 rounded">{{job_title}}</code> - Job position</li>#}
+{#                                                <li><code class="bg-gray-100 px-2 py-1 rounded">{{hiring_manager}}</code> - Hiring manager</li>#}
+{#                                            </ul>#}
+{#                                        </div>#}
+{#                                        <div>#}
+{#                                            <ul class="space-y-1">#}
+{#                                                <li><code class="bg-gray-100 px-2 py-1 rounded">{{days_since_application}}</code> - Days since applied</li>#}
+{#                                                <li><code class="bg-gray-100 px-2 py-1 rounded">{{current_title}}</code> - Your current job title</li>#}
+{#                                                <li><code class="bg-gray-100 px-2 py-1 rounded">{{years_experience}}</code> - Years of experience</li>#}
+{#                                                <li><code class="bg-gray-100 px-2 py-1 rounded">{{first_name}}</code> - Your first name</li>#}
+{#                                            </ul>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                        <!-- Submit Buttons -->#}
+{#                        <div class="flex justify-between items-center flex-wrap gap-3">#}
+{#                            <div class="flex gap-3">#}
+{#                                <button type="submit" class="btn btn-primary btn-lg">#}
+{#                                    <i class="fas fa-save"></i> Save Changes#}
+{#                                </button>#}
+{#                                <a href="{% url 'followups:templates' %}" class="btn btn-secondary btn-lg">#}
+{#                                    <i class="fas fa-times"></i> Cancel#}
+{#                                </a>#}
+{#                            </div>#}
+{#                            <div>#}
+{#                                <button type="button" class="btn btn-success btn-lg" onclick="previewTemplate()">#}
+{#                                    <i class="fas fa-eye"></i> Preview#}
+{#                                </button>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </form>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Sidebar - Takes 1/3 width on large screens -->#}
+{#        <div class="lg:col-span-1 space-y-4">#}
+{#            <!-- Template Stats -->#}
+{#            <div class="card animate-slide-up" style="animation-delay: 0.1s;">#}
+{#                <div class="card-header">#}
+{#                    <h3 class="card-title text-lg">#}
+{#                        <i class="fas fa-chart-bar"></i>#}
+{#                        Performance#}
+{#                    </h3>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="space-y-4">#}
+{#                        <div class="flex justify-between items-center p-3 bg-tertiary rounded-lg">#}
+{#                            <span class="text-secondary">Times Used:</span>#}
+{#                            <strong class="text-primary">{{ object.times_used }}</strong>#}
+{#                        </div>#}
+{#                        <div class="flex justify-between items-center p-3 bg-tertiary rounded-lg">#}
+{#                            <span class="text-secondary">Responses:</span>#}
+{#                            <strong class="text-primary">{{ object.responses_received }}</strong>#}
+{#                        </div>#}
+{#                        <div class="flex justify-between items-center p-3 bg-tertiary rounded-lg">#}
+{#                            <span class="text-secondary">Success Rate:</span>#}
+{#                            <strong class="{% if object.success_rate >= 25 %}text-success{% elif object.success_rate >= 15 %}text-warning{% else %}text-danger{% endif %}">#}
+{#                                {{ object.success_rate|floatformat:1 }}%#}
+{#                            </strong>#}
+{#                        </div>#}
+{##}
+{#                        {% if object.success_rate > 0 %}#}
+{#                        <div class="w-full bg-gray-200 rounded-full h-2">#}
+{#                            <div class="h-2 rounded-full {% if object.success_rate >= 25 %}bg-success-500{% elif object.success_rate >= 15 %}bg-warning-500{% else %}bg-danger-500{% endif %}"#}
+{#                                 style="width: {{ object.success_rate }}%"></div>#}
+{#                        </div>#}
+{#                        {% endif %}#}
+{##}
+{#                        <div class="border-t border-gray-200 pt-3">#}
+{#                            <p class="text-sm text-secondary">#}
+{#                                <i class="fas fa-lightbulb text-accent"></i>#}
+{#                                {% if object.success_rate >= 25 %}#}
+{#                                    Excellent performance! This template works well.#}
+{#                                {% elif object.success_rate >= 15 %}#}
+{#                                    Good template. Consider minor adjustments.#}
+{#                                {% elif object.success_rate > 0 %}#}
+{#                                    Consider revising for better results.#}
+{#                                {% else %}#}
+{#                                    New template - performance data will appear after use.#}
+{#                                {% endif %}#}
+{#                            </p>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Template Tips -->#}
+{#            <div class="card animate-slide-up" style="animation-delay: 0.2s;">#}
+{#                <div class="card-header">#}
+{#                    <h3 class="card-title text-lg">#}
+{#                        <i class="fas fa-lightbulb"></i>#}
+{#                        Writing Tips#}
+{#                    </h3>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <ul class="space-y-3 text-sm">#}
+{#                        <li class="flex items-start gap-2">#}
+{#                            <i class="fas fa-check text-success-500 mt-1"></i>#}
+{#                            <span>Keep emails concise and professional</span>#}
+{#                        </li>#}
+{#                        <li class="flex items-start gap-2">#}
+{#                            <i class="fas fa-check text-success-500 mt-1"></i>#}
+{#                            <span>Personalize with company-specific details</span>#}
+{#                        </li>#}
+{#                        <li class="flex items-start gap-2">#}
+{#                            <i class="fas fa-check text-success-500 mt-1"></i>#}
+{#                            <span>Include a clear call-to-action</span>#}
+{#                        </li>#}
+{#                        <li class="flex items-start gap-2">#}
+{#                            <i class="fas fa-check text-success-500 mt-1"></i>#}
+{#                            <span>Mention specific qualifications</span>#}
+{#                        </li>#}
+{#                        <li class="flex items-start gap-2">#}
+{#                            <i class="fas fa-check text-success-500 mt-1"></i>#}
+{#                            <span>Express continued enthusiasm</span>#}
+{#                        </li>#}
+{#                        <li class="flex items-start gap-2">#}
+{#                            <i class="fas fa-check text-success-500 mt-1"></i>#}
+{#                            <span>Use a professional email signature</span>#}
+{#                        </li>#}
+{#                    </ul>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Quick Actions -->#}
+{#            <div class="card animate-slide-up" style="animation-delay: 0.3s;">#}
+{#                <div class="card-header">#}
+{#                    <h3 class="card-title text-lg">#}
+{#                        <i class="fas fa-bolt"></i>#}
+{#                        Quick Actions#}
+{#                    </h3>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="space-y-3">#}
+{#                        <button class="btn btn-secondary w-full justify-start" onclick="duplicateTemplate()">#}
+{#                            <i class="fas fa-copy"></i> Duplicate Template#}
+{#                        </button>#}
+{#                        <button class="btn btn-success w-full justify-start" onclick="testTemplate()">#}
+{#                            <i class="fas fa-paper-plane"></i> Send Test Email#}
+{#                        </button>#}
+{#                        <a href="{% url 'followups:history' %}" class="btn btn-secondary w-full justify-start">#}
+{#                            <i class="fas fa-history"></i> View History#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Preview Modal -->#}
+{#<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">#}
+{#    <div class="modal-dialog modal-lg">#}
+{#        <div class="modal-content">#}
+{#            <div class="modal-header bg-primary text-white">#}
+{#                <h5 class="modal-title">#}
+{#                    <i class="fas fa-eye"></i> Email Preview#}
+{#                </h5>#}
+{#                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>#}
+{#            </div>#}
+{#            <div class="modal-body">#}
+{#                <div class="email-preview">#}
+{#                    <div class="email-header mb-4 p-4 bg-tertiary border-l-4 border-accent rounded">#}
+{#                        <div class="flex justify-between items-start">#}
+{#                            <div class="space-y-1">#}
+{#                                <div><strong>From:</strong> Your Name &lt;your.email@example.com&gt;</div>#}
+{#                                <div><strong>To:</strong> hiring@company.com</div>#}
+{#                                <div><strong>Subject:</strong> <span id="previewSubject" class="font-semibold"></span></div>#}
+{#                            </div>#}
+{#                            <span class="text-sm text-secondary">#}
+{#                                <i class="fas fa-clock"></i> Today, 10:30 AM#}
+{#                            </span>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="email-body bg-white p-5 rounded border border-gray-200">#}
+{#                        <div id="previewBody" style="white-space: pre-line; line-height: 1.6;"></div>#}
+{#                    </div>#}
+{#                    <div class="border-t border-gray-200 mt-4 pt-4">#}
+{#                        <div class="email-signature text-sm text-secondary">#}
+{#                            Best regards,<br>#}
+{#                            Mrityunjay Gupta<br>#}
+{#                            Data Scientist & ML Engineer<br>#}
+{#                            Phone: 778-636-6294<br>#}
+{#                            Email: mrityunjay.100293@gmail.com<br>#}
+{#                            LinkedIn: linkedin.com/in/gupta-mrityunjay#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="modal-footer">#}
+{#                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>#}
+{#                <button type="button" class="btn btn-primary" onclick="sendTestEmail()">#}
+{#                    <i class="fas fa-paper-plane"></i> Send Test Email#}
+{#                </button>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.email-preview {#}
+{#    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;#}
+{#}#}
+{##}
+{#.form-control:focus {#}
+{#    border-color: var(--accent-primary);#}
+{#    box-shadow: 0 0 0 0.2rem rgba(94, 106, 210, 0.25);#}
+{#}#}
+{##}
+{#.form-check-input:checked {#}
+{#    background-color: var(--accent-primary);#}
+{#    border-color: var(--accent-primary);#}
+{#}#}
+{##}
+{#.form-check-input:focus {#}
+{#    border-color: var(--accent-hover);#}
+{#    box-shadow: 0 0 0 0.25rem rgba(94, 106, 210, 0.25);#}
+{#}#}
+{##}
+{#code {#}
+{#    font-size: 0.875rem;#}
+{#    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;#}
+{#}#}
+{##}
+{#.modal-content {#}
+{#    border: none;#}
+{#    border-radius: var(--radius-lg);#}
+{#    box-shadow: var(--shadow-xl);#}
+{#}#}
+{##}
+{#.modal-header {#}
+{#    border-bottom: 1px solid var(--border-primary);#}
+{#    border-radius: var(--radius-lg) var(--radius-lg) 0 0;#}
+{#}#}
+{##}
+{#.modal-footer {#}
+{#    border-top: 1px solid var(--border-primary);#}
+{#    border-radius: 0 0 var(--radius-lg) var(--radius-lg);#}
+{#}#}
+{##}
+{#@media (max-width: 768px) {#}
+{#    .flex-wrap .btn {#}
+{#        margin-bottom: 0.5rem;#}
+{#    }#}
+{##}
+{#    .grid {#}
+{#        grid-template-columns: 1fr;#}
+{#    }#}
+{##}
+{#    .lg\:col-span-2,#}
+{#    .lg\:col-span-1 {#}
+{#        grid-column: span 1;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#// Insert variable at cursor position#}
+{#function insertVariable(fieldType, variable) {#}
+{#    const field = fieldType === 'subject' ?#}
+{#        document.querySelector('input[name="subject_template"]') :#}
+{#        document.querySelector('textarea[name="body_template"]');#}
+{##}
+{#    if (!field) return;#}
+{##}
+{#    const start = field.selectionStart;#}
+{#    const end = field.selectionEnd;#}
+{#    const text = field.value;#}
+{##}
+{#    field.value = text.substring(0, start) + variable + text.substring(end);#}
+{#    field.selectionStart = field.selectionEnd = start + variable.length;#}
+{#    field.focus();#}
+{#}#}
+{##}
+{#// Preview template#}
+{#function previewTemplate() {#}
+{#    const subject = document.querySelector('input[name="subject_template"]')?.value || '';#}
+{#    const body = document.querySelector('textarea[name="body_template"]')?.value || '';#}
+{##}
+{#    // Sample data for preview#}
+{#    const sampleData = {#}
+{#        '{{user_name}}': 'Mrityunjay Gupta',#}
+{#        '{{company_name}}': 'TechCorp Inc.',#}
+{#        '{{job_title}}': 'Senior Data Scientist',#}
+{#        '{{hiring_manager}}': 'Hiring Manager',#}
+{#        '{{days_since_application}}': '7',#}
+{#        '{{current_title}}': 'Data Scientist',#}
+{#        '{{years_experience}}': '5',#}
+{#        '{{first_name}}': 'Mrityunjay'#}
+{#    };#}
+{##}
+{#    // Replace variables with sample data#}
+{#    let previewSubject = subject;#}
+{#    let previewBody = body;#}
+{##}
+{#    Object.entries(sampleData).forEach(([variable, value]) => {#}
+{#        const regex = new RegExp(variable.replace(/[{}]/g, '\\$&'), 'g');#}
+{#        previewSubject = previewSubject.replace(regex, value);#}
+{#        previewBody = previewBody.replace(regex, value);#}
+{#    });#}
+{##}
+{#    document.getElementById('previewSubject').textContent = previewSubject;#}
+{#    document.getElementById('previewBody').textContent = previewBody;#}
+{##}
+{#    const modal = new bootstrap.Modal(document.getElementById('previewModal'));#}
+{#    modal.show();#}
+{#}#}
+{##}
+{#// Duplicate template#}
+{#function duplicateTemplate() {#}
+{#    dashboard.showNotification('Template duplication started...', 'info');#}
+{##}
+{#    // In real implementation, this would make an API call#}
+{#    setTimeout(() => {#}
+{#        dashboard.showNotification('Template duplicated successfully!', 'success');#}
+{#    }, 1500);#}
+{#}#}
+{##}
+{#// Test template#}
+{#function testTemplate() {#}
+{#    const email = 'mrityunjay.100293@gmail.com';#}
+{#    sendTestEmail(email);#}
+{#}#}
+{##}
+{#function sendTestEmail(email) {#}
+{#    dashboard.showNotification('Sending test email...', 'info');#}
+{##}
+{#    // Simulate sending (in real implementation, make API call)#}
+{#    setTimeout(() => {#}
+{#        dashboard.showNotification(`Test email sent to ${email || 'your email'}!`, 'success');#}
+{#    }, 2000);#}
+{#}#}
+{##}
+{#// Form validation#}
+{#document.getElementById('templateForm')?.addEventListener('submit', function(e) {#}
+{#    const templateName = document.querySelector('input[name="template_name"]')?.value.trim();#}
+{#    const subject = document.querySelector('input[name="subject_template"]')?.value.trim();#}
+{#    const body = document.querySelector('textarea[name="body_template"]')?.value.trim();#}
+{##}
+{#    let errors = [];#}
+{##}
+{#    if (!templateName) {#}
+{#        errors.push('Template name is required');#}
+{#    }#}
+{##}
+{#    if (!subject) {#}
+{#        errors.push('Email subject is required');#}
+{#    }#}
+{##}
+{#    if (!body) {#}
+{#        errors.push('Email body is required');#}
+{#    }#}
+{##}
+{#    if (body && body.length < 50) {#}
+{#        errors.push('Email body should be at least 50 characters long');#}
+{#    }#}
+{##}
+{#    if (errors.length > 0) {#}
+{#        e.preventDefault();#}
+{#        dashboard.showNotification(#}
+{#            'Please fix the following errors:<br>• ' + errors.join('<br>• '),#}
+{#            'error'#}
+{#        );#}
+{#    }#}
+{#});#}
+{##}
+{#// Character counter for body#}
+{#const bodyTextarea = document.querySelector('textarea[name="body_template"]');#}
+{#if (bodyTextarea) {#}
+{#    const counter = document.createElement('small');#}
+{#    counter.className = 'text-secondary mt-1 block';#}
+{#    bodyTextarea.parentNode.appendChild(counter);#}
+{##}
+{#    function updateCounter() {#}
+{#        const length = bodyTextarea.value.length;#}
+{#        counter.textContent = `${length} characters`;#}
+{#        counter.className = length < 50 ? 'text-danger mt-1 block' : 'text-secondary mt-1 block';#}
+{#    }#}
+{##}
+{#    bodyTextarea.addEventListener('input', updateCounter);#}
+{#    updateCounter();#}
+{#}#}
+{##}
+{#// Auto-save draft#}
+{#let saveTimeout;#}
+{#document.querySelectorAll('input, textarea, select').forEach(element => {#}
+{#    element.addEventListener('input', function() {#}
+{#        clearTimeout(saveTimeout);#}
+{#        saveTimeout = setTimeout(() => {#}
+{#            console.log('Auto-saving draft...');#}
+{#            // In real implementation, save draft to localStorage or server#}
+{#            localStorage.setItem('template_draft', JSON.stringify({#}
+{#                name: document.querySelector('input[name="template_name"]')?.value,#}
+{#                subject: document.querySelector('input[name="subject_template"]')?.value,#}
+{#                body: document.querySelector('textarea[name="body_template"]')?.value,#}
+{#                timestamp: Date.now()#}
+{#            }));#}
+{#        }, 3000);#}
+{#    });#}
+{#});#}
+{##}
+{#// Load draft on page load#}
+{#document.addEventListener('DOMContentLoaded', function() {#}
+{#    const draft = localStorage.getItem('template_draft');#}
+{#    if (draft) {#}
+{#        try {#}
+{#            const draftData = JSON.parse(draft);#}
+{#            // Only load if draft is less than 1 hour old#}
+{#            if (Date.now() - draftData.timestamp < 3600000) {#}
+{#                if (confirm('A draft was found. Would you like to restore it?')) {#}
+{#                    if (draftData.name) document.querySelector('input[name="template_name"]').value = draftData.name;#}
+{#                    if (draftData.subject) document.querySelector('input[name="subject_template"]').value = draftData.subject;#}
+{#                    if (draftData.body) document.querySelector('textarea[name="body_template"]').value = draftData.body;#}
+{#                }#}
+{#            }#}
+{#        } catch (e) {#}
+{#            console.warn('Could not load draft:', e);#}
+{#        }#}
+{#    }#}
+{#});#}
+{#</script>#}
+{#{% endblock %}#}
+
+{#{% extends 'base.html' %}#}
+{#{% load crispy_forms_tags %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Edit Follow-up Template - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container">#}
+{#    <div class="row justify-content-center">#}
+{#        <div class="col-lg-10">#}
+{#            <!-- Header -->#}
+{#            <div class="d-flex justify-content-between align-items-center mb-4">#}
+{#                <div>#}
+{#                    <h2 class="display-6 fw-bold text-primary">#}
+{#                        <i class="fas fa-edit"></i> Edit Follow-up Template#}
+{#                    </h2>#}
+{#                    <p class="text-muted">Update your email template: "{{ object.template_name }}"</p>#}
+{#                </div>#}
+{#                <div>#}
+{#                    <a href="{% url 'followups:templates' %}" class="btn btn-outline-secondary">#}
+{#                        <i class="fas fa-arrow-left"></i> Back to Templates#}
+{#                    </a>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <div class="row">#}
+{#                <!-- Main Form -->#}
+{#                <div class="col-lg-8">#}
+{#                    <div class="card shadow-sm">#}
+{#                        <div class="card-header bg-primary text-white">#}
+{#                            <h5 class="mb-0">#}
+{#                                <i class="fas fa-envelope"></i> Template Settings#}
+{#                            </h5>#}
+{#                        </div>#}
+{#                        <div class="card-body">#}
+{#                            <form method="post" id="templateForm">#}
+{#                                {% csrf_token %}#}
+{##}
+{#                                <!-- Template Name -->#}
+{#                                <div class="form-group mb-4">#}
+{#                                    <label class="form-label fw-bold">#}
+{#                                        <i class="fas fa-tag"></i> Template Name#}
+{#                                    </label>#}
+{#                                    {{ form.template_name|as_crispy_field }}#}
+{#                                </div>#}
+{##}
+{#                                <!-- Template Type & Timing -->#}
+{#                                <div class="row mb-4">#}
+{#                                    <div class="col-md-6">#}
+{#                                        <label class="form-label fw-bold">#}
+{#                                            <i class="fas fa-category"></i> Template Type#}
+{#                                        </label>#}
+{#                                        {{ form.template_type|as_crispy_field }}#}
+{#                                    </div>#}
+{#                                    <div class="col-md-6">#}
+{#                                        <label class="form-label fw-bold">#}
+{#                                            <i class="fas fa-calendar"></i> Days After Application#}
+{#                                        </label>#}
+{#                                        {{ form.days_after_application|as_crispy_field }}#}
+{#                                    </div>#}
+{#                                </div>#}
+{##}
+{#                                <!-- Default Template -->#}
+{#                                <div class="form-group mb-4">#}
+{#                                    <div class="card border-info">#}
+{#                                        <div class="card-body">#}
+{#                                            <div class="form-check form-switch">#}
+{#                                                {{ form.is_default }}#}
+{#                                                <label class="form-check-label fw-bold" for="{{ form.is_default.id_for_label }}">#}
+{#                                                    <i class="fas fa-star"></i> Set as Default Template#}
+{#                                                </label>#}
+{#                                            </div>#}
+{#                                            <small class="text-muted">#}
+{#                                                Default templates are used for automatic follow-ups#}
+{#                                            </small>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{##}
+{#                                <!-- Email Subject -->#}
+{#                                <div class="form-group mb-4">#}
+{#                                    <label class="form-label fw-bold">#}
+{#                                        <i class="fas fa-subject"></i> Email Subject#}
+{#                                    </label>#}
+{#                                    {{ form.subject_template|as_crispy_field }}#}
+{#                                    <div class="mt-2">#}
+{#                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="insertVariable('subject', '{{company_name}}')">Company</button>#}
+{#                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="insertVariable('subject', '{{job_title}}')">Job Title</button>#}
+{#                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="insertVariable('subject', '{{user_name}}')">Your Name</button>#}
+{#                                    </div>#}
+{#                                </div>#}
+{##}
+{#                                <!-- Email Body -->#}
+{#                                <div class="form-group mb-4">#}
+{#                                    <label class="form-label fw-bold">#}
+{#                                        <i class="fas fa-envelope-open-text"></i> Email Body#}
+{#                                    </label>#}
+{#                                    {{ form.body_template|as_crispy_field }}#}
+{##}
+{#                                    <!-- Variable Buttons -->#}
+{#                                    <div class="mt-2">#}
+{#                                        <p class="small text-muted mb-2">Quick Insert Variables:</p>#}
+{#                                        <div class="btn-group-sm mb-2" role="group">#}
+{#                                            <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="insertVariable('body', '{{user_name}}')">Your Name</button>#}
+{#                                            <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="insertVariable('body', '{{company_name}}')">Company</button>#}
+{#                                            <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="insertVariable('body', '{{job_title}}')">Job Title</button>#}
+{#                                            <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="insertVariable('body', '{{hiring_manager}}')">Hiring Manager</button>#}
+{#                                        </div>#}
+{#                                        <div class="btn-group-sm mb-2" role="group">#}
+{#                                            <button type="button" class="btn btn-outline-secondary btn-sm me-1" onclick="insertVariable('body', '{{days_since_application}}')">Days Since App</button>#}
+{#                                            <button type="button" class="btn btn-outline-secondary btn-sm me-1" onclick="insertVariable('body', '{{current_title}}')">Your Title</button>#}
+{#                                            <button type="button" class="btn btn-outline-secondary btn-sm me-1" onclick="insertVariable('body', '{{years_experience}}')">Experience</button>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{##}
+{#                                    <!-- Variable Guide -->#}
+{#                                    <div class="mt-3">#}
+{#                                        <div class="alert alert-info">#}
+{#                                            <h6 class="alert-heading">#}
+{#                                                <i class="fas fa-info-circle"></i> Available Variables#}
+{#                                            </h6>#}
+{#                                            <div class="row small">#}
+{#                                                <div class="col-md-6">#}
+{#                                                    <ul class="mb-0">#}
+{#                                                        <li><code>{{user_name}}</code> - Your full name</li>#}
+{#                                                        <li><code>{{company_name}}</code> - Company name</li>#}
+{#                                                        <li><code>{{job_title}}</code> - Job position</li>#}
+{#                                                        <li><code>{{hiring_manager}}</code> - Hiring manager</li>#}
+{#                                                    </ul>#}
+{#                                                </div>#}
+{#                                                <div class="col-md-6">#}
+{#                                                    <ul class="mb-0">#}
+{#                                                        <li><code>{{days_since_application}}</code> - Days since applied</li>#}
+{#                                                        <li><code>{{current_title}}</code> - Your current job title</li>#}
+{#                                                        <li><code>{{years_experience}}</code> - Years of experience</li>#}
+{#                                                        <li><code>{{first_name}}</code> - Your first name</li>#}
+{#                                                    </ul>#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{##}
+{#                                <!-- Submit Buttons -->#}
+{#                                <div class="d-flex justify-content-between">#}
+{#                                    <div>#}
+{#                                        <button type="submit" class="btn btn-primary btn-lg me-3">#}
+{#                                            <i class="fas fa-save"></i> Save Changes#}
+{#                                        </button>#}
+{#                                        <a href="{% url 'followups:templates' %}" class="btn btn-outline-secondary btn-lg">#}
+{#                                            <i class="fas fa-times"></i> Cancel#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                    <div>#}
+{#                                        <button type="button" class="btn btn-success btn-lg" onclick="previewTemplate()">#}
+{#                                            <i class="fas fa-eye"></i> Preview#}
+{#                                        </button>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </form>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <!-- Sidebar -->#}
+{#                <div class="col-lg-4">#}
+{#                    <!-- Template Stats -->#}
+{#                    <div class="card shadow-sm mb-4">#}
+{#                        <div class="card-header bg-info text-white">#}
+{#                            <h6 class="mb-0">#}
+{#                                <i class="fas fa-chart-bar"></i> Template Performance#}
+{#                            </h6>#}
+{#                        </div>#}
+{#                        <div class="card-body">#}
+{#                            <div class="stat-item mb-3">#}
+{#                                <div class="d-flex justify-content-between">#}
+{#                                    <span>Times Used:</span>#}
+{#                                    <strong>{{ object.times_used }}</strong>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            <div class="stat-item mb-3">#}
+{#                                <div class="d-flex justify-content-between">#}
+{#                                    <span>Responses:</span>#}
+{#                                    <strong>{{ object.responses_received }}</strong>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            <div class="stat-item mb-3">#}
+{#                                <div class="d-flex justify-content-between">#}
+{#                                    <span>Success Rate:</span>#}
+{#                                    <strong class="text-{% if object.success_rate >= 25 %}success{% elif object.success_rate >= 15 %}warning{% else %}danger{% endif %}">#}
+{#                                        {{ object.success_rate|floatformat:1 }}%#}
+{#                                    </strong>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            {% if object.success_rate > 0 %}#}
+{#                            <div class="progress mt-3" style="height: 8px;">#}
+{#                                <div class="progress-bar bg-{% if object.success_rate >= 25 %}success{% elif object.success_rate >= 15 %}warning{% else %}danger{% endif %}"#}
+{#                                     style="width: {{ object.success_rate }}%"></div>#}
+{#                            </div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <hr>#}
+{#                            <small class="text-muted">#}
+{#                                <i class="fas fa-lightbulb"></i>#}
+{#                                {% if object.success_rate >= 25 %}#}
+{#                                    Excellent performance! This template works well.#}
+{#                                {% elif object.success_rate >= 15 %}#}
+{#                                    Good template. Consider minor adjustments.#}
+{#                                {% elif object.success_rate > 0 %}#}
+{#                                    Consider revising for better results.#}
+{#                                {% else %}#}
+{#                                    New template - performance data will appear after use.#}
+{#                                {% endif %}#}
+{#                            </small>#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <!-- Template Tips -->#}
+{#                    <div class="card shadow-sm mb-4">#}
+{#                        <div class="card-header bg-warning text-dark">#}
+{#                            <h6 class="mb-0">#}
+{#                                <i class="fas fa-lightbulb"></i> Writing Tips#}
+{#                            </h6>#}
+{#                        </div>#}
+{#                        <div class="card-body">#}
+{#                            <ul class="list-unstyled small">#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check text-success me-2"></i>#}
+{#                                    Keep emails concise and professional#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check text-success me-2"></i>#}
+{#                                    Personalize with company-specific details#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check text-success me-2"></i>#}
+{#                                    Include a clear call-to-action#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check text-success me-2"></i>#}
+{#                                    Mention specific qualifications#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check text-success me-2"></i>#}
+{#                                    Express continued enthusiasm#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check text-success me-2"></i>#}
+{#                                    Use a professional email signature#}
+{#                                </li>#}
+{#                            </ul>#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <!-- Quick Actions -->#}
+{#                    <div class="card shadow-sm">#}
+{#                        <div class="card-header bg-secondary text-white">#}
+{#                            <h6 class="mb-0">#}
+{#                                <i class="fas fa-bolt"></i> Quick Actions#}
+{#                            </h6>#}
+{#                        </div>#}
+{#                        <div class="card-body">#}
+{#                            <div class="d-grid gap-2">#}
+{#                                <button class="btn btn-outline-primary" onclick="duplicateTemplate()">#}
+{#                                    <i class="fas fa-copy"></i> Duplicate Template#}
+{#                                </button>#}
+{#                                <button class="btn btn-outline-success" onclick="testTemplate()">#}
+{#                                    <i class="fas fa-paper-plane"></i> Send Test Email#}
+{#                                </button>#}
+{#                                <a href="{% url 'followups:history' %}" class="btn btn-outline-info">#}
+{#                                    <i class="fas fa-history"></i> View History#}
+{#                                </a>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Preview Modal -->#}
+{#<div class="modal fade" id="previewModal" tabindex="-1">#}
+{#    <div class="modal-dialog modal-lg">#}
+{#        <div class="modal-content">#}
+{#            <div class="modal-header bg-primary text-white">#}
+{#                <h5 class="modal-title">#}
+{#                    <i class="fas fa-eye"></i> Email Preview#}
+{#                </h5>#}
+{#                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>#}
+{#            </div>#}
+{#            <div class="modal-body">#}
+{#                <div class="email-preview">#}
+{#                    <div class="email-header mb-3 p-3 bg-light border-start border-primary border-4">#}
+{#                        <div class="d-flex justify-content-between">#}
+{#                            <div>#}
+{#                                <strong>From:</strong> Your Name &lt;your.email@example.com&gt;<br>#}
+{#                                <strong>To:</strong> hiring@company.com<br>#}
+{#                                <strong>Subject:</strong> <span id="previewSubject"></span>#}
+{#                            </div>#}
+{#                            <small class="text-muted">#}
+{#                                <i class="fas fa-clock"></i> Today, 10:30 AM#}
+{#                            </small>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="email-body">#}
+{#                        <div id="previewBody" style="white-space: pre-line; line-height: 1.6;"></div>#}
+{#                    </div>#}
+{#                    <hr>#}
+{#                    <div class="email-signature text-muted">#}
+{#                        <small>#}
+{#                            Best regards,<br>#}
+{#                            Mrityunjay Gupta<br>#}
+{#                            Data Scientist & ML Engineer<br>#}
+{#                            Phone: 778-636-6294<br>#}
+{#                            Email: mrityunjay.100293@gmail.com<br>#}
+{#                            LinkedIn: linkedin.com/in/gupta-mrityunjay#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="modal-footer">#}
+{#                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>#}
+{#                <button type="button" class="btn btn-primary" onclick="sendTestEmail()">#}
+{#                    <i class="fas fa-paper-plane"></i> Send Test Email#}
+{#                </button>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.stat-item {#}
+{#    padding: 10px;#}
+{#    background-color: #f8f9fa;#}
+{#    border-radius: 5px;#}
+{#    border-left: 3px solid #17a2b8;#}
+{#}#}
+{##}
+{#.email-preview {#}
+{#    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;#}
+{#}#}
+{##}
+{#.email-header {#}
+{#    background-color: #f8f9fb !important;#}
+{#}#}
+{##}
+{#.email-body {#}
+{#    background-color: white;#}
+{#    padding: 20px;#}
+{#    border: 1px solid #dee2e6;#}
+{#    border-radius: 5px;#}
+{#}#}
+{##}
+{#.btn-group-sm .btn {#}
+{#    font-size: 0.8rem;#}
+{#    padding: 0.25rem 0.5rem;#}
+{#}#}
+{##}
+{#.form-control:focus {#}
+{#    border-color: #007bff;#}
+{#    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);#}
+{#}#}
+{##}
+{#@media (max-width: 768px) {#}
+{#    .btn-group-sm .btn {#}
+{#        margin-bottom: 5px;#}
+{#        margin-right: 5px;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#// Insert variable at cursor position#}
+{#function insertVariable(fieldType, variable) {#}
+{#    const field = fieldType === 'subject' ?#}
+{#        document.querySelector('input[name="subject_template"]') :#}
+{#        document.querySelector('textarea[name="body_template"]');#}
+{##}
+{#    const start = field.selectionStart;#}
+{#    const end = field.selectionEnd;#}
+{#    const text = field.value;#}
+{##}
+{#    field.value = text.substring(0, start) + variable + text.substring(end);#}
+{#    field.selectionStart = field.selectionEnd = start + variable.length;#}
+{#    field.focus();#}
+{#}#}
+{##}
+{#// Preview template#}
+{#function previewTemplate() {#}
+{#    const subject = document.querySelector('input[name="subject_template"]').value;#}
+{#    const body = document.querySelector('textarea[name="body_template"]').value;#}
+{##}
+{#    // Sample data for preview#}
+{#    const sampleData = {#}
+{#        '{{user_name}}': 'Mrityunjay Gupta',#}
+{#        '{{company_name}}': 'TechCorp Inc.',#}
+{#        '{{job_title}}': 'Senior Data Scientist',#}
+{#        '{{hiring_manager}}': 'Hiring Manager',#}
+{#        '{{days_since_application}}': '7',#}
+{#        '{{current_title}}': 'Data Scientist',#}
+{#        '{{years_experience}}': '5',#}
+{#        '{{first_name}}': 'Mrityunjay'#}
+{#    };#}
+{##}
+{#    // Replace variables with sample data#}
+{#    let previewSubject = subject;#}
+{#    let previewBody = body;#}
+{##}
+{#    Object.entries(sampleData).forEach(([variable, value]) => {#}
+{#        const regex = new RegExp(variable.replace(/[{}]/g, '\\$&'), 'g');#}
+{#        previewSubject = previewSubject.replace(regex, value);#}
+{#        previewBody = previewBody.replace(regex, value);#}
+{#    });#}
+{##}
+{#    document.getElementById('previewSubject').textContent = previewSubject;#}
+{#    document.getElementById('previewBody').textContent = previewBody;#}
+{##}
+{#    new bootstrap.Modal(document.getElementById('previewModal')).show();#}
+{#}#}
+{##}
+{#// Duplicate template#}
+{#function duplicateTemplate() {#}
+{#    Swal.fire({#}
+{#        title: 'Duplicate Template',#}
+{#        input: 'text',#}
+{#        inputLabel: 'New template name',#}
+{#        inputValue: '{{ object.template_name }} (Copy)',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Duplicate',#}
+{#        inputValidator: (value) => {#}
+{#            if (!value) {#}
+{#                return 'Please enter a name for the new template';#}
+{#            }#}
+{#        }#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            // In real implementation, this would make an API call#}
+{#            Swal.fire('Duplicated!', 'Template has been duplicated successfully.', 'success');#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Test template#}
+{#function testTemplate() {#}
+{#    Swal.fire({#}
+{#        title: 'Send Test Email',#}
+{#        input: 'email',#}
+{#        inputLabel: 'Send test email to:',#}
+{#        inputValue: 'mrityunjay.100293@gmail.com',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Send Test',#}
+{#        inputValidator: (value) => {#}
+{#            if (!value || !value.includes('@')) {#}
+{#                return 'Please enter a valid email address';#}
+{#            }#}
+{#        }#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            sendTestEmail(result.value);#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function sendTestEmail(email) {#}
+{#    // Show loading#}
+{#    Swal.fire({#}
+{#        title: 'Sending Test Email...',#}
+{#        allowOutsideClick: false,#}
+{#        showConfirmButton: false,#}
+{#        willOpen: () => {#}
+{#            Swal.showLoading();#}
+{#        }#}
+{#    });#}
+{##}
+{#    // Simulate sending (in real implementation, make API call)#}
+{#    setTimeout(() => {#}
+{#        Swal.fire('Test Sent!', `Test email sent to ${email || 'your email'}`, 'success');#}
+{#    }, 2000);#}
+{#}#}
+{##}
+{#// Form validation#}
+{#document.getElementById('templateForm').addEventListener('submit', function(e) {#}
+{#    const templateName = document.querySelector('input[name="template_name"]').value.trim();#}
+{#    const subject = document.querySelector('input[name="subject_template"]').value.trim();#}
+{#    const body = document.querySelector('textarea[name="body_template"]').value.trim();#}
+{##}
+{#    let errors = [];#}
+{##}
+{#    if (!templateName) {#}
+{#        errors.push('Template name is required');#}
+{#    }#}
+{##}
+{#    if (!subject) {#}
+{#        errors.push('Email subject is required');#}
+{#    }#}
+{##}
+{#    if (!body) {#}
+{#        errors.push('Email body is required');#}
+{#    }#}
+{##}
+{#    if (body.length < 50) {#}
+{#        errors.push('Email body should be at least 50 characters long');#}
+{#    }#}
+{##}
+{#    if (errors.length > 0) {#}
+{#        e.preventDefault();#}
+{#        Swal.fire({#}
+{#            title: 'Validation Errors',#}
+{#            html: '<ul class="text-left"><li>' + errors.join('</li><li>') + '</li></ul>',#}
+{#            icon: 'error'#}
+{#        });#}
+{#    }#}
+{#});#}
+{##}
+{#// Character counter for body#}
+{#const bodyTextarea = document.querySelector('textarea[name="body_template"]');#}
+{#if (bodyTextarea) {#}
+{#    const counter = document.createElement('small');#}
+{#    counter.className = 'text-muted';#}
+{#    bodyTextarea.parentNode.appendChild(counter);#}
+{##}
+{#    function updateCounter() {#}
+{#        const length = bodyTextarea.value.length;#}
+{#        counter.textContent = `${length} characters`;#}
+{#        counter.className = length < 50 ? 'text-danger' : 'text-muted';#}
+{#    }#}
+{##}
+{#    bodyTextarea.addEventListener('input', updateCounter);#}
+{#    updateCounter();#}
+{#}#}
+{##}
+{#// Auto-save draft#}
+{#let saveTimeout;#}
+{#document.querySelectorAll('input, textarea, select').forEach(element => {#}
+{#    element.addEventListener('input', function() {#}
+{#        clearTimeout(saveTimeout);#}
+{#        saveTimeout = setTimeout(() => {#}
+{#            console.log('Auto-saving draft...');#}
+{#            // In real implementation, save draft to localStorage or server#}
+{#        }, 3000);#}
+{#    });#}
+{#});#}
+{#</script>#}
+{#{% endblock %}#}

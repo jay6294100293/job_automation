@@ -1,0 +1,3788 @@
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Job Automation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+/* ===============================================
+   MODERN ELEGANT DESIGN SYSTEM
+   =============================================== */
+:root {
+    /* Core Colors - Refined Professional Palette */
+    --primary-500: #4F46E5;      /* Elegant indigo */
+    --primary-400: #6366F1;
+    --primary-600: #4338CA;
+    --primary-700: #3730A3;
+
+    --success-500: #10B981;      /* Modern emerald */
+    --success-400: #34D399;
+    --success-600: #059669;
+
+    --info-500: #0EA5E9;         /* Clean sky blue */
+    --info-400: #38BDF8;
+    --info-600: #0284C7;
+
+    --warning-500: #F59E0B;      /* Warm amber */
+    --warning-400: #FBBF24;
+    --warning-600: #D97706;
+
+    --danger-500: #EF4444;       /* Modern red */
+    --danger-400: #F87171;
+    --danger-600: #DC2626;
+
+    --purple-500: #8B5CF6;       /* Elegant violet */
+    --purple-400: #A78BFA;
+    --purple-600: #7C3AED;
+
+    /* Dark Theme Base */
+    {#--bg-primary: #0f172a;       /* Deep slate */#}
+    {#--bg-secondary: #1E293B;     /* Medium slate */#}
+    --bg-tertiary: #334155;      /* Light slate */
+    --bg-card: #1E293B;          /* Card background */
+    --bg-elevated: #334155;      /* Elevated elements */
+
+    /* Text Colors */
+    --text-primary: #F8FAFC;     /* Primary white */
+    --text-secondary: #CBD5E1;   /* Secondary gray */
+    --text-muted: #64748B;       /* Muted gray */
+
+    /* Border Colors */
+    --border-primary: #334155;
+    --border-secondary: #475569;
+
+    /* Spacing System */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+
+    /* Border Radius */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 350ms ease;
+}
+
+/* ===============================================
+   GLOBAL STYLES
+   =============================================== */
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+}
+
+.container-fluid {
+    padding: var(--space-xl);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ===============================================
+   HEADER SECTION
+   =============================================== */
+.dashboard-header {
+    margin-bottom: var(--space-2xl);
+    animation: slideUp 0.6s ease forwards;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+}
+
+.header-text h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-sm) 0;
+    letter-spacing: -0.025em;
+}
+
+.header-text p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+/* ===============================================
+   STATISTICS CARDS
+   =============================================== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.6s ease forwards;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-500), var(--info-500));
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-secondary);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-header {
+    display: flex;
+    justify-content: between;
+    align-items: flex-start;
+    margin-bottom: var(--space-md);
+}
+
+.stat-info h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 var(--space-xs) 0;
+    color: var(--text-primary);
+}
+
+.stat-info p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 500;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-left: auto;
+}
+
+.stat-icon.primary { background: rgba(79, 70, 229, 0.1); color: var(--primary-500); }
+.stat-icon.success { background: rgba(16, 185, 129, 0.1); color: var(--success-500); }
+.stat-icon.warning { background: rgba(245, 158, 11, 0.1); color: var(--warning-500); }
+.stat-icon.info { background: rgba(14, 165, 233, 0.1); color: var(--info-500); }
+
+.stat-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.stat-footer i {
+    font-size: 0.875rem;
+}
+
+/* ===============================================
+   MAIN CONTENT GRID
+   =============================================== */
+.main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-2xl);
+}
+
+/* ===============================================
+   PIPELINE VISUALIZATION
+   =============================================== */
+.pipeline-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: slideUp 0.8s ease forwards;
+}
+
+.pipeline-header {
+    background: var(--bg-elevated);
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.pipeline-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.pipeline-content {
+    padding: var(--space-lg);
+}
+
+.pipeline-stages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.pipeline-stage {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    text-align: center;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.pipeline-stage::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    transition: opacity var(--transition-normal);
+    opacity: 0;
+}
+
+.pipeline-stage:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.pipeline-stage:hover::before {
+    opacity: 1;
+}
+
+.pipeline-stage.found::before { background: var(--text-muted); }
+.pipeline-stage.applied::before { background: var(--primary-500); }
+.pipeline-stage.responded::before { background: var(--success-500); }
+.pipeline-stage.interview::before { background: var(--warning-500); }
+.pipeline-stage.offer::before { background: var(--info-500); }
+
+.stage-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+}
+
+.stage-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.found .stage-number { color: var(--text-muted); }
+.applied .stage-number { color: var(--primary-500); }
+.responded .stage-number { color: var(--success-500); }
+.interview .stage-number { color: var(--warning-500); }
+.offer .stage-number { color: var(--info-500); }
+
+/* ===============================================
+   RECENT APPLICATIONS
+   =============================================== */
+.recent-applications {
+    margin-top: var(--space-xl);
+}
+
+.applications-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+}
+
+.applications-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.application-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+    transition: all var(--transition-normal);
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.application-item:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(2px);
+}
+
+.application-info h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 var(--space-xs) 0;
+    color: var(--text-primary);
+}
+
+.application-info p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.application-meta {
+    text-align: right;
+}
+
+.status-badge {
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+    display: inline-block;
+}
+
+.status-badge.applied { background: rgba(79, 70, 229, 0.1); color: var(--primary-500); }
+.status-badge.responded { background: rgba(16, 185, 129, 0.1); color: var(--success-500); }
+.status-badge.interview { background: rgba(245, 158, 11, 0.1); color: var(--warning-500); }
+.status-badge.offer { background: rgba(14, 165, 233, 0.1); color: var(--info-500); }
+
+.application-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ===============================================
+   SIDEBAR CONTENT
+   =============================================== */
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
+/* ===============================================
+   PROFILE HEALTH CARD
+   =============================================== */
+.profile-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: slideUp 1s ease forwards;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, var(--success-500), var(--success-600));
+    padding: var(--space-lg);
+    color: white;
+}
+
+.profile-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.profile-content {
+    padding: var(--space-lg);
+    text-align: center;
+}
+
+.progress-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: conic-gradient(var(--success-500) 0deg, var(--success-500) 270deg, var(--bg-elevated) 270deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-md);
+    position: relative;
+}
+
+.progress-circle::before {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--bg-card);
+}
+
+.progress-percentage {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 1;
+}
+
+.profile-status {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-lg);
+    font-weight: 500;
+}
+
+.missing-fields {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--warning-500);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    text-align: left;
+}
+
+.missing-fields h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--warning-500);
+    margin: 0 0 var(--space-sm) 0;
+}
+
+.missing-fields ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.missing-fields li {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: var(--space-xs) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.missing-fields li::before {
+    content: '•';
+    color: var(--warning-500);
+    font-weight: bold;
+}
+
+/* ===============================================
+   NOTIFICATIONS CARD
+   =============================================== */
+.notifications-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: slideUp 1.2s ease forwards;
+    height: fit-content;
+}
+
+.notifications-header {
+    background: var(--bg-elevated);
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.notifications-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.notification-badge {
+    background: var(--danger-500);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+.notifications-content {
+    padding: var(--space-lg);
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+.notifications-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.notifications-empty i {
+    font-size: 2rem;
+    margin-bottom: var(--space-md);
+    opacity: 0.5;
+}
+
+/* ===============================================
+   QUICK ACTIONS
+   =============================================== */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.quick-action {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all var(--transition-normal);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    animation: slideUp 0.6s ease forwards;
+}
+
+.quick-action:hover {
+    background: var(--bg-elevated);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.quick-action-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all var(--transition-normal);
+}
+
+.quick-action:nth-child(1) .quick-action-icon {
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary-500);
+}
+
+.quick-action:nth-child(2) .quick-action-icon {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-500);
+}
+
+.quick-action:nth-child(3) .quick-action-icon {
+    background: rgba(14, 165, 233, 0.1);
+    color: var(--info-500);
+}
+
+.quick-action:nth-child(4) .quick-action-icon {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-500);
+}
+
+.quick-action:nth-child(5) .quick-action-icon {
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--purple-500);
+}
+
+.quick-action:nth-child(6) .quick-action-icon {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-500);
+}
+
+.quick-action:hover .quick-action-icon {
+    transform: scale(1.1);
+}
+
+.quick-action-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.quick-action-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* ===============================================
+   BUTTONS
+   =============================================== */
+.btn {
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    transition: all var(--transition-normal);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: var(--primary-500);
+    color: white;
+    border-color: var(--primary-500);
+}
+
+.btn-primary:hover {
+    background: var(--primary-600);
+    border-color: var(--primary-600);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-outline-primary {
+    background: transparent;
+    color: var(--primary-500);
+    border-color: var(--primary-500);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-500);
+    color: white;
+}
+
+.btn-success {
+    background: var(--success-500);
+    color: white;
+    border-color: var(--success-500);
+}
+
+.btn-success:hover {
+    background: var(--success-600);
+    border-color: var(--success-600);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-sm {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.75rem;
+}
+
+/* ===============================================
+   ANIMATIONS
+   =============================================== */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* ===============================================
+   RESPONSIVE DESIGN
+   =============================================== */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: var(--space-md);
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .header-actions {
+        justify-content: center;
+    }
+
+    .main-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-md);
+    }
+
+    .pipeline-stages {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: var(--space-sm);
+    }
+
+    .quick-actions-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: var(--space-sm);
+    }
+
+    .quick-action {
+        padding: var(--space-md);
+    }
+
+    .quick-action-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-text h1 {
+        font-size: 1.5rem;
+    }
+
+    .stat-card {
+        padding: var(--space-md);
+    }
+
+    .stat-info h3 {
+        font-size: 1.5rem;
+    }
+
+    .pipeline-card,
+    .profile-card,
+    .notifications-card {
+        margin-bottom: var(--space-lg);
+    }
+}
+
+/* ===============================================
+   UTILITY CLASSES
+   =============================================== */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.justify-content-between { justify-content: space-between; }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }
+
+.mb-0 { margin-bottom: 0; }
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.mb-xl { margin-bottom: var(--space-xl); }
+
+.mt-auto { margin-top: auto; }
+.ml-auto { margin-left: auto; }
+
+.w-100 { width: 100%; }
+.h-100 { height: 100%; }
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="header-text">
+                <h1>Welcome back, {{ user.first_name|default:user.username }}! 👋</h1>
+                <p>Here's your job search progress and what needs your attention</p>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'dashboard:quick_search' %}" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Emergency Search
+                </a>
+                <a href="{% url 'jobs:applications' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-project-diagram"></i>
+                    View Pipeline
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card" style="animation-delay: 0.1s;">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>{{ total_applications|default:0 }}</h3>
+                    <p>Total Applications</p>
+                </div>
+                <div class="stat-icon primary">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <i class="fas fa-arrow-up"></i>
+                <span>{{ applications_this_week|default:0 }} this week</span>
+            </div>
+        </div>
+
+        <div class="stat-card" style="animation-delay: 0.2s;">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>{{ response_rate|floatformat:1|default:0.0 }}%</h3>
+                    <p>Response Rate</p>
+                </div>
+                <div class="stat-icon success">
+                    <i class="fas fa-reply"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <i class="fas fa-chart-line"></i>
+                <span>Industry avg: 2-5%</span>
+            </div>
+        </div>
+
+        <div class="stat-card" style="animation-delay: 0.3s;">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>{{ interviews_scheduled|default:0 }}</h3>
+                    <p>Interviews Scheduled</p>
+                </div>
+                <div class="stat-icon warning">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <i class="fas fa-clock"></i>
+                <span>Prepare now</span>
+            </div>
+        </div>
+
+        <div class="stat-card" style="animation-delay: 0.4s;">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>{{ applications_this_month|default:0 }}</h3>
+                    <p>This Month</p>
+                </div>
+                <div class="stat-icon info">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <i class="fas fa-target"></i>
+                <span>Goal: 30/month</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="main-grid">
+        <!-- Pipeline Visualization -->
+        <div class="pipeline-card">
+            <div class="pipeline-header">
+                <h2>
+                    <i class="fas fa-project-diagram"></i>
+                    Application Pipeline
+                </h2>
+                <a href="{% url 'dashboard:pipeline_visualization' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-expand"></i>
+                    View Full Pipeline
+                </a>
+            </div>
+            <div class="pipeline-content">
+                <!-- Pipeline Stages -->
+                <div class="pipeline-stages">
+                    <div class="pipeline-stage found">
+                        <div class="stage-number">{{ pipeline_data.found|default:0 }}</div>
+                        <div class="stage-label">Found</div>
+                    </div>
+                    <div class="pipeline-stage applied">
+                        <div class="stage-number">{{ pipeline_data.applied|default:0 }}</div>
+                        <div class="stage-label">Applied</div>
+                    </div>
+                    <div class="pipeline-stage responded">
+                        <div class="stage-number">{{ pipeline_data.responded|default:0 }}</div>
+                        <div class="stage-label">Responded</div>
+                    </div>
+                    <div class="pipeline-stage interview">
+                        <div class="stage-number">{{ pipeline_data.interview|default:0 }}</div>
+                        <div class="stage-label">Interview</div>
+                    </div>
+                    <div class="pipeline-stage offer">
+                        <div class="stage-number">{{ pipeline_data.offer|default:0 }}</div>
+                        <div class="stage-label">Offer</div>
+                    </div>
+                </div>
+
+                <!-- Recent Applications -->
+                <div class="recent-applications">
+                    <div class="applications-header">
+                        <h3>Recent Applications</h3>
+                        <a href="{% url 'jobs:applications' %}" class="btn btn-sm btn-outline-primary">
+                            View All
+                        </a>
+                    </div>
+
+                    {% for app in recent_applications|slice:":5" %}
+                    <div class="application-item">
+                        <div class="application-info">
+                            <h4>{{ app.company_name }}</h4>
+                            <p>{{ app.job_title }}</p>
+                        </div>
+                        <div class="application-meta">
+                            <div class="status-badge {{ app.application_status }}">
+                                {{ app.application_status|title }}
+                            </div>
+                            <div class="application-time">{{ app.created_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center" style="padding: var(--space-xl); color: var(--text-muted);">
+                        <i class="fas fa-clipboard-list" style="font-size: 2rem; margin-bottom: var(--space-md); opacity: 0.5;"></i>
+                        <p style="margin-bottom: var(--space-md);">No applications yet.</p>
+                        <a href="{% url 'jobs:job_list' %}" class="btn btn-primary btn-sm">
+                            Start your first search!
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Content -->
+        <div class="sidebar-content">
+            <!-- Profile Health -->
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h2>
+                        <i class="fas fa-user-check"></i>
+                        Profile Health
+                    </h2>
+                </div>
+                <div class="profile-content">
+                    <div class="progress-circle">
+                        <span class="progress-percentage">{{ profile.calculate_completion_percentage|default:75 }}%</span>
+                    </div>
+                    <div class="profile-status">Profile Completion</div>
+
+                    <div class="missing-fields">
+                        <h4>Missing:</h4>
+                        <ul>
+                            <li>Phone number</li>
+                            <li>Skills section</li>
+                            <li>Portfolio links</li>
+                        </ul>
+                    </div>
+
+                    <a href="{% url 'accounts:profile' %}" class="btn btn-success w-100">
+                        <i class="fas fa-edit"></i>
+                        Update Profile
+                    </a>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="notifications-card">
+                <div class="notifications-header">
+                    <h2>
+                        <i class="fas fa-bell"></i>
+                        Notifications
+                    </h2>
+                    <div class="position-relative">
+                        <a href="{% url 'dashboard:notifications' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-bell"></i>
+                        </a>
+                        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+                    </div>
+                </div>
+                <div class="notifications-content">
+                    <div id="notifications-list">
+                        <div class="notifications-empty" id="notifications-empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No new notifications.</p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-auto">
+                        <a href="{% url 'dashboard:notifications' %}" class="btn btn-sm btn-outline-primary w-100">
+                            View All Notifications
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions-grid">
+        <a href="{% url 'dashboard:quick_search' %}" class="quick-action" style="animation-delay: 0.1s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="quick-action-title">Emergency Search</div>
+            <div class="quick-action-desc">Find jobs instantly</div>
+        </a>
+
+        <a href="{% url 'followups:bulk_followup' %}" class="quick-action" style="animation-delay: 0.2s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <div class="quick-action-title">Send Follow-ups</div>
+            <div class="quick-action-desc">Automated follow-up emails</div>
+        </a>
+
+        <a href="{% url 'dashboard:bulk_download' %}" class="quick-action" style="animation-delay: 0.3s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-download"></i>
+            </div>
+            <div class="quick-action-title">Download Docs</div>
+            <div class="quick-action-desc">Get all your documents</div>
+        </a>
+
+        <a href="{% url 'dashboard:skills_analysis' %}" class="quick-action" style="animation-delay: 0.4s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="quick-action-title">Skills Analysis</div>
+            <div class="quick-action-desc">Improve your profile</div>
+        </a>
+
+        <a href="{% url 'dashboard:interview_prep' %}" class="quick-action" style="animation-delay: 0.5s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="quick-action-title">Interview Prep</div>
+            <div class="quick-action-desc">Get ready for interviews</div>
+        </a>
+
+        <a href="{% url 'dashboard:market_intelligence' %}" class="quick-action" style="animation-delay: 0.6s;">
+            <div class="quick-action-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="quick-action-title">Market Intel</div>
+            <div class="quick-action-desc">Industry insights</div>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Enhanced loading states
+    $('.quick-action, .btn').on('click', function(e) {
+        const href = $(this).attr('href');
+        if (href && href !== '#' && !$(this).hasClass('no-loading-state')) {
+            const $element = $(this);
+            $element.addClass('loading');
+
+            setTimeout(() => {
+                $element.removeClass('loading');
+            }, 2000);
+        }
+    });
+
+    // Notifications system
+    function fetchNotifications() {
+        $.ajax({
+            url: "{% url 'dashboard:notifications_api' %}",
+            method: 'GET',
+            success: function(data) {
+                const notificationsList = $('#notifications-list');
+                const notificationCountBadge = $('#notification-count');
+                const notificationsEmptyState = $('#notifications-empty-state');
+
+                notificationsList.empty();
+
+                if (data.notifications && data.notifications.length > 0) {
+                    notificationsEmptyState.hide();
+                    data.notifications.slice(0, 3).forEach(notification => {
+                        const notificationHtml = `
+                            <div class="application-item" style="margin-bottom: var(--space-sm); background: var(--bg-elevated);">
+                                <div class="application-info">
+                                    <h4 style="font-size: 0.75rem;">${notification.title}</h4>
+                                    <p style="font-size: 0.7rem;">${notification.message}</p>
+                                </div>
+                                <div class="application-meta">
+                                    <div class="application-time">${timeSince(notification.created_at)} ago</div>
+                                </div>
+                            </div>
+                        `;
+                        notificationsList.append(notificationHtml);
+                    });
+                } else {
+                    notificationsList.append(notificationsEmptyState);
+                    notificationsEmptyState.show();
+                }
+
+                if (data.unread_count > 0) {
+                    notificationCountBadge.text(data.unread_count).show();
+                } else {
+                    notificationCountBadge.hide();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error fetching notifications:", error);
+            }
+        });
+    }
+
+    function timeSince(dateString) {
+        const now = new Date();
+        const date = new Date(dateString);
+        const seconds = Math.floor((now - date) / 1000);
+
+        let interval = seconds / 31536000;
+        if (interval > 1) { return Math.floor(interval) + "y"; }
+        interval = seconds / 2592000;
+        if (interval > 1) { return Math.floor(interval) + "mo"; }
+        interval = seconds / 86400;
+        if (interval > 1) { return Math.floor(interval) + "d"; }
+        interval = seconds / 3600;
+        if (interval > 1) { return Math.floor(interval) + "h"; }
+        interval = seconds / 60;
+        if (interval > 1) { return Math.floor(interval) + "m"; }
+        return Math.floor(seconds) + "s";
+    }
+
+    // Initialize notifications
+    fetchNotifications();
+    setInterval(fetchNotifications, 60000);
+
+    // Animate progress circle
+    const progressCircle = document.querySelector('.progress-circle');
+    if (progressCircle) {
+        const percentage = parseInt(progressCircle.querySelector('.progress-percentage').textContent);
+        const degrees = (percentage / 100) * 360;
+
+        setTimeout(() => {
+            progressCircle.style.background = `conic-gradient(var(--success-500) 0deg, var(--success-500) ${degrees}deg, var(--bg-elevated) ${degrees}deg)`;
+        }, 1000);
+    }
+
+    console.log('Enhanced elegant dashboard loaded successfully');
+});
+</script>
+{% endblock %}
+
+{#{% extends 'base_dashboard.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Dashboard - Job Automation{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">#}
+{#<style>#}
+{#/* ===============================================#}
+{#   ENHANCED ELEGANT COLOR VARIABLES#}
+{#   =============================================== */#}
+{#:root {#}
+{#    --primary-500: #2563eb;#}
+{#    --success-500: #059669;#}
+{#    --info-500: #0891b2;#}
+{#    --warning-500: #d97706;#}
+{#    --danger-500: #dc2626;#}
+{#    --purple-500: #7c3aed;#}
+{##}
+{#    --dark-bg-primary: #0f1419;      /* Even darker for more elegance */#}
+{#    --dark-bg-secondary: #1e2428;    /* Sophisticated dark gray */#}
+{#    --dark-bg-tertiary: #2d3748;     /* Accent background */#}
+{#    --dark-text-primary: #ffffff;#}
+{#    --dark-text-secondary: #e2e8f0;#}
+{#    --dark-text-muted: #a0aec0;#}
+{##}
+{#    /* Enhanced Extended Palette */#}
+{#    --primary-400: #3b82f6;#}
+{#    --primary-600: #1d4ed8;#}
+{#    --primary-700: #1e40af;#}
+{##}
+{#    --success-400: #10b981;#}
+{#    --success-600: #047857;#}
+{#    --success-700: #065f46;#}
+{##}
+{#    --info-400: #06b6d4;#}
+{#    --info-600: #0e7490;#}
+{#    --info-700: #164e63;#}
+{##}
+{#    --warning-400: #f59e0b;#}
+{#    --warning-600: #b45309;#}
+{#    --warning-700: #92400e;#}
+{##}
+{#    --danger-400: #f87171;#}
+{#    --danger-600: #b91c1c;#}
+{#    --danger-700: #991b1b;#}
+{##}
+{#    --purple-400: #a855f7;#}
+{#    --purple-600: #7c3aed;#}
+{#    --purple-700: #6b21a8;#}
+{#}#}
+{##}
+{#/* ===============================================#}
+{#   SOPHISTICATED BUTTON STYLING#}
+{#   =============================================== */#}
+{##}
+{#/* Universal text visibility with enhanced elegance */#}
+{#.dashboard-card,#}
+{#.dashboard-card *,#}
+{#.card,#}
+{#.card *,#}
+{#.quick-action-btn,#}
+{#.quick-action-btn *,#}
+{#.footer-action-btn,#}
+{#.footer-action-btn *,#}
+{#.pipeline-stage {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;#}
+{#}#}
+{##}
+{#/* Enhanced button text styling */#}
+{#.quick-action-btn span,#}
+{#.footer-action-btn span {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9) !important;#}
+{#    font-size: 0.9rem !important;#}
+{#    line-height: 1.2 !important;#}
+{#    display: block !important;#}
+{#    opacity: 1 !important;#}
+{#    visibility: visible !important;#}
+{#}#}
+{##}
+{#.quick-action-btn i,#}
+{#.footer-action-btn i {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9) !important;#}
+{#    opacity: 1 !important;#}
+{#    visibility: visible !important;#}
+{#}#}
+{##}
+{#/* Premium button designs */#}
+{#.quick-action-btn {#}
+{#    min-height: 90px !important;#}
+{#    max-height: 90px !important;#}
+{#    width: 100% !important;#}
+{#    padding: 20px 18px !important;#}
+{#    display: flex !important;#}
+{#    flex-direction: column !important;#}
+{#    align-items: center !important;#}
+{#    justify-content: center !important;#}
+{#    text-align: center !important;#}
+{#    border: 2px solid !important;#}
+{#    border-radius: 18px !important;#}
+{#    background: linear-gradient(145deg, var(--dark-bg-secondary) 0%, rgba(30, 36, 40, 0.95) 100%) !important;#}
+{#    text-decoration: none !important;#}
+{#    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;#}
+{#    box-sizing: border-box !important;#}
+{#    font-weight: 600 !important;#}
+{#    position: relative !important;#}
+{#    overflow: hidden !important;#}
+{#    backdrop-filter: blur(12px) !important;#}
+{#    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;#}
+{#}#}
+{##}
+{#.footer-action-btn {#}
+{#    min-height: 70px !important;#}
+{#    max-height: 70px !important;#}
+{#    width: 100% !important;#}
+{#    padding: 14px 10px !important;#}
+{#    display: flex !important;#}
+{#    flex-direction: column !important;#}
+{#    align-items: center !important;#}
+{#    justify-content: center !important;#}
+{#    text-align: center !important;#}
+{#    border: 2px solid !important;#}
+{#    border-radius: 14px !important;#}
+{#    background: linear-gradient(145deg, var(--dark-bg-secondary) 0%, rgba(30, 36, 40, 0.95) 100%) !important;#}
+{#    text-decoration: none !important;#}
+{#    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;#}
+{#    box-sizing: border-box !important;#}
+{#    font-weight: 600 !important;#}
+{#    overflow: hidden !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25) !important;#}
+{#}#}
+{##}
+{#/* Enhanced icon styling */#}
+{#.quick-action-btn i {#}
+{#    font-size: 1.8rem !important;#}
+{#    margin-bottom: 8px !important;#}
+{#    display: block !important;#}
+{#}#}
+{##}
+{#.footer-action-btn i {#}
+{#    font-size: 1.4rem !important;#}
+{#    margin-bottom: 5px !important;#}
+{#    display: block !important;#}
+{#}#}
+{##}
+{#/* Sophisticated color schemes with premium gradients */#}
+{#.btn-outline-primary.quick-action-btn,#}
+{#.btn-outline-primary.footer-action-btn {#}
+{#    border-color: var(--primary-500) !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(37, 99, 235, 0.12) 0%,#}
+{#        rgba(29, 78, 216, 0.20) 50%,#}
+{#        rgba(30, 64, 175, 0.12) 100%) !important;#}
+{#    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.15) !important;#}
+{#}#}
+{##}
+{#.btn-outline-success.quick-action-btn,#}
+{#.btn-outline-success.footer-action-btn {#}
+{#    border-color: var(--success-500) !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(5, 150, 105, 0.12) 0%,#}
+{#        rgba(4, 120, 87, 0.20) 50%,#}
+{#        rgba(6, 95, 70, 0.12) 100%) !important;#}
+{#    box-shadow: 0 8px 32px rgba(5, 150, 105, 0.15) !important;#}
+{#}#}
+{##}
+{#.btn-outline-info.quick-action-btn,#}
+{#.btn-outline-info.footer-action-btn {#}
+{#    border-color: var(--info-500) !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(8, 145, 178, 0.12) 0%,#}
+{#        rgba(14, 116, 144, 0.20) 50%,#}
+{#        rgba(22, 78, 99, 0.12) 100%) !important;#}
+{#    box-shadow: 0 8px 32px rgba(8, 145, 178, 0.15) !important;#}
+{#}#}
+{##}
+{#.btn-outline-warning.quick-action-btn,#}
+{#.btn-outline-warning.footer-action-btn {#}
+{#    border-color: var(--warning-500) !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(217, 119, 6, 0.12) 0%,#}
+{#        rgba(180, 83, 9, 0.20) 50%,#}
+{#        rgba(146, 64, 14, 0.12) 100%) !important;#}
+{#    box-shadow: 0 8px 32px rgba(217, 119, 6, 0.15) !important;#}
+{#}#}
+{##}
+{#.btn-outline-secondary.quick-action-btn,#}
+{#.btn-outline-secondary.footer-action-btn {#}
+{#    border-color: var(--dark-bg-tertiary) !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(74, 85, 104, 0.12) 0%,#}
+{#        rgba(113, 128, 150, 0.20) 50%,#}
+{#        rgba(160, 174, 192, 0.12) 100%) !important;#}
+{#    box-shadow: 0 8px 32px rgba(74, 85, 104, 0.15) !important;#}
+{#}#}
+{##}
+{#.btn-outline-dark.quick-action-btn,#}
+{#.footer-purple-btn {#}
+{#    border-color: var(--purple-500) !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(124, 58, 237, 0.12) 0%,#}
+{#        rgba(124, 58, 237, 0.20) 50%,#}
+{#        rgba(107, 33, 168, 0.12) 100%) !important;#}
+{#    box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15) !important;#}
+{#}#}
+{##}
+{#.footer-red-btn {#}
+{#    border-color: var(--danger-500) !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(220, 38, 38, 0.12) 0%,#}
+{#        rgba(185, 28, 28, 0.20) 50%,#}
+{#        rgba(153, 27, 27, 0.12) 100%) !important;#}
+{#    box-shadow: 0 8px 32px rgba(220, 38, 38, 0.15) !important;#}
+{#}#}
+{##}
+{#/* Premium hover effects */#}
+{#.quick-action-btn:hover,#}
+{#.footer-action-btn:hover {#}
+{#    transform: translateY(-6px) scale(1.03) !important;#}
+{#    box-shadow: 0 20px 60px rgba(0,0,0,0.4) !important;#}
+{#    text-decoration: none !important;#}
+{#}#}
+{##}
+{#.quick-action-btn:hover span,#}
+{#.footer-action-btn:hover span,#}
+{#.quick-action-btn:hover i,#}
+{#.footer-action-btn:hover i {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    text-shadow: 0 3px 8px rgba(0, 0, 0, 1) !important;#}
+{#}#}
+{##}
+{#/* Enhanced hover colors with luxury gradients */#}
+{#.btn-outline-primary:hover {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--primary-500) 0%,#}
+{#        var(--primary-600) 50%,#}
+{#        var(--primary-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--primary-400) !important;#}
+{#    box-shadow: 0 20px 60px rgba(37, 99, 235, 0.4) !important;#}
+{#}#}
+{##}
+{#.btn-outline-success:hover {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--success-500) 0%,#}
+{#        var(--success-600) 50%,#}
+{#        var(--success-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--success-400) !important;#}
+{#    box-shadow: 0 20px 60px rgba(5, 150, 105, 0.4) !important;#}
+{#}#}
+{##}
+{#.btn-outline-info:hover {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--info-500) 0%,#}
+{#        var(--info-600) 50%,#}
+{#        var(--info-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--info-400) !important;#}
+{#    box-shadow: 0 20px 60px rgba(8, 145, 178, 0.4) !important;#}
+{#}#}
+{##}
+{#.btn-outline-warning:hover {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--warning-500) 0%,#}
+{#        var(--warning-600) 50%,#}
+{#        var(--warning-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--warning-400) !important;#}
+{#    box-shadow: 0 20px 60px rgba(217, 119, 6, 0.4) !important;#}
+{#}#}
+{##}
+{#.btn-outline-secondary:hover {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--dark-bg-tertiary) 0%,#}
+{#        #6c757d 50%,#}
+{#        #5a6169 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: #8a94a6 !important;#}
+{#    box-shadow: 0 20px 60px rgba(74, 85, 104, 0.4) !important;#}
+{#}#}
+{##}
+{#.btn-outline-dark:hover,#}
+{#.footer-purple-btn:hover {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--purple-500) 0%,#}
+{#        var(--purple-600) 50%,#}
+{#        var(--purple-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--purple-400) !important;#}
+{#    box-shadow: 0 20px 60px rgba(124, 58, 237, 0.4) !important;#}
+{#}#}
+{##}
+{#.footer-red-btn:hover {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--danger-500) 0%,#}
+{#        var(--danger-600) 50%,#}
+{#        var(--danger-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--danger-400) !important;#}
+{#    box-shadow: 0 20px 60px rgba(220, 38, 38, 0.4) !important;#}
+{#}#}
+{##}
+{#/* ===============================================#}
+{#   LUXURIOUS CARD STYLING#}
+{#   =============================================== */#}
+{##}
+{#.dashboard-card {#}
+{#    background: linear-gradient(150deg,#}
+{#        var(--dark-bg-secondary) 0%,#}
+{#        rgba(30, 36, 40, 0.98) 100%) !important;#}
+{#    border: 1px solid rgba(74, 85, 104, 0.25) !important;#}
+{#    border-radius: 20px !important;#}
+{#    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;#}
+{#    backdrop-filter: blur(15px) !important;#}
+{#    min-height: 130px;#}
+{#    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;#}
+{#    position: relative;#}
+{#    overflow: hidden;#}
+{#}#}
+{##}
+{#.dashboard-card::before {#}
+{#    content: '';#}
+{#    position: absolute;#}
+{#    top: 0;#}
+{#    left: 0;#}
+{#    right: 0;#}
+{#    height: 1px;#}
+{#    background: linear-gradient(90deg,#}
+{#        transparent 0%,#}
+{#        rgba(255, 255, 255, 0.1) 50%,#}
+{#        transparent 100%);#}
+{#}#}
+{##}
+{#.dashboard-card:hover {#}
+{#    transform: translateY(-8px) !important;#}
+{#    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4) !important;#}
+{#    border-color: rgba(37, 99, 235, 0.5) !important;#}
+{#}#}
+{##}
+{#.card-header {#}
+{#    background: linear-gradient(150deg,#}
+{#        rgba(15, 20, 25, 0.98) 0%,#}
+{#        rgba(30, 36, 40, 0.95) 100%) !important;#}
+{#    border-bottom: 1px solid rgba(74, 85, 104, 0.25) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    backdrop-filter: blur(15px) !important;#}
+{#    border-radius: 20px 20px 0 0 !important;#}
+{#    padding: 1.75rem !important;#}
+{#}#}
+{##}
+{#.card-header h1,#}
+{#.card-header h2,#}
+{#.card-header h3,#}
+{#.card-header h4,#}
+{#.card-header h5,#}
+{#.card-header h6 {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6) !important;#}
+{#}#}
+{##}
+{#.card-body {#}
+{#    background: linear-gradient(150deg,#}
+{#        rgba(30, 36, 40, 0.98) 0%,#}
+{#        rgba(74, 85, 104, 0.08) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    padding: 1.75rem !important;#}
+{#    backdrop-filter: blur(15px) !important;#}
+{#}#}
+{##}
+{#.card-body h1,#}
+{#.card-body h2,#}
+{#.card-body h3,#}
+{#.card-body h4,#}
+{#.card-body h5,#}
+{#.card-body h6 {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6) !important;#}
+{#    margin-bottom: 0.75rem !important;#}
+{#}#}
+{##}
+{#.card-body p {#}
+{#    color: var(--dark-text-secondary) !important;#}
+{#    font-weight: 500 !important;#}
+{#    margin-bottom: 0.75rem !important;#}
+{#}#}
+{##}
+{#.stats-card h2 {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 800 !important;#}
+{#    font-size: 2.75rem !important;#}
+{#    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8) !important;#}
+{#    margin-bottom: 0.5rem !important;#}
+{#}#}
+{##}
+{#.stats-card p {#}
+{#    color: var(--dark-text-secondary) !important;#}
+{#    font-weight: 600 !important;#}
+{#    font-size: 1.05rem !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6) !important;#}
+{#}#}
+{##}
+{#.stats-card small {#}
+{#    color: var(--dark-text-muted) !important;#}
+{#    font-weight: 600 !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6) !important;#}
+{#}#}
+{##}
+{#.text-light {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 600 !important;#}
+{#}#}
+{##}
+{#.text-muted {#}
+{#    color: var(--dark-text-muted) !important;#}
+{#    font-weight: 500 !important;#}
+{#}#}
+{##}
+{#.text-primary {#}
+{#    color: var(--primary-500) !important;#}
+{#    font-weight: 700 !important;#}
+{#}#}
+{##}
+{#.text-success {#}
+{#    color: var(--success-500) !important;#}
+{#    font-weight: 700 !important;#}
+{#}#}
+{##}
+{#.text-warning {#}
+{#    color: var(--warning-500) !important;#}
+{#    font-weight: 700 !important;#}
+{#}#}
+{##}
+{#.text-info {#}
+{#    color: var(--info-500) !important;#}
+{#    font-weight: 700 !important;#}
+{#}#}
+{##}
+{#.text-white {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 600 !important;#}
+{#}#}
+{##}
+{#small,#}
+{#.small {#}
+{#    color: var(--dark-text-secondary) !important;#}
+{#    font-weight: 500 !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;#}
+{#}#}
+{##}
+{#/* Enhanced pipeline and activity styles */#}
+{#.pipeline-mini {#}
+{#    display: flex;#}
+{#    gap: 16px;#}
+{#    align-items: center;#}
+{#    flex-wrap: wrap;#}
+{#    justify-content: center;#}
+{#    padding: 1.25rem 0;#}
+{#}#}
+{##}
+{#.pipeline-stage {#}
+{#    padding: 14px 20px !important;#}
+{#    border-radius: 16px !important;#}
+{#    font-size: 0.95rem !important;#}
+{#    font-weight: 700 !important;#}
+{#    min-width: 110px !important;#}
+{#    text-align: center !important;#}
+{#    margin: 6px !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8) !important;#}
+{#    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25) !important;#}
+{#    backdrop-filter: blur(12px) !important;#}
+{#    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;#}
+{#}#}
+{##}
+{#.pipeline-stage:hover {#}
+{#    transform: translateY(-3px) scale(1.02);#}
+{#    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35) !important;#}
+{#}#}
+{##}
+{#/* Enhanced pipeline stage colors */#}
+{#.pipeline-stage.bg-secondary {#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(74, 85, 104, 0.85) 0%,#}
+{#        rgba(113, 128, 150, 0.75) 100%) !important;#}
+{#}#}
+{#.pipeline-stage.bg-primary {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--primary-500) 0%,#}
+{#        var(--primary-600) 100%) !important;#}
+{#}#}
+{#.pipeline-stage.bg-success {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--success-500) 0%,#}
+{#        var(--success-600) 100%) !important;#}
+{#}#}
+{#.pipeline-stage.bg-warning {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--warning-500) 0%,#}
+{#        var(--warning-600) 100%) !important;#}
+{#}#}
+{#.pipeline-stage.bg-info {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--info-500) 0%,#}
+{#        var(--info-600) 100%) !important;#}
+{#}#}
+{##}
+{#.list-group-item {#}
+{#    background-color: rgba(30, 36, 40, 0.9) !important;#}
+{#    border: 1px solid rgba(74, 85, 104, 0.3) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    margin-bottom: 10px !important;#}
+{#    border-radius: 12px !important;#}
+{#    backdrop-filter: blur(8px) !important;#}
+{#    transition: all 0.3s ease;#}
+{#}#}
+{##}
+{#.list-group-item:hover {#}
+{#    background-color: rgba(30, 36, 40, 1) !important;#}
+{#    transform: translateX(4px);#}
+{#    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);#}
+{#}#}
+{##}
+{#.list-group-item strong {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6) !important;#}
+{#}#}
+{##}
+{#.activity-item {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--dark-bg-primary) 0%,#}
+{#        rgba(15, 20, 25, 0.95) 100%) !important;#}
+{#    border-left: 4px solid var(--primary-500) !important;#}
+{#    padding: 18px !important;#}
+{#    margin-bottom: 14px !important;#}
+{#    border-radius: 12px !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    transition: all 0.3s ease;#}
+{#}#}
+{##}
+{#.activity-item:hover {#}
+{#    transform: translateX(6px);#}
+{#    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35) !important;#}
+{#}#}
+{##}
+{#.activity-item strong {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6) !important;#}
+{#}#}
+{##}
+{#.progress-circle {#}
+{#    width: 100px !important;#}
+{#    height: 100px !important;#}
+{#    border-radius: 50% !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--success-500) 0%,#}
+{#        var(--success-600) 50%,#}
+{#        var(--success-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 800 !important;#}
+{#    font-size: 1.4rem !important;#}
+{#    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.6) !important;#}
+{#    box-shadow: 0 12px 35px rgba(5, 150, 105, 0.4) !important;#}
+{#    display: flex !important;#}
+{#    align-items: center !important;#}
+{#    justify-content: center !important;#}
+{#    margin: 0 auto !important;#}
+{#    backdrop-filter: blur(5px) !important;#}
+{#}#}
+{##}
+{#.badge {#}
+{#    font-size: 0.85rem !important;#}
+{#    padding: 0.6rem 1rem !important;#}
+{#    font-weight: 600 !important;#}
+{#    border-radius: 8px !important;#}
+{#    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;#}
+{#    backdrop-filter: blur(5px) !important;#}
+{#}#}
+{##}
+{#/* Enhanced badge colors */#}
+{#.badge.bg-primary {#}
+{#    background: linear-gradient(145deg, var(--primary-500) 0%, var(--primary-600) 100%) !important;#}
+{#}#}
+{#.badge.bg-success {#}
+{#    background: linear-gradient(145deg, var(--success-500) 0%, var(--success-600) 100%) !important;#}
+{#}#}
+{#.badge.bg-warning {#}
+{#    background: linear-gradient(145deg, var(--warning-500) 0%, var(--warning-600) 100%) !important;#}
+{#}#}
+{#.badge.bg-info {#}
+{#    background: linear-gradient(145deg, var(--info-500) 0%, var(--info-600) 100%) !important;#}
+{#}#}
+{#.badge.bg-secondary {#}
+{#    background: linear-gradient(145deg, var(--dark-bg-tertiary) 0%, #6c757d 100%) !important;#}
+{#}#}
+{##}
+{#.notification-badge {#}
+{#    position: absolute !important;#}
+{#    top: -10px !important;#}
+{#    right: -10px !important;#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--danger-500) 0%,#}
+{#        var(--danger-600) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-radius: 50% !important;#}
+{#    width: 26px !important;#}
+{#    height: 26px !important;#}
+{#    font-size: 0.85rem !important;#}
+{#    font-weight: 700 !important;#}
+{#    display: flex !important;#}
+{#    align-items: center !important;#}
+{#    justify-content: center !important;#}
+{#    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5) !important;#}
+{#    animation: luxuryPulse 2.5s infinite !important;#}
+{#    backdrop-filter: blur(5px) !important;#}
+{#}#}
+{##}
+{#@keyframes luxuryPulse {#}
+{#    0% { transform: scale(1); box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5); }#}
+{#    50% { transform: scale(1.15); box-shadow: 0 8px 30px rgba(220, 38, 38, 0.7); }#}
+{#    100% { transform: scale(1); box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5); }#}
+{#}#}
+{##}
+{#.alert-warning {#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(217, 119, 6, 0.08) 0%,#}
+{#        rgba(180, 83, 9, 0.04) 100%) !important;#}
+{#    color: var(--warning-500) !important;#}
+{#    border-left: 4px solid var(--warning-500) !important;#}
+{#    border-radius: 12px !important;#}
+{#    backdrop-filter: blur(8px) !important;#}
+{#}#}
+{##}
+{#.alert-warning strong {#}
+{#    color: var(--warning-600) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;#}
+{#}#}
+{##}
+{#.alert-warning small {#}
+{#    color: var(--dark-text-secondary) !important;#}
+{#    font-weight: 600 !important;#}
+{#}#}
+{##}
+{#/* Enhanced responsive adjustments */#}
+{#@media (max-width: 768px) {#}
+{#    .quick-action-btn {#}
+{#        min-height: 80px !important;#}
+{#        max-height: 80px !important;#}
+{#        padding: 16px 14px !important;#}
+{#        font-size: 0.85rem !important;#}
+{#        border-radius: 16px !important;#}
+{#    }#}
+{##}
+{#    .quick-action-btn i {#}
+{#        font-size: 1.5rem !important;#}
+{#        margin-bottom: 6px !important;#}
+{#    }#}
+{##}
+{#    .quick-action-btn span {#}
+{#        font-size: 0.85rem !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn {#}
+{#        min-height: 60px !important;#}
+{#        max-height: 60px !important;#}
+{#        padding: 12px 8px !important;#}
+{#        font-size: 0.75rem !important;#}
+{#        border-radius: 12px !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn i {#}
+{#        font-size: 1.2rem !important;#}
+{#        margin-bottom: 4px !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn span {#}
+{#        font-size: 0.75rem !important;#}
+{#    }#}
+{##}
+{#    .dashboard-card {#}
+{#        border-radius: 16px !important;#}
+{#        min-height: 110px;#}
+{#    }#}
+{##}
+{#    .card-header,#}
+{#    .card-body {#}
+{#        padding: 1.25rem !important;#}
+{#    }#}
+{#}#}
+{##}
+{#@media (max-width: 576px) {#}
+{#    .quick-action-btn {#}
+{#        min-height: 75px !important;#}
+{#        max-height: 75px !important;#}
+{#        padding: 14px 10px !important;#}
+{#        border-radius: 14px !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn {#}
+{#        min-height: 55px !important;#}
+{#        max-height: 55px !important;#}
+{#        padding: 10px 6px !important;#}
+{#        font-size: 0.7rem !important;#}
+{#        border-radius: 10px !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn i {#}
+{#        font-size: 1.1rem !important;#}
+{#        margin-bottom: 3px !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn span {#}
+{#        font-size: 0.7rem !important;#}
+{#    }#}
+{##}
+{#    .dashboard-card {#}
+{#        border-radius: 14px !important;#}
+{#    }#}
+{#}#}
+{##}
+{#/* Premium loading animations */#}
+{#@keyframes elegantSlideUp {#}
+{#    from {#}
+{#        opacity: 0;#}
+{#        transform: translateY(30px);#}
+{#    }#}
+{#    to {#}
+{#        opacity: 1;#}
+{#        transform: translateY(0);#}
+{#    }#}
+{#}#}
+{##}
+{#.dashboard-card {#}
+{#    animation: elegantSlideUp 0.8s ease forwards;#}
+{#}#}
+{##}
+{#.quick-action-btn,#}
+{#.footer-action-btn {#}
+{#    animation: elegantSlideUp 0.6s ease forwards;#}
+{#}#}
+{#</style>#}
+{##}
+{#{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container-fluid">#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="d-flex justify-content-between align-items-center flex-wrap">#}
+{#                <div class="mb-3 mb-md-0">#}
+{#                    <h1 class="display-5 fw-bold text-light mb-2">#}
+{#                        Welcome back, {{ user.first_name|default:user.username }}! 👋#}
+{#                    </h1>#}
+{#                    <p class="text-light mb-0">Here's your job search progress and what needs your attention</p>#}
+{#                </div>#}
+{#                <div class="d-flex gap-2 flex-wrap">#}
+{#                    <a href="{% url 'dashboard:quick_search' %}" class="btn btn-primary">#}
+{#                        <i class="fas fa-search"></i> Emergency Search#}
+{#                    </a>#}
+{#                    <a href="{% url 'jobs:applications' %}" class="btn btn-outline-primary">#}
+{#                        <i class="fas fa-project-diagram"></i> View Pipeline#}
+{#                    </a>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4 row-eq-height">#}
+{#        <div class="col-md-3 col-sm-6 mb-3">#}
+{#            <div class="card dashboard-card stats-card border-primary h-100">#}
+{#                <div class="card-body d-flex flex-column justify-content-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h2 class="text-primary mb-1">{{ total_applications|default:0 }}</h2>#}
+{#                            <p class="text-light mb-0">Total Applications</p>#}
+{#                        </div>#}
+{#                        <div class="text-primary">#}
+{#                            <i class="fas fa-file-alt fa-2x"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="mt-2">#}
+{#                        <small class="text-success">#}
+{#                            <i class="fas fa-arrow-up"></i> {{ applications_this_week|default:0 }} this week#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-md-3 col-sm-6 mb-3">#}
+{#            <div class="card dashboard-card stats-card border-success h-100">#}
+{#                <div class="card-body d-flex flex-column justify-content-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h2 class="text-success mb-1">{{ response_rate|floatformat:1|default:0.0 }}%</h2>#}
+{#                            <p class="text-light mb-0">Response Rate</p>#}
+{#                        </div>#}
+{#                        <div class="text-success">#}
+{#                            <i class="fas fa-reply fa-2x"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="mt-2">#}
+{#                        <small class="text-success">#}
+{#                            <i class="fas fa-chart-line"></i> Industry avg: 2-5%#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-md-3 col-sm-6 mb-3">#}
+{#            <div class="card dashboard-card stats-card border-warning h-100">#}
+{#                <div class="card-body d-flex flex-column justify-content-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h2 class="text-warning mb-1">{{ interviews_scheduled|default:0 }}</h2>#}
+{#                            <p class="text-light mb-0">Interviews Scheduled</p>#}
+{#                        </div>#}
+{#                        <div class="text-warning">#}
+{#                            <i class="fas fa-calendar-check fa-2x"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="mt-2">#}
+{#                        <small class="text-warning">#}
+{#                            <i class="fas fa-clock"></i> Prepare now#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-md-3 col-sm-6 mb-3">#}
+{#            <div class="card dashboard-card stats-card border-info h-100">#}
+{#                <div class="card-body d-flex flex-column justify-content-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h2 class="text-info mb-1">{{ applications_this_month|default:0 }}</h2>#}
+{#                            <p class="text-light mb-0">This Month</p>#}
+{#                        </div>#}
+{#                        <div class="text-info">#}
+{#                            <i class="fas fa-calendar-alt fa-2x"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="mt-2">#}
+{#                        <small class="text-info">#}
+{#                            <i class="fas fa-target"></i> Goal: 30/month#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4 row-eq-height">#}
+{#        <div class="col-lg-8 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header bg-primary text-white">#}
+{#                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="row g-3">#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:quick_search' %}" class="btn btn-outline-primary w-100 quick-action-btn">#}
+{#                                <i class="fas fa-search"></i>#}
+{#                                <span>Emergency Job Search</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'followups:bulk_followup' %}" class="btn btn-outline-success w-100 quick-action-btn">#}
+{#                                <i class="fas fa-paper-plane"></i>#}
+{#                                <span>Send Follow-ups</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:bulk_download' %}" class="btn btn-outline-info w-100 quick-action-btn">#}
+{#                                <i class="fas fa-download"></i>#}
+{#                                <span>Download Documents</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:skills_analysis' %}" class="btn btn-outline-warning w-100 quick-action-btn">#}
+{#                                <i class="fas fa-chart-line"></i>#}
+{#                                <span>Skills Analysis</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:interview_prep' %}" class="btn btn-outline-secondary w-100 quick-action-btn">#}
+{#                                <i class="fas fa-user-tie"></i>#}
+{#                                <span>Interview Prep</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:market_intelligence' %}" class="btn btn-outline-dark w-100 quick-action-btn">#}
+{#                                <i class="fas fa-chart-bar"></i>#}
+{#                                <span>Market Intelligence</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-lg-4 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header bg-success text-white">#}
+{#                    <h5 class="mb-0"><i class="fas fa-user-check"></i> Profile Health</h5>#}
+{#                </div>#}
+{#                <div class="card-body d-flex flex-column justify-content-center text-center">#}
+{#                    <div class="progress-circle mb-3">#}
+{#                        <span id="profile-completion">{{ profile.calculate_completion_percentage|default:75 }}%</span>#}
+{#                    </div>#}
+{#                    <h6 class="text-light">Profile Completion</h6>#}
+{#                    <div id="missing-fields" class="mt-3 flex-grow-1">#}
+{#                        <div class="alert alert-warning alert-sm p-2">#}
+{#                            <strong>Missing:</strong><br>#}
+{#                            <small>• Phone number</small><br>#}
+{#                            <small>• Skills section</small><br>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <a href="{% url 'accounts:profile' %}" class="btn btn-success mt-auto">#}
+{#                        <i class="fas fa-edit"></i> Update Profile#}
+{#                    </a>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4 row-eq-height">#}
+{#        <div class="col-lg-8 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                    <h5 class="mb-0 text-white"><i class="fas fa-project-diagram"></i> Application Pipeline</h5>#}
+{#                    <a href="{% url 'dashboard:pipeline_visualization' %}" class="btn btn-sm btn-outline-primary">#}
+{#                        <i class="fas fa-expand"></i> View Full Pipeline#}
+{#                    </a>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="pipeline-mini mb-4">#}
+{#                        <div class="pipeline-stage bg-secondary text-white">#}
+{#                            Found: {{ pipeline_data.found|default:0 }}#}
+{#                        </div>#}
+{#                        <i class="fas fa-chevron-right"></i>#}
+{#                        <div class="pipeline-stage bg-primary text-white">#}
+{#                            Applied: {{ pipeline_data.applied|default:0 }}#}
+{#                        </div>#}
+{#                        <i class="fas fa-chevron-right "></i>#}
+{#                        <div class="pipeline-stage bg-success text-white">#}
+{#                            Responded: {{ pipeline_data.responded|default:0 }}#}
+{#                        </div>#}
+{#                        <i class="fas fa-chevron-right "></i>#}
+{#                        <div class="pipeline-stage bg-warning text-white">#}
+{#                            Interview: {{ pipeline_data.interview|default:0 }}#}
+{#                        </div>#}
+{#                        <i class="fas fa-chevron-right"></i>#}
+{#                        <div class="pipeline-stage bg-info text-white">#}
+{#                            Offer: {{ pipeline_data.offer|default:0 }}#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <div class="mt-4">#}
+{#                        <h6 class="text-white">Recent Applications</h6>#}
+{#                        <div class="list-group list-group-flush">#}
+{#                            {% for app in recent_applications|slice:":5" %}#}
+{#                            <div class="list-group-item d-flex justify-content-between align-items-center">#}
+{#                                <div>#}
+{#                                    <strong class="text-white">{{ app.company_name }}</strong>#}
+{#                                    <br><small class="text-muted">{{ app.job_title }}</small>#}
+{#                                </div>#}
+{#                                <div class="text-end">#}
+{#                                    <span class="badge bg-{% if app.application_status == 'applied' %}primary{% elif app.application_status == 'responded' %}success{% elif app.application_status == 'interview' %}warning{% elif app.application_status == 'offer' %}info{% else %}secondary{% endif %}">#}
+{#                                        {{ app.application_status|title }}#}
+{#                                    </span>#}
+{#                                    <br><small class="text-muted">{{ app.created_at|timesince }} ago</small>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% empty %}#}
+{#                            <div class="list-group-item text-center">#}
+{#                                <p class="text-light mb-2">No applications yet.</p>#}
+{#                                <a href="{% url 'jobs:job_list' %}" class="btn btn-primary btn-sm">Start your first search!</a>#}
+{#                            </div>#}
+{#                            {% endfor %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-lg-4 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                    <h5 class="mb-0 text-white"><i class="fas fa-bell"></i> Notifications</h5>#}
+{#                    <div class="position-relative">#}
+{#                        <a href="{% url 'dashboard:notifications' %}" class="btn btn-sm btn-outline-secondary">#}
+{#                            <i class="fas fa-bell"></i>#}
+{#                        </a>#}
+{#                        <span class="notification-badge" id="notification-count">0</span>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="card-body d-flex flex-column">#}
+{#                    <div id="notifications-list" class="flex-grow-1">#}
+{#                        <div class="text-center text-muted py-4" id="notifications-empty-state">#}
+{#                            <i class="fas fa-inbox fa-2x mb-2"></i>#}
+{#                            <p>No new notifications.</p>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="text-center mt-3">#}
+{#                        <a href="{% url 'dashboard:notifications' %}" class="btn btn-sm btn-outline-primary">#}
+{#                            View All Notifications#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4 row-eq-height">#}
+{#        <div class="col-lg-6 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header bg-info text-white">#}
+{#                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Weekly Report</h5>#}
+{#                </div>#}
+{#                <div class="card-body d-flex flex-column">#}
+{#                    <p class="text-light">Your performance this week compared to last week</p>#}
+{#                    <div class="row text-center flex-grow-1 d-flex align-items-center">#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-primary">{{ applications_this_week|default:0 }}</h4>#}
+{#                            <p class="small text-light">Applications</p>#}
+{#                        </div>#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-success">{{ response_rate|floatformat:1|default:0.0 }}%</h4>#}
+{#                            <p class="small text-light">Response Rate</p>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="text-center mt-auto">#}
+{#                        <a href="{% url 'dashboard:weekly_report' %}" class="btn btn-info">#}
+{#                            <i class="fas fa-chart-line"></i> View Full Report#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-lg-6 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header bg-warning text-white">#}
+{#                    <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Skills Insights</h5>#}
+{#                </div>#}
+{#                <div class="card-body d-flex flex-column">#}
+{#                    <p class="text-light">Skills analysis based on your recent applications</p>#}
+{#                    <div class="row text-center flex-grow-1 d-flex align-items-center">#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-success">{{ skills_you_have_count|default:0 }}</h4>#}
+{#                            <p class="small text-light">Skills You Have</p>#}
+{#                        </div>#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-warning">{{ skills_to_develop_count|default:0 }}</h4>#}
+{#                            <p class="small text-light">Skills to Develop</p>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="text-center mt-auto">#}
+{#                        <a href="{% url 'dashboard:skills_analysis' %}" class="btn btn-warning">#}
+{#                            <i class="fas fa-chart-line"></i> View Analysis#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="card dashboard-card">#}
+{#                <div class="card-body py-3">#}
+{#                    <div class="row text-center g-2 justify-content-center align-items-stretch">#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-primary btn-sm footer-action-btn">#}
+{#                                <i class="fas fa-cog"></i>#}
+{#                                <span>Search Config</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'followups:templates' %}" class="btn btn-outline-success btn-sm footer-action-btn">#}
+{#                                <i class="fas fa-envelope"></i>#}
+{#                                <span>Email Templates</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'documents:download_options' %}" class="btn btn-outline-info btn-sm footer-action-btn">#}
+{#                                <i class="fas fa-file-download"></i>#}
+{#                                <span>Documents</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'dashboard:analytics' %}" class="btn btn-outline-warning btn-sm footer-action-btn">#}
+{#                                <i class="fas fa-chart-bar"></i>#}
+{#                                <span>Analytics</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'dashboard:settings' %}" class="btn btn-sm footer-action-btn footer-red-btn">#}
+{#                                <i class="fas fa-cog"></i>#}
+{#                                <span>Settings</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'admin:index' %}" class="btn btn-sm footer-action-btn footer-purple-btn">#}
+{#                                <i class="fas fa-tools"></i>#}
+{#                                <span>Admin</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>#}
+{#<script>#}
+{#$(document).ready(function() {#}
+{#    // Enhanced loading states with luxury animations#}
+{#    $('.quick-action-btn, .footer-action-btn').on('click', function(e) {#}
+{#        const href = $(this).attr('href');#}
+{#        if (href && href !== '#' && !$(this).hasClass('no-loading-state')) {#}
+{#            e.preventDefault();#}
+{##}
+{#            const $btn = $(this);#}
+{#            const originalHtml = $btn.html();#}
+{#            const originalHref = $btn.attr('href');#}
+{##}
+{#            $btn.html('<i class="fas fa-spinner fa-spin"></i> <span>Loading...</span>');#}
+{#            $btn.css('pointer-events', 'none');#}
+{##}
+{#            setTimeout(function() {#}
+{#                $btn.html(originalHtml);#}
+{#                $btn.css('pointer-events', 'auto');#}
+{#                window.location.href = originalHref;#}
+{#            }, 1200);#}
+{#        } else if ($(this).hasClass('no-loading-state')) {#}
+{#            return true;#}
+{#        }#}
+{#    });#}
+{##}
+{#    // Sophisticated hover animations#}
+{#    $('.quick-action-btn, .footer-action-btn').hover(#}
+{#        function() {#}
+{#            $(this).css('transform', 'translateY(-3px) scale(1.02)');#}
+{#        },#}
+{#        function() {#}
+{#            $(this).css('transform', 'translateY(0) scale(1)');#}
+{#        }#}
+{#    );#}
+{##}
+{#    // Enhanced notifications system#}
+{#    function fetchNotifications() {#}
+{#        $.ajax({#}
+{#            url: "{% url 'dashboard:notifications_api' %}",#}
+{#            method: 'GET',#}
+{#            success: function(data) {#}
+{#                const notificationsList = $('#notifications-list');#}
+{#                const notificationCountBadge = $('#notification-count');#}
+{#                const notificationsEmptyState = $('#notifications-empty-state');#}
+{#                notificationsList.empty();#}
+{##}
+{#                if (data.notifications && data.notifications.length > 0) {#}
+{#                    notificationsEmptyState.hide();#}
+{#                    data.notifications.forEach(notification => {#}
+{#                        const notificationHtml = `#}
+{#                            <div class="activity-item" data-notification-id="${notification.id}">#}
+{#                                <div class="d-flex justify-content-between align-items-center mb-1">#}
+{#                                    <strong class="text-white">${notification.title}</strong>#}
+{#                                    <small class="text-muted">${timeSince(notification.created_at)} ago</small>#}
+{#                                </div>#}
+{#                                <p class="mb-2 small text-muted">${notification.message}</p>#}
+{#                                <div class="d-flex justify-content-end gap-2">#}
+{#                                    ${!notification.is_read ? `<button class="btn btn-sm btn-outline-info mark-read-btn" data-id="${notification.id}">Mark Read</button>` : ''}#}
+{#                                    <button class="btn btn-sm btn-outline-danger dismiss-btn" data-id="${notification.id}">Dismiss</button>#}
+{#                                    ${notification.action_url ? `<a href="${notification.action_url}" class="btn btn-sm btn-outline-primary no-loading-state">${notification.action_text || 'View'}</a>` : ''}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        `;#}
+{#                        notificationsList.append(notificationHtml);#}
+{#                    });#}
+{##}
+{#                    $('.mark-read-btn').on('click', function() {#}
+{#                        const notificationId = $(this).data('id');#}
+{#                        markNotificationAction(notificationId, 'mark_read');#}
+{#                    });#}
+{#                    $('.dismiss-btn').on('click', function() {#}
+{#                        const notificationId = $(this).data('id');#}
+{#                        markNotificationAction(notificationId, 'dismiss');#}
+{#                    });#}
+{##}
+{#                } else {#}
+{#                    notificationsEmptyState.show();#}
+{#                }#}
+{#                notificationCountBadge.text(data.unread_count);#}
+{#                if (data.unread_count > 0) {#}
+{#                    notificationCountBadge.show();#}
+{#                } else {#}
+{#                    notificationCountBadge.hide();#}
+{#                }#}
+{#            },#}
+{#            error: function(xhr, status, error) {#}
+{#                console.error("Error fetching notifications:", error);#}
+{#                const notificationsList = $('#notifications-list');#}
+{#                const notificationsEmptyState = $('#notifications-empty-state');#}
+{#                notificationsList.empty();#}
+{#                notificationsList.append('<div class="text-center text-danger py-4"><i class="fas fa-exclamation-circle fa-2x mb-2"></i><p>Failed to load notifications. Please try again later.</p></div>');#}
+{#                notificationsEmptyState.hide();#}
+{#            }#}
+{#        });#}
+{#    }#}
+{##}
+{#    function markNotificationAction(notificationId, action) {#}
+{#        $.ajax({#}
+{#            url: "{% url 'dashboard:notifications_api' %}",#}
+{#            method: 'POST',#}
+{#            contentType: 'application/json',#}
+{#            data: JSON.stringify({#}
+{#                action: action,#}
+{#                notification_ids: [notificationId]#}
+{#            }),#}
+{#            headers: {#}
+{#                'X-CSRFToken': getCookie('csrftoken')#}
+{#            },#}
+{#            success: function(response) {#}
+{#                if (response.success) {#}
+{#                    console.log(`Notification ${action}ed successfully.`);#}
+{#                    fetchNotifications();#}
+{#                } else {#}
+{#                    console.error(`Failed to ${action} notification:`, response.message);#}
+{#                }#}
+{#            },#}
+{#            error: function(xhr, status, error) {#}
+{#                console.error(`Error ${action}ing notification:`, error);#}
+{#            }#}
+{#        });#}
+{#    }#}
+{##}
+{#    function timeSince(dateString) {#}
+{#        const now = new Date();#}
+{#        const date = new Date(dateString);#}
+{#        const seconds = Math.floor((now - date) / 1000);#}
+{##}
+{#        let interval = seconds / 31536000;#}
+{#        if (interval > 1) { return Math.floor(interval) + " years"; }#}
+{#        interval = seconds / 2592000;#}
+{#        if (interval > 1) { return Math.floor(interval) + " months"; }#}
+{#        interval = seconds / 86400;#}
+{#        if (interval > 1) { return Math.floor(interval) + " days"; }#}
+{#        interval = seconds / 3600;#}
+{#        if (interval > 1) { return Math.floor(interval) + " hours"; }#}
+{#        interval = seconds / 60;#}
+{#        if (interval > 1) { return Math.floor(interval) + " minutes"; }#}
+{#        return Math.floor(seconds) + " seconds";#}
+{#    }#}
+{##}
+{#    function getCookie(name) {#}
+{#        let cookieValue = null;#}
+{#        if (document.cookie && document.cookie !== '') {#}
+{#            const cookies = document.cookie.split(';');#}
+{#            for (let i = 0; i < cookies.length; i++) {#}
+{#                const cookie = cookies[i].trim();#}
+{#                if (cookie.substring(0, name.length + 1) === (name + '=')) {#}
+{#                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));#}
+{#                    break;#}
+{#                }#}
+{#            }#}
+{#        }#}
+{#        return cookieValue;#}
+{#    }#}
+{##}
+{#    // Initialize notifications#}
+{#    fetchNotifications();#}
+{#    setInterval(fetchNotifications, 60000);#}
+{##}
+{#    console.log('Enhanced elegant dashboard loaded successfully');#}
+{#});#}
+{#</script>#}
+{#{% endblock %}#}
+{##}
+{#{% extends 'base_dashboard.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Dashboard - Job Automation{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">#}
+{#<style>#}
+{#/* ===============================================#}
+{#   ELEGANT COLOR VARIABLES (PREMIUM PROFESSIONAL PALETTE)#}
+{#   =============================================== */#}
+{#:root {#}
+{#    --primary-500: #2563eb;   /* Sophisticated royal blue - more refined */#}
+{#    --success-500: #059669;   /* Elegant emerald green - richer and deeper */#}
+{#    --info-500: #0891b2;      /* Premium cyan - more sophisticated */#}
+{#    --warning-500: #d97706;   /* Luxurious amber - more elegant */#}
+{#    --danger-500: #dc2626;    /* Classic crimson - refined */#}
+{#    --purple-500: #7c3aed;    /* Royal violet - more elegant */#}
+{##}
+{#    /* Grayscale/Neutrals for Dark Theme */#}
+{#    --dark-bg-primary: #1a202c; /* Very Dark Blue-Gray (almost black) */#}
+{#    --dark-bg-secondary: #2d3748; /* Dark Blue-Gray */#}
+{#    --dark-bg-tertiary: #4a5568; /* Medium Dark Blue-Gray (for borders/accents) */#}
+{#    --dark-text-primary: #ffffff; /* Pure White */#}
+{#    --dark-text-secondary: #e2e8f0; /* Off-White/Light Gray */#}
+{#    --dark-text-muted: #a0aec0; /* Medium Gray */#}
+{##}
+{#    /* Elegant Extended Palette */#}
+{#    --primary-400: #3b82f6;#}
+{#    --primary-600: #1d4ed8;#}
+{#    --primary-700: #1e40af;#}
+{##}
+{#    --success-400: #10b981;#}
+{#    --success-600: #047857;#}
+{#    --success-700: #065f46;#}
+{##}
+{#    --info-400: #06b6d4;#}
+{#    --info-600: #0e7490;#}
+{#    --info-700: #164e63;#}
+{##}
+{#    --warning-400: #f59e0b;#}
+{#    --warning-600: #b45309;#}
+{#    --warning-700: #92400e;#}
+{##}
+{#    --danger-400: #f87171;#}
+{#    --danger-600: #b91c1c;#}
+{#    --danger-700: #991b1b;#}
+{##}
+{#    --purple-400: #a855f7;#}
+{#    --purple-600: #7c3aed;#}
+{#    --purple-700: #6b21a8;#}
+{#}#}
+{##}
+{#/* ===============================================#}
+{#   ENHANCED ELEGANT BUTTON STYLING#}
+{#   =============================================== */#}
+{##}
+{#/* Universal text visibility - Force all text to be visible */#}
+{#.dashboard-card,#}
+{#.dashboard-card *,#}
+{#.card,#}
+{#.card *,#}
+{#.quick-action-btn,#}
+{#.quick-action-btn *,#}
+{#.footer-action-btn,#}
+{#.footer-action-btn *,#}
+{#.pipeline-stage {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7) !important;#}
+{#}#}
+{##}
+{#/* SPECIFIC BUTTON TEXT FIXES */#}
+{#.quick-action-btn span,#}
+{#.footer-action-btn span {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;#}
+{#    font-size: 0.9rem !important;#}
+{#    line-height: 1.2 !important;#}
+{#    display: block !important;#}
+{#    opacity: 1 !important;#}
+{#    visibility: visible !important;#}
+{#}#}
+{##}
+{#.quick-action-btn i,#}
+{#.footer-action-btn i {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;#}
+{#    opacity: 1 !important;#}
+{#    visibility: visible !important;#}
+{#}#}
+{##}
+{#/* Enhanced button styling with sophisticated gradients */#}
+{#.quick-action-btn {#}
+{#    min-height: 85px !important;#}
+{#    max-height: 85px !important;#}
+{#    width: 100% !important;#}
+{#    padding: 18px 16px !important;#}
+{#    display: flex !important;#}
+{#    flex-direction: column !important;#}
+{#    align-items: center !important;#}
+{#    justify-content: center !important;#}
+{#    text-align: center !important;#}
+{#    border: 2px solid !important;#}
+{#    border-radius: 16px !important; /* More rounded for elegance */#}
+{#    background-color: var(--dark-bg-secondary) !important;#}
+{#    text-decoration: none !important;#}
+{#    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Smooth elegant transition */#}
+{#    box-sizing: border-box !important;#}
+{#    font-weight: 600 !important;#}
+{#    position: relative !important;#}
+{#    overflow: hidden !important;#}
+{#}#}
+{##}
+{#.footer-action-btn {#}
+{#    min-height: 65px !important;#}
+{#    max-height: 65px !important;#}
+{#    width: 100% !important;#}
+{#    padding: 12px 8px !important;#}
+{#    display: flex !important;#}
+{#    flex-direction: column !important;#}
+{#    align-items: center !important;#}
+{#    justify-content: center !important;#}
+{#    text-align: center !important;#}
+{#    border: 2px solid !important;#}
+{#    border-radius: 12px !important; /* More rounded */#}
+{#    background-color: var(--dark-bg-secondary) !important;#}
+{#    text-decoration: none !important;#}
+{#    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;#}
+{#    box-sizing: border-box !important;#}
+{#    font-weight: 600 !important;#}
+{#    overflow: hidden !important;#}
+{#}#}
+{##}
+{#/* Icon styling */#}
+{#.quick-action-btn i {#}
+{#    font-size: 1.6rem !important;#}
+{#    margin-bottom: 6px !important;#}
+{#    display: block !important;#}
+{#}#}
+{##}
+{#.footer-action-btn i {#}
+{#    font-size: 1.3rem !important;#}
+{#    margin-bottom: 4px !important;#}
+{#    display: block !important;#}
+{#}#}
+{##}
+{#/* Sophisticated color schemes with elegant gradients */#}
+{#.btn-outline-primary.quick-action-btn,#}
+{#.btn-outline-primary.footer-action-btn {#}
+{#    border-color: var(--primary-500) !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(37, 99, 235, 0.15) 0%,#}
+{#        rgba(29, 78, 216, 0.25) 50%,#}
+{#        rgba(30, 64, 175, 0.15) 100%) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1) !important;#}
+{#}#}
+{##}
+{#.btn-outline-success.quick-action-btn,#}
+{#.btn-outline-success.footer-action-btn {#}
+{#    border-color: var(--success-500) !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(5, 150, 105, 0.15) 0%,#}
+{#        rgba(4, 120, 87, 0.25) 50%,#}
+{#        rgba(6, 95, 70, 0.15) 100%) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    box-shadow: 0 4px 20px rgba(5, 150, 105, 0.1) !important;#}
+{#}#}
+{##}
+{#.btn-outline-info.quick-action-btn,#}
+{#.btn-outline-info.footer-action-btn {#}
+{#    border-color: var(--info-500) !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(8, 145, 178, 0.15) 0%,#}
+{#        rgba(14, 116, 144, 0.25) 50%,#}
+{#        rgba(22, 78, 99, 0.15) 100%) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    box-shadow: 0 4px 20px rgba(8, 145, 178, 0.1) !important;#}
+{#}#}
+{##}
+{#.btn-outline-warning.quick-action-btn,#}
+{#.btn-outline-warning.footer-action-btn {#}
+{#    border-color: var(--warning-500) !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(217, 119, 6, 0.15) 0%,#}
+{#        rgba(180, 83, 9, 0.25) 50%,#}
+{#        rgba(146, 64, 14, 0.15) 100%) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    box-shadow: 0 4px 20px rgba(217, 119, 6, 0.1) !important;#}
+{#}#}
+{##}
+{#.btn-outline-secondary.quick-action-btn,#}
+{#.btn-outline-secondary.footer-action-btn {#}
+{#    border-color: var(--dark-bg-tertiary) !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(74, 85, 104, 0.15) 0%,#}
+{#        rgba(113, 128, 150, 0.25) 50%,#}
+{#        rgba(160, 174, 192, 0.15) 100%) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    box-shadow: 0 4px 20px rgba(74, 85, 104, 0.1) !important;#}
+{#}#}
+{##}
+{#.btn-outline-dark.quick-action-btn,#}
+{#.footer-purple-btn {#}
+{#    border-color: var(--purple-500) !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(124, 58, 237, 0.15) 0%,#}
+{#        rgba(124, 58, 237, 0.25) 50%,#}
+{#        rgba(107, 33, 168, 0.15) 100%) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.1) !important;#}
+{#}#}
+{##}
+{#.footer-red-btn {#}
+{#    border-color: var(--danger-500) !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(220, 38, 38, 0.15) 0%,#}
+{#        rgba(185, 28, 28, 0.25) 50%,#}
+{#        rgba(153, 27, 27, 0.15) 100%) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.1) !important;#}
+{#}#}
+{##}
+{#/* Elegant hover effects with sophisticated transforms */#}
+{#.quick-action-btn:hover,#}
+{#.footer-action-btn:hover {#}
+{#    transform: translateY(-4px) scale(1.02) !important;#}
+{#    box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;#}
+{#    text-decoration: none !important;#}
+{#}#}
+{##}
+{#.quick-action-btn:hover span,#}
+{#.footer-action-btn:hover span,#}
+{#.quick-action-btn:hover i,#}
+{#.footer-action-btn:hover i {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9) !important;#}
+{#}#}
+{##}
+{#/* Enhanced hover colors with elegant transitions */#}
+{#.btn-outline-primary:hover {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--primary-500) 0%,#}
+{#        var(--primary-600) 50%,#}
+{#        var(--primary-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--primary-400) !important;#}
+{#    box-shadow: 0 15px 40px rgba(37, 99, 235, 0.3) !important;#}
+{#}#}
+{##}
+{#.btn-outline-success:hover {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--success-500) 0%,#}
+{#        var(--success-600) 50%,#}
+{#        var(--success-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--success-400) !important;#}
+{#    box-shadow: 0 15px 40px rgba(5, 150, 105, 0.3) !important;#}
+{#}#}
+{##}
+{#.btn-outline-info:hover {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--info-500) 0%,#}
+{#        var(--info-600) 50%,#}
+{#        var(--info-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--info-400) !important;#}
+{#    box-shadow: 0 15px 40px rgba(8, 145, 178, 0.3) !important;#}
+{#}#}
+{##}
+{#.btn-outline-warning:hover {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--warning-500) 0%,#}
+{#        var(--warning-600) 50%,#}
+{#        var(--warning-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--warning-400) !important;#}
+{#    box-shadow: 0 15px 40px rgba(217, 119, 6, 0.3) !important;#}
+{#}#}
+{##}
+{#.btn-outline-secondary:hover {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--dark-bg-tertiary) 0%,#}
+{#        #6c757d 50%,#}
+{#        #5a6169 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: #8a94a6 !important;#}
+{#    box-shadow: 0 15px 40px rgba(74, 85, 104, 0.3) !important;#}
+{#}#}
+{##}
+{#.btn-outline-dark:hover,#}
+{#.footer-purple-btn:hover {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--purple-500) 0%,#}
+{#        var(--purple-600) 50%,#}
+{#        var(--purple-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--purple-400) !important;#}
+{#    box-shadow: 0 15px 40px rgba(124, 58, 237, 0.3) !important;#}
+{#}#}
+{##}
+{#.footer-red-btn:hover {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--danger-500) 0%,#}
+{#        var(--danger-600) 50%,#}
+{#        var(--danger-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-color: var(--danger-400) !important;#}
+{#    box-shadow: 0 15px 40px rgba(220, 38, 38, 0.3) !important;#}
+{#}#}
+{##}
+{#/* ===============================================#}
+{#   ELEGANT CARD AND PIPELINE STYLING#}
+{#   =============================================== */#}
+{##}
+{#.dashboard-card {#}
+{#    background: linear-gradient(145deg,#}
+{#        var(--dark-bg-secondary) 0%,#}
+{#        rgba(45, 55, 72, 0.95) 100%) !important;#}
+{#    border: 1px solid rgba(74, 85, 104, 0.3) !important;#}
+{#    border-radius: 16px !important;#}
+{#    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    min-height: 120px;#}
+{#    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;#}
+{#}#}
+{##}
+{#.dashboard-card:hover {#}
+{#    transform: translateY(-6px) !important;#}
+{#    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25) !important;#}
+{#    border-color: rgba(37, 99, 235, 0.4) !important;#}
+{#}#}
+{##}
+{#.card-header {#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(26, 32, 44, 0.95) 0%,#}
+{#        rgba(45, 55, 72, 0.9) 100%) !important;#}
+{#    border-bottom: 1px solid rgba(74, 85, 104, 0.3) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 600 !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    border-radius: 16px 16px 0 0 !important;#}
+{#}#}
+{##}
+{#.card-header h1,#}
+{#.card-header h2,#}
+{#.card-header h3,#}
+{#.card-header h4,#}
+{#.card-header h5,#}
+{#.card-header h6 {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;#}
+{#}#}
+{##}
+{#.card-body {#}
+{#    background: linear-gradient(145deg,#}
+{#        rgba(45, 55, 72, 0.95) 0%,#}
+{#        rgba(74, 85, 104, 0.05) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    padding: 1.5rem !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#}#}
+{##}
+{#.card-body h1,#}
+{#.card-body h2,#}
+{#.card-body h3,#}
+{#.card-body h4,#}
+{#.card-body h5,#}
+{#.card-body h6 {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;#}
+{#    margin-bottom: 0.5rem !important;#}
+{#}#}
+{##}
+{#.card-body p {#}
+{#    color: var(--dark-text-secondary) !important;#}
+{#    font-weight: 500 !important;#}
+{#    margin-bottom: 0.5rem !important;#}
+{#}#}
+{##}
+{#.stats-card h2 {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 800 !important;#}
+{#    font-size: 2.5rem !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;#}
+{#    margin-bottom: 0.25rem !important;#}
+{#}#}
+{##}
+{#.stats-card p {#}
+{#    color: var(--dark-text-secondary) !important;#}
+{#    font-weight: 600 !important;#}
+{#    font-size: 1rem !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;#}
+{#}#}
+{##}
+{#.stats-card small {#}
+{#    color: var(--dark-text-muted) !important;#}
+{#    font-weight: 600 !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;#}
+{#}#}
+{##}
+{#.text-light {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 600 !important;#}
+{#}#}
+{##}
+{#.text-muted {#}
+{#    color: var(--dark-text-muted) !important;#}
+{#    font-weight: 500 !important;#}
+{#}#}
+{##}
+{#.text-primary {#}
+{#    color: var(--primary-500) !important;#}
+{#    font-weight: 700 !important;#}
+{#}#}
+{##}
+{#.text-success {#}
+{#    color: var(--success-500) !important;#}
+{#    font-weight: 700 !important;#}
+{#}#}
+{##}
+{#.text-warning {#}
+{#    color: var(--warning-500) !important;#}
+{#    font-weight: 700 !important;#}
+{#}#}
+{##}
+{#.text-info {#}
+{#    color: var(--info-500) !important;#}
+{#    font-weight: 700 !important;#}
+{#}#}
+{##}
+{#.text-white {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 600 !important;#}
+{#}#}
+{##}
+{#small,#}
+{#.small {#}
+{#    color: var(--dark-text-secondary) !important;#}
+{#    font-weight: 500 !important;#}
+{#    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5) !important;#}
+{#}#}
+{##}
+{#/* Pipeline and activity styles */#}
+{#.pipeline-mini {#}
+{#    display: flex;#}
+{#    gap: 12px;#}
+{#    align-items: center;#}
+{#    flex-wrap: wrap;#}
+{#    justify-content: center;#}
+{#    padding: 1rem 0;#}
+{#}#}
+{##}
+{#.pipeline-stage {#}
+{#    padding: 12px 18px !important;#}
+{#    border-radius: 12px !important;#}
+{#    font-size: 0.9rem !important;#}
+{#    font-weight: 700 !important;#}
+{#    min-width: 100px !important;#}
+{#    text-align: center !important;#}
+{#    margin: 4px !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;#}
+{#    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;#}
+{#    backdrop-filter: blur(10px) !important;#}
+{#    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;#}
+{#}#}
+{##}
+{#/* Enhanced pipeline stage colors */#}
+{#.pipeline-stage.bg-secondary {#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(74, 85, 104, 0.9) 0%,#}
+{#        rgba(113, 128, 150, 0.8) 100%) !important;#}
+{#}#}
+{#.pipeline-stage.bg-primary {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--primary-500) 0%,#}
+{#        var(--primary-600) 100%) !important;#}
+{#}#}
+{#.pipeline-stage.bg-success {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--success-500) 0%,#}
+{#        var(--success-600) 100%) !important;#}
+{#}#}
+{#.pipeline-stage.bg-warning {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--warning-500) 0%,#}
+{#        var(--warning-600) 100%) !important;#}
+{#}#}
+{#.pipeline-stage.bg-info {#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--info-500) 0%,#}
+{#        var(--info-600) 100%) !important;#}
+{#}#}
+{##}
+{#.list-group-item {#}
+{#    background-color: rgba(45, 55, 72, 0.8) !important;#}
+{#    border: 1px solid var(--dark-bg-tertiary) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    margin-bottom: 8px !important;#}
+{#    border-radius: 8px !important;#}
+{#}#}
+{##}
+{#.list-group-item strong {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;#}
+{#}#}
+{##}
+{#.activity-item {#}
+{#    background-color: var(--dark-bg-primary) !important;#}
+{#    border-left: 4px solid var(--primary-500) !important;#}
+{#    padding: 16px !important;#}
+{#    margin-bottom: 12px !important;#}
+{#    border-radius: 8px !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;#}
+{#}#}
+{##}
+{#.activity-item strong {#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;#}
+{#}#}
+{##}
+{#.progress-circle {#}
+{#    width: 90px !important;#}
+{#    height: 90px !important;#}
+{#    border-radius: 50% !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--success-500) 0%,#}
+{#        var(--success-600) 50%,#}
+{#        var(--success-700) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    font-weight: 800 !important;#}
+{#    font-size: 1.3rem !important;#}
+{#    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;#}
+{#    box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3) !important;#}
+{#    display: flex !important;#}
+{#    align-items: center !important;#}
+{#    justify-content: center !important;#}
+{#    margin: 0 auto !important;#}
+{#}#}
+{##}
+{#.badge {#}
+{#    font-size: 0.8rem !important;#}
+{#    padding: 0.5rem 0.8rem !important;#}
+{#    font-weight: 600 !important;#}
+{#    border-radius: 6px !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;#}
+{#}#}
+{##}
+{#/* Enhanced badge colors */#}
+{#.badge.bg-primary {#}
+{#    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%) !important;#}
+{#}#}
+{#.badge.bg-success {#}
+{#    background: linear-gradient(135deg, var(--success-500) 0%, var(--success-600) 100%) !important;#}
+{#}#}
+{#.badge.bg-warning {#}
+{#    background: linear-gradient(135deg, var(--warning-500) 0%, var(--warning-600) 100%) !important;#}
+{#}#}
+{#.badge.bg-info {#}
+{#    background: linear-gradient(135deg, var(--info-500) 0%, var(--info-600) 100%) !important;#}
+{#}#}
+{#.badge.bg-secondary {#}
+{#    background: linear-gradient(135deg, var(--dark-bg-tertiary) 0%, #6c757d 100%) !important;#}
+{#}#}
+{##}
+{#.notification-badge {#}
+{#    position: absolute !important;#}
+{#    top: -8px !important;#}
+{#    right: -8px !important;#}
+{#    background: linear-gradient(135deg,#}
+{#        var(--danger-500) 0%,#}
+{#        var(--danger-600) 100%) !important;#}
+{#    color: var(--dark-text-primary) !important;#}
+{#    border-radius: 50% !important;#}
+{#    width: 24px !important;#}
+{#    height: 24px !important;#}
+{#    font-size: 0.8rem !important;#}
+{#    font-weight: 700 !important;#}
+{#    display: flex !important;#}
+{#    align-items: center !important;#}
+{#    justify-content: center !important;#}
+{#    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4) !important;#}
+{#    animation: elegantPulse 2s infinite !important;#}
+{#}#}
+{##}
+{#@keyframes elegantPulse {#}
+{#    0% { transform: scale(1); box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4); }#}
+{#    50% { transform: scale(1.1); box-shadow: 0 6px 25px rgba(220, 38, 38, 0.6); }#}
+{#    100% { transform: scale(1); box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4); }#}
+{#}#}
+{##}
+{#.alert-warning {#}
+{#    background: linear-gradient(135deg,#}
+{#        rgba(217, 119, 6, 0.1) 0%,#}
+{#        rgba(180, 83, 9, 0.05) 100%) !important;#}
+{#    color: var(--warning-500) !important;#}
+{#    border-left: 4px solid var(--warning-500) !important;#}
+{#    border-radius: 8px !important;#}
+{#    backdrop-filter: blur(5px) !important;#}
+{#}#}
+{##}
+{#.alert-warning strong {#}
+{#    color: var(--warning-600) !important;#}
+{#    font-weight: 700 !important;#}
+{#    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;#}
+{#}#}
+{##}
+{#.alert-warning small {#}
+{#    color: var(--dark-text-secondary) !important;#}
+{#    font-weight: 600 !important;#}
+{#}#}
+{##}
+{#/* Responsive adjustments */#}
+{#@media (max-width: 768px) {#}
+{#    .quick-action-btn {#}
+{#        min-height: 75px !important;#}
+{#        max-height: 75px !important;#}
+{#        padding: 14px 12px !important;#}
+{#        font-size: 0.8rem !important;#}
+{#    }#}
+{##}
+{#    .quick-action-btn i {#}
+{#        font-size: 1.3rem !important;#}
+{#        margin-bottom: 4px !important;#}
+{#    }#}
+{##}
+{#    .quick-action-btn span {#}
+{#        font-size: 0.8rem !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn {#}
+{#        min-height: 55px !important;#}
+{#        max-height: 55px !important;#}
+{#        padding: 10px 6px !important;#}
+{#        font-size: 0.7rem !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn i {#}
+{#        font-size: 1.1rem !important;#}
+{#        margin-bottom: 3px !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn span {#}
+{#        font-size: 0.7rem !important;#}
+{#    }#}
+{#}#}
+{##}
+{#@media (max-width: 576px) {#}
+{#    .quick-action-btn {#}
+{#        min-height: 70px !important;#}
+{#        max-height: 70px !important;#}
+{#        padding: 12px 8px !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn {#}
+{#        min-height: 50px !important;#}
+{#        max-height: 50px !important;#}
+{#        padding: 8px 4px !important;#}
+{#        font-size: 0.65rem !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn i {#}
+{#        font-size: 1rem !important;#}
+{#        margin-bottom: 2px !important;#}
+{#    }#}
+{##}
+{#    .footer-action-btn span {#}
+{#        font-size: 0.65rem !important;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{##}
+{#{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container-fluid">#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="d-flex justify-content-between align-items-center flex-wrap">#}
+{#                <div class="mb-3 mb-md-0">#}
+{#                    <h1 class="display-5 fw-bold text-light mb-2">#}
+{#                        Welcome back, {{ user.first_name|default:user.username }}! 👋#}
+{#                    </h1>#}
+{#                    <p class="text-light mb-0">Here's your job search progress and what needs your attention</p>#}
+{#                </div>#}
+{#                <div class="d-flex gap-2 flex-wrap">#}
+{#                    <a href="{% url 'dashboard:quick_search' %}" class="btn btn-primary">#}
+{#                        <i class="fas fa-search"></i> Emergency Search#}
+{#                    </a>#}
+{#                    <a href="{% url 'jobs:applications' %}" class="btn btn-outline-primary">#}
+{#                        <i class="fas fa-project-diagram"></i> View Pipeline#}
+{#                    </a>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4 row-eq-height">#}
+{#        <div class="col-md-3 col-sm-6 mb-3">#}
+{#            <div class="card dashboard-card stats-card border-primary h-100">#}
+{#                <div class="card-body d-flex flex-column justify-content-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h2 class="text-primary mb-1">{{ total_applications|default:0 }}</h2>#}
+{#                            <p class="text-light mb-0">Total Applications</p>#}
+{#                        </div>#}
+{#                        <div class="text-primary">#}
+{#                            <i class="fas fa-file-alt fa-2x"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="mt-2">#}
+{#                        <small class="text-success">#}
+{#                            <i class="fas fa-arrow-up"></i> {{ applications_this_week|default:0 }} this week#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-md-3 col-sm-6 mb-3">#}
+{#            <div class="card dashboard-card stats-card border-success h-100">#}
+{#                <div class="card-body d-flex flex-column justify-content-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h2 class="text-success mb-1">{{ response_rate|floatformat:1|default:0.0 }}%</h2>#}
+{#                            <p class="text-light mb-0">Response Rate</p>#}
+{#                        </div>#}
+{#                        <div class="text-success">#}
+{#                            <i class="fas fa-reply fa-2x"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="mt-2">#}
+{#                        <small class="text-success">#}
+{#                            <i class="fas fa-chart-line"></i> Industry avg: 2-5%#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-md-3 col-sm-6 mb-3">#}
+{#            <div class="card dashboard-card stats-card border-warning h-100">#}
+{#                <div class="card-body d-flex flex-column justify-content-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h2 class="text-warning mb-1">{{ interviews_scheduled|default:0 }}</h2>#}
+{#                            <p class="text-light mb-0">Interviews Scheduled</p>#}
+{#                        </div>#}
+{#                        <div class="text-warning">#}
+{#                            <i class="fas fa-calendar-check fa-2x"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="mt-2">#}
+{#                        <small class="text-warning">#}
+{#                            <i class="fas fa-clock"></i> Prepare now#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-md-3 col-sm-6 mb-3">#}
+{#            <div class="card dashboard-card stats-card border-info h-100">#}
+{#                <div class="card-body d-flex flex-column justify-content-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h2 class="text-info mb-1">{{ applications_this_month|default:0 }}</h2>#}
+{#                            <p class="text-light mb-0">This Month</p>#}
+{#                        </div>#}
+{#                        <div class="text-info">#}
+{#                            <i class="fas fa-calendar-alt fa-2x"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="mt-2">#}
+{#                        <small class="text-info">#}
+{#                            <i class="fas fa-target"></i> Goal: 30/month#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4 row-eq-height">#}
+{#        <div class="col-lg-8 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header bg-primary text-white">#}
+{#                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="row g-3">#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:quick_search' %}" class="btn btn-outline-primary w-100 quick-action-btn">#}
+{#                                <i class="fas fa-search"></i>#}
+{#                                <span>Emergency Job Search</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'followups:bulk_followup' %}" class="btn btn-outline-success w-100 quick-action-btn">#}
+{#                                <i class="fas fa-paper-plane"></i>#}
+{#                                <span>Send Follow-ups</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:bulk_download' %}" class="btn btn-outline-info w-100 quick-action-btn">#}
+{#                                <i class="fas fa-download"></i>#}
+{#                                <span>Download Documents</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:skills_analysis' %}" class="btn btn-outline-warning w-100 quick-action-btn">#}
+{#                                <i class="fas fa-chart-line"></i>#}
+{#                                <span>Skills Analysis</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:interview_prep' %}" class="btn btn-outline-secondary w-100 quick-action-btn">#}
+{#                                <i class="fas fa-user-tie"></i>#}
+{#                                <span>Interview Prep</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-md-4 col-sm-6">#}
+{#                            <a href="{% url 'dashboard:market_intelligence' %}" class="btn btn-outline-dark w-100 quick-action-btn">#}
+{#                                <i class="fas fa-chart-bar"></i>#}
+{#                                <span>Market Intelligence</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-lg-4 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header bg-success text-white">#}
+{#                    <h5 class="mb-0"><i class="fas fa-user-check"></i> Profile Health</h5>#}
+{#                </div>#}
+{#                <div class="card-body d-flex flex-column justify-content-center text-center">#}
+{#                    <div class="progress-circle mb-3">#}
+{#                        <span id="profile-completion">{{ profile.calculate_completion_percentage|default:75 }}%</span>#}
+{#                    </div>#}
+{#                    <h6 class="text-light">Profile Completion</h6>#}
+{#                    <div id="missing-fields" class="mt-3 flex-grow-1">#}
+{#                        <div class="alert alert-warning alert-sm p-2">#}
+{#                            <strong>Missing:</strong><br>#}
+{#                            <small>• Phone number</small><br>#}
+{#                            <small>• Skills section</small><br>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <a href="{% url 'accounts:profile' %}" class="btn btn-success mt-auto">#}
+{#                        <i class="fas fa-edit"></i> Update Profile#}
+{#                    </a>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4 row-eq-height">#}
+{#        <div class="col-lg-8 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                    <h5 class="mb-0 text-white"><i class="fas fa-project-diagram"></i> Application Pipeline</h5>#}
+{#                    <a href="{% url 'dashboard:pipeline_visualization' %}" class="btn btn-sm btn-outline-primary">#}
+{#                        <i class="fas fa-expand"></i> View Full Pipeline#}
+{#                    </a>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="pipeline-mini mb-4">#}
+{#                        <div class="pipeline-stage bg-secondary text-white">#}
+{#                            Found: {{ pipeline_data.found|default:0 }}#}
+{#                        </div>#}
+{#                        <i class="fas fa-chevron-right"></i>#}
+{#                        <div class="pipeline-stage bg-primary text-white">#}
+{#                            Applied: {{ pipeline_data.applied|default:0 }}#}
+{#                        </div>#}
+{#                        <i class="fas fa-chevron-right "></i>#}
+{#                        <div class="pipeline-stage bg-success text-white">#}
+{#                            Responded: {{ pipeline_data.responded|default:0 }}#}
+{#                        </div>#}
+{#                        <i class="fas fa-chevron-right "></i>#}
+{#                        <div class="pipeline-stage bg-warning text-white">#}
+{#                            Interview: {{ pipeline_data.interview|default:0 }}#}
+{#                        </div>#}
+{#                        <i class="fas fa-chevron-right"></i>#}
+{#                        <div class="pipeline-stage bg-info text-white">#}
+{#                            Offer: {{ pipeline_data.offer|default:0 }}#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <div class="mt-4">#}
+{#                        <h6 class="text-white">Recent Applications</h6>#}
+{#                        <div class="list-group list-group-flush">#}
+{#                            {% for app in recent_applications|slice:":5" %}#}
+{#                            <div class="list-group-item d-flex justify-content-between align-items-center">#}
+{#                                <div>#}
+{#                                    <strong class="text-white">{{ app.company_name }}</strong>#}
+{#                                    <br><small class="text-muted">{{ app.job_title }}</small>#}
+{#                                </div>#}
+{#                                <div class="text-end">#}
+{#                                    <span class="badge bg-{% if app.application_status == 'applied' %}primary{% elif app.application_status == 'responded' %}success{% elif app.application_status == 'interview' %}warning{% elif app.application_status == 'offer' %}info{% else %}secondary{% endif %}">#}
+{#                                        {{ app.application_status|title }}#}
+{#                                    </span>#}
+{#                                    <br><small class="text-muted">{{ app.created_at|timesince }} ago</small>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% empty %}#}
+{#                            <div class="list-group-item text-center">#}
+{#                                <p class="text-light mb-2">No applications yet.</p>#}
+{#                                <a href="{% url 'jobs:job_list' %}" class="btn btn-primary btn-sm">Start your first search!</a>#}
+{#                            </div>#}
+{#                            {% endfor %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-lg-4 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                    <h5 class="mb-0 text-white"><i class="fas fa-bell"></i> Notifications</h5>#}
+{#                    <div class="position-relative">#}
+{#                        <a href="{% url 'dashboard:notifications' %}" class="btn btn-sm btn-outline-secondary">#}
+{#                            <i class="fas fa-bell"></i>#}
+{#                        </a>#}
+{#                        <span class="notification-badge" id="notification-count">0</span> {# Default to 0, updated by JS #}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="card-body d-flex flex-column">#}
+{#                    <div id="notifications-list" class="flex-grow-1">#}
+                        {# Notifications will be loaded here by JavaScript #}
+{#                        <div class="text-center text-muted py-4" id="notifications-empty-state">#}
+{#                            <i class="fas fa-inbox fa-2x mb-2"></i>#}
+{#                            <p>No new notifications.</p>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="text-center mt-3">#}
+{#                        <a href="{% url 'dashboard:notifications' %}" class="btn btn-sm btn-outline-primary">#}
+{#                            View All Notifications#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4 row-eq-height">#}
+{#        <div class="col-lg-6 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header bg-info text-white">#}
+{#                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Weekly Report</h5>#}
+{#                </div>#}
+{#                <div class="card-body d-flex flex-column">#}
+{#                    <p class="text-light">Your performance this week compared to last week</p>#}
+{#                    <div class="row text-center flex-grow-1 d-flex align-items-center">#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-primary">{{ applications_this_week|default:0 }}</h4>#}
+{#                            <p class="small text-light">Applications</p>#}
+{#                        </div>#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-success">{{ response_rate|floatformat:1|default:0.0 }}%</h4>#}
+{#                            <p class="small text-light">Response Rate</p>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="text-center mt-auto">#}
+{#                        <a href="{% url 'dashboard:weekly_report' %}" class="btn btn-info">#}
+{#                            <i class="fas fa-chart-line"></i> View Full Report#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="col-lg-6 mb-4">#}
+{#            <div class="card dashboard-card h-100">#}
+{#                <div class="card-header bg-warning text-white">#}
+{#                    <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Skills Insights</h5>#}
+{#                </div>#}
+{#                <div class="card-body d-flex flex-column">#}
+{#                    <p class="text-light">Skills analysis based on your recent applications</p>#}
+{#                    <div class="row text-center flex-grow-1 d-flex align-items-center">#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-success">{{ skills_you_have_count|default:0 }}</h4>{# Now truly dynamic #}
+{#                            <p class="small text-light">Skills You Have</p>#}
+{#                        </div>#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-warning">{{ skills_to_develop_count|default:0 }}</h4>{# Now truly dynamic #}
+{#                            <p class="small text-light">Skills to Develop</p>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="text-center mt-auto">#}
+{#                        <a href="{% url 'dashboard:skills_analysis' %}" class="btn btn-warning">#}
+{#                            <i class="fas fa-chart-line"></i> View Analysis#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="card dashboard-card">#}
+{#                <div class="card-body py-3">#}
+{#                    <div class="row text-center g-2 justify-content-center align-items-stretch">#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-primary btn-sm footer-action-btn">#}
+{#                                <i class="fas fa-cog"></i>#}
+{#                                <span>Search Config</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'followups:templates' %}" class="btn btn-outline-success btn-sm footer-action-btn">#}
+{#                                <i class="fas fa-envelope"></i>#}
+{#                                <span>Email Templates</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'documents:download_options' %}" class="btn btn-outline-info btn-sm footer-action-btn">#}
+{#                                <i class="fas fa-file-download"></i>#}
+{#                                <span>Documents</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'dashboard:analytics' %}" class="btn btn-outline-warning btn-sm footer-action-btn">#}
+{#                                <i class="fas fa-chart-bar"></i>#}
+{#                                <span>Analytics</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'dashboard:settings' %}" class="btn btn-sm footer-action-btn footer-red-btn">#}
+{#                                <i class="fas fa-cog"></i>#}
+{#                                <span>Settings</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex">#}
+{#                            <a href="{% url 'admin:index' %}" class="btn btn-sm footer-action-btn footer-purple-btn">#}
+{#                                <i class="fas fa-tools"></i>#}
+{#                                <span>Admin</span>#}
+{#                            </a>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>#}
+{#<script>#}
+{#$(document).ready(function() {#}
+{#    // Add loading states to buttons#}
+{#    $('.quick-action-btn, .footer-action-btn').on('click', function(e) {#}
+{#        // Only add loading state if it's a dynamic action, not a simple page navigation#}
+{#        // For actual AJAX calls, you'd integrate this with your fetch/$.ajax success/error#}
+{#        const href = $(this).attr('href');#}
+{#        // Check if the link navigates to a URL, not just a JS function (#) or if it's explicitly marked for AJAX#}
+{#        if (href && href !== '#' && !$(this).hasClass('no-loading-state')) { // Added 'no-loading-state' class for navigation#}
+{#            e.preventDefault(); // Prevent default navigation immediately#}
+{##}
+{#            const $btn = $(this);#}
+{#            const originalHtml = $btn.html();#}
+{#            const originalHref = $btn.attr('href');#}
+{##}
+{#            $btn.html('<i class="fas fa-spinner fa-spin"></i> <span>Loading...</span>');#}
+{#            $btn.css('pointer-events', 'none'); // Disable button#}
+{##}
+{#            // In a real application, you would perform your AJAX call here.#}
+{#            // On success/error of the AJAX, you would then:#}
+{#            // 1. Revert button HTML and enable.#}
+{#            // 2. Potentially navigate (window.location.href = originalHref;).#}
+{#            // For now, simulating with a timeout and then navigating.#}
+{#            setTimeout(function() {#}
+{#                // Revert button state#}
+{#                $btn.html(originalHtml);#}
+{#                $btn.css('pointer-events', 'auto');#}
+{#                // Proceed with navigation after the simulated loading time#}
+{#                window.location.href = originalHref;#}
+{#            }, 1000); // Simulate a 1-second loading time#}
+{#        } else if ($(this).hasClass('no-loading-state')) {#}
+{#            // For buttons that should not show a loading state, simply allow default behavior#}
+{#            return true;#}
+{#        }#}
+{#    });#}
+{##}
+{#    // Smooth hover animations#}
+{#    $('.quick-action-btn, .footer-action-btn').hover(#}
+{#        function() {#}
+{#            $(this).css('transform', 'translateY(-2px) scale(1.02)');#}
+{#        },#}
+{#        function() {#}
+{#            $(this).css('transform', 'translateY(0) scale(1)');#}
+{#        }#}
+{#    );#}
+{##}
+{#    // Function to fetch and render notifications#}
+{#    function fetchNotifications() {#}
+{#        $.ajax({#}
+{#            url: "{% url 'dashboard:notifications_api' %}", // Use the API endpoint for notifications#}
+{#            method: 'GET',#}
+{#            success: function(data) {#}
+{#                const notificationsList = $('#notifications-list');#}
+{#                const notificationCountBadge = $('#notification-count');#}
+{#                const notificationsEmptyState = $('#notifications-empty-state');#}
+{#                notificationsList.empty(); // Clear existing notifications#}
+{##}
+{#                if (data.notifications && data.notifications.length > 0) {#}
+{#                    notificationsEmptyState.hide(); // Hide empty state#}
+{#                    data.notifications.forEach(notification => {#}
+{#                        const notificationHtml = `#}
+{#                            <div class="activity-item" data-notification-id="${notification.id}">#}
+{#                                <div class="d-flex justify-content-between align-items-center mb-1">#}
+{#                                    <strong class="text-white">${notification.title}</strong>#}
+{#                                    <small class="text-muted">${timeSince(notification.created_at)} ago</small>#}
+{#                                </div>#}
+{#                                <p class="mb-2 small text-muted">${notification.message}</p>#}
+{#                                <div class="d-flex justify-content-end gap-2">#}
+{#                                    ${!notification.is_read ? `<button class="btn btn-sm btn-outline-info mark-read-btn" data-id="${notification.id}">Mark Read</button>` : ''}#}
+{#                                    <button class="btn btn-sm btn-outline-danger dismiss-btn" data-id="${notification.id}">Dismiss</button>#}
+{#                                    ${notification.action_url ? `<a href="${notification.action_url}" class="btn btn-sm btn-outline-primary no-loading-state">${notification.action_text || 'View'}</a>` : ''}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        `;#}
+{#                        notificationsList.append(notificationHtml);#}
+{#                    });#}
+{##}
+{#                    // Add event listeners for newly added buttons#}
+{#                    $('.mark-read-btn').on('click', function() {#}
+{#                        const notificationId = $(this).data('id');#}
+{#                        markNotificationAction(notificationId, 'mark_read');#}
+{#                    });#}
+{#                    $('.dismiss-btn').on('click', function() {#}
+{#                        const notificationId = $(this).data('id');#}
+{#                        markNotificationAction(notificationId, 'dismiss');#}
+{#                    });#}
+{##}
+{#                } else {#}
+{#                    notificationsEmptyState.show(); // Show empty state#}
+{#                }#}
+{#                notificationCountBadge.text(data.unread_count); // Update count#}
+{#                if (data.unread_count > 0) {#}
+{#                    notificationCountBadge.show();#}
+{#                } else {#}
+{#                    notificationCountBadge.hide();#}
+{#                }#}
+{#            },#}
+{#            error: function(xhr, status, error) {#}
+{#                console.error("Error fetching notifications:", error);#}
+{#                // Optionally show an error message on the dashboard#}
+{#                const notificationsList = $('#notifications-list');#}
+{#                const notificationsEmptyState = $('#notifications-empty-state');#}
+{#                notificationsList.empty();#}
+{#                notificationsList.append('<div class="text-center text-danger py-4"><i class="fas fa-exclamation-circle fa-2x mb-2"></i><p>Failed to load notifications. Please try again later.</p></div>');#}
+{#                notificationsEmptyState.hide(); // Hide the default empty state#}
+{#            }#}
+{#        });#}
+{#    }#}
+{##}
+{#    // Function to mark notification as read or dismiss#}
+{#    function markNotificationAction(notificationId, action) {#}
+{#        $.ajax({#}
+{#            url: "{% url 'dashboard:notifications_api' %}", // Use the API endpoint#}
+{#            method: 'POST',#}
+{#            contentType: 'application/json',#}
+{#            data: JSON.stringify({#}
+{#                action: action,#}
+{#                notification_ids: [notificationId]#}
+{#            }),#}
+{#            headers: {#}
+{#                'X-CSRFToken': getCookie('csrftoken') // Get CSRF token#}
+{#            },#}
+{#            success: function(response) {#}
+{#                if (response.success) {#}
+{#                    console.log(`Notification ${action}ed successfully.`);#}
+{#                    fetchNotifications(); // Re-fetch notifications to update the list#}
+{#                } else {#}
+{#                    console.error(`Failed to ${action} notification:`, response.message);#}
+{#                }#}
+{#            },#}
+{#            error: function(xhr, status, error) {#}
+{#                console.error(`Error ${action}ing notification:`, error);#}
+{#            }#}
+{#        });#}
+{#    }#}
+{##}
+{#    // Helper function to calculate time since#}
+{#    function timeSince(dateString) {#}
+{#        const now = new Date();#}
+{#        const date = new Date(dateString);#}
+{#        const seconds = Math.floor((now - date) / 1000);#}
+{##}
+{#        let interval = seconds / 31536000;#}
+{#        if (interval > 1) { return Math.floor(interval) + " years"; }#}
+{#        interval = seconds / 2592000;#}
+{#        if (interval > 1) { return Math.floor(interval) + " months"; }#}
+{#        interval = seconds / 86400;#}
+{#        if (interval > 1) { return Math.floor(interval) + " days"; }#}
+{#        interval = seconds / 3600;#}
+{#        if (interval > 1) { return Math.floor(interval) + " hours"; }#}
+{#        interval = seconds / 60;#}
+{#        if (interval > 1) { return Math.floor(interval) + " minutes"; }#}
+{#        return Math.floor(seconds) + " seconds";#}
+{#    }#}
+{##}
+{#    // Helper function to get CSRF token#}
+{#    function getCookie(name) {#}
+{#        let cookieValue = null;#}
+{#        if (document.cookie && document.cookie !== '') {#}
+{#            const cookies = document.cookie.split(';');#}
+{#            for (let i = 0; i < cookies.length; i++) {#}
+{#                const cookie = cookies[i].trim();#}
+{#                // Does this cookie string begin with the name we want?#}
+{#                if (cookie.substring(0, name.length + 1) === (name + '=')) {#}
+{#                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));#}
+{#                    break;#}
+{#                }#}
+{#            }#}
+{#        }#}
+{#        return cookieValue;#}
+{#    }#}
+{##}
+{##}
+{#    // Initial fetch of notifications on page load#}
+{#    fetchNotifications();#}
+{##}
+{#    // Set interval to periodically refresh notifications (e.g., every 60 seconds)#}
+{#    setInterval(fetchNotifications, 60000); // 60000 milliseconds = 1 minute#}
+{#});#}
+{#</script>#}
+{#{% endblock %}#}

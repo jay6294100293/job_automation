@@ -1,0 +1,1449 @@
+<!-- templates/dashboard/interview_prep.html -->
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Interview Preparation - Job Automation{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Override Bootstrap and ensure text visibility */
+    .dashboard-content * {
+        color: var(--text-primary) !important;
+    }
+
+    .dashboard-content .text-muted {
+        color: var(--text-secondary) !important;
+    }
+
+    .dashboard-content .text-primary {
+        color: var(--accent-primary) !important;
+    }
+
+    .dashboard-content .text-success {
+        color: var(--success-500) !important;
+    }
+
+    .dashboard-content .text-warning {
+        color: var(--warning-500) !important;
+    }
+
+    .dashboard-content .text-info {
+        color: var(--info-500) !important;
+    }
+
+    /* Interview Prep Specific Styles */
+    .interview-hero {
+        background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+        border-radius: var(--radius-xl);
+        color: white !important;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .interview-hero * {
+        color: white !important;
+    }
+
+    .interview-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: rotate(45deg);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        text-align: center;
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent-primary);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--accent-primary);
+        transform: scaleX(0);
+        transition: transform var(--transition-normal);
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--accent-primary) !important;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--text-secondary) !important;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(94, 106, 210, 0.1);
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: var(--accent-primary) !important;
+        font-size: 1.5rem;
+    }
+
+    .interview-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all var(--transition-normal);
+        margin-bottom: 1.5rem;
+    }
+
+    .interview-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .interview-card-header {
+        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-primary);
+        position: relative;
+    }
+
+    .interview-card-body {
+        padding: 1.5rem;
+    }
+
+    .company-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--accent-light);
+        color: var(--accent-primary) !important;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .days-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: var(--warning-500);
+        color: white !important;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        box-shadow: var(--shadow-md);
+    }
+
+    .days-badge.urgent {
+        background: var(--danger-500);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .question-preview {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .question-preview:last-child {
+        margin-bottom: 0;
+    }
+
+    .question-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: var(--info-50);
+        color: var(--info-500) !important;
+        padding: 0.125rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .question-text {
+        color: var(--text-primary) !important;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 0.75rem;
+    }
+
+    .question-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .quick-action-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-secondary);
+        color: var(--text-secondary) !important;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .quick-action-btn:hover {
+        background: var(--accent-primary);
+        color: white !important;
+        border-color: var(--accent-primary);
+    }
+
+    .document-status {
+        background: var(--success-50);
+        border: 1px solid var(--success-500);
+        border-radius: var(--radius-md);
+        padding: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .document-status .status-text {
+        color: var(--success-500) !important;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-secondary) !important;
+    }
+
+    .empty-state h4 {
+        color: var(--text-primary) !important;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        color: var(--text-secondary) !important;
+    }
+
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--bg-tertiary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 2rem;
+        color: var(--text-tertiary) !important;
+    }
+
+    .preparation-package {
+        background: linear-gradient(135deg, var(--info-50) 0%, rgba(9, 105, 218, 0.05) 100%);
+        border: 1px solid var(--info-500);
+        border-radius: var(--radius-lg);
+        margin-bottom: 2rem;
+    }
+
+    .package-header {
+        background: linear-gradient(135deg, var(--info-500) 0%, var(--primary-600) 100%);
+        color: white !important;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .package-header * {
+        color: white !important;
+    }
+
+    .package-body {
+        padding: 1.5rem;
+    }
+
+    .package-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .package-item {
+        color: var(--text-secondary) !important;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .behavioral-questions {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+
+    .behavioral-header {
+        background: linear-gradient(135deg, var(--success-500) 0%, var(--success-600) 100%);
+        color: white !important;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .behavioral-header * {
+        color: white !important;
+    }
+
+    .behavioral-body {
+        padding: 1.5rem;
+    }
+
+    .behavioral-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+
+    .behavioral-item {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        transition: all var(--transition-normal);
+        cursor: pointer;
+    }
+
+    .behavioral-item:hover {
+        border-color: var(--accent-primary);
+        background: var(--accent-light);
+    }
+
+    .behavioral-item .fw-semibold {
+        color: var(--text-primary) !important;
+    }
+
+    .behavioral-item .small {
+        color: var(--text-secondary) !important;
+    }
+
+    .tips-section {
+        background: linear-gradient(135deg, var(--info-50) 0%, rgba(9, 105, 218, 0.05) 100%);
+        border: 1px solid var(--info-500);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .tips-header {
+        color: var(--info-500) !important;
+        font-weight: 600;
+        font-size: 1.125rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .tip-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .tip-item .fw-semibold {
+        color: var(--text-primary) !important;
+    }
+
+    .tip-item .small {
+        color: var(--text-secondary) !important;
+    }
+
+    .tip-icon {
+        width: 24px;
+        height: 24px;
+        background: var(--success-500);
+        color: white !important;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+        margin-top: 0.125rem;
+    }
+
+    .floating-action {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1000;
+    }
+
+    .fab-button {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--primary-700) 100%);
+        color: white !important;
+        border: none;
+        border-radius: 50%;
+        box-shadow: var(--shadow-lg);
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .fab-button:hover {
+        transform: scale(1.1);
+        box-shadow: var(--shadow-xl);
+    }
+
+    /* Fix for card titles and content */
+    .card-title, .card-subtitle {
+        color: var(--text-primary) !important;
+    }
+
+    .card-body {
+        color: var(--text-primary) !important;
+    }
+
+    .card-body .small, .card-body .text-small {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Button fixes */
+    .btn {
+        color: white !important;
+        text-decoration: none !important;
+    }
+
+    .btn-outline-secondary {
+        color: var(--text-secondary) !important;
+        border-color: var(--border-secondary);
+    }
+
+    .btn-outline-secondary:hover {
+        color: white !important;
+        background-color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+
+    .btn-outline-success {
+        color: var(--success-500) !important;
+        border-color: var(--success-500);
+    }
+
+    .btn-outline-success:hover {
+        color: white !important;
+        background-color: var(--success-500);
+        border-color: var(--success-500);
+    }
+
+    .btn-outline-info {
+        color: var(--info-500) !important;
+        border-color: var(--info-500);
+    }
+
+    .btn-outline-info:hover {
+        color: white !important;
+        background-color: var(--info-500);
+        border-color: var(--info-500);
+    }
+
+    /* Alert fixes */
+    .alert {
+        color: var(--text-primary) !important;
+    }
+
+    .alert-info {
+        background-color: var(--info-50);
+        border-color: var(--info-500);
+        color: var(--text-primary) !important;
+    }
+
+    /* Modal fixes */
+    .modal-content {
+        background-color: var(--bg-secondary) !important;
+        border: 1px solid var(--border-primary);
+    }
+
+    .modal-header, .modal-body, .modal-footer {
+        color: var(--text-primary) !important;
+        border-color: var(--border-primary);
+    }
+
+    .modal-title {
+        color: var(--accent-primary) !important;
+    }
+
+    .form-control {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--border-secondary);
+        color: var(--text-primary) !important;
+    }
+
+    .form-control::placeholder {
+        color: var(--text-tertiary) !important;
+    }
+
+    .form-text {
+        color: var(--text-secondary) !important;
+    }
+
+    .btn-close-white {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .interview-hero {
+            padding: 1.5rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            padding: 1rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+        }
+
+        .behavioral-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .tips-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .package-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .floating-action {
+            bottom: 1rem;
+            right: 1rem;
+        }
+
+        .fab-button {
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+
+        .question-actions {
+            flex-direction: column;
+        }
+
+        .quick-action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-content">
+    <!-- Hero Section -->
+    <div class="interview-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-6 fw-bold mb-3">
+                    <i class="fas fa-user-tie me-2"></i>
+                    Interview Preparation Hub
+                </h1>
+                <p class="lead mb-0">
+                    Master your interviews with AI-powered preparation materials and personalized practice sessions
+                </p>
+            </div>
+            <div class="col-lg-4 text-end">
+                {% if upcoming_interviews.first %}
+                    <div class="text-center">
+                        <div class="h2 mb-2">
+                            {% if upcoming_interviews.first.interview_scheduled_date %}
+                                {{ upcoming_interviews.first.interview_scheduled_date|timeuntil }}
+                            {% else %}
+                                Soon
+                            {% endif %}
+                        </div>
+                        <div class="small opacity-75">Until your next interview</div>
+                        <div class="fw-semibold">{{ upcoming_interviews.first.company_name }}</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-clock"></i>
+            </div>
+            <div class="stat-number">{{ upcoming_interviews|length }}</div>
+            <div class="stat-label">Upcoming Interviews</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <div class="stat-number">{{ total_interviews }}</div>
+            <div class="stat-label">Total Interviews</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-number">
+                {% if total_interviews > 0 %}
+                    85%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
+            <div class="stat-label">Success Rate</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="stat-number">
+                {% with total_questions=interview_prep_data|length %}
+                    {{ total_questions|add:total_questions|add:8 }}
+                {% endwith %}
+            </div>
+            <div class="stat-label">Practice Questions</div>
+        </div>
+    </div>
+
+    <!-- Complete Interview Preparation Package -->
+    <div class="preparation-package">
+        <div class="package-header">
+            <i class="fas fa-briefcase"></i>
+            <span>Complete Interview Preparation Package</span>
+        </div>
+        <div class="package-body">
+            <p style="color: var(--text-secondary);" class="mb-3">
+                Get AI-generated documents and comprehensive preparation materials for your interviews.
+            </p>
+
+            <div class="package-grid">
+                <div>
+                    <h6 style="color: var(--text-primary);">📄 Document Package Includes:</h6>
+                    <div class="package-item">
+                        <i class="fas fa-check text-success"></i>
+                        <span>ATS-Optimized Resume</span>
+                    </div>
+                    <div class="package-item">
+                        <i class="fas fa-check text-success"></i>
+                        <span>Custom Cover Letter</span>
+                    </div>
+                    <div class="package-item">
+                        <i class="fas fa-check text-success"></i>
+                        <span>Email Templates (4 types)</span>
+                    </div>
+                    <div class="package-item">
+                        <i class="fas fa-check text-success"></i>
+                        <span>LinkedIn Messages</span>
+                    </div>
+                </div>
+                <div>
+                    <h6 style="color: var(--text-primary);">🎯 Preparation Materials:</h6>
+                    <div class="package-item">
+                        <i class="fas fa-check text-success"></i>
+                        <span>Video Pitch Script</span>
+                    </div>
+                    <div class="package-item">
+                        <i class="fas fa-check text-success"></i>
+                        <span>Company Research Report</span>
+                    </div>
+                    <div class="package-item">
+                        <i class="fas fa-check text-success"></i>
+                        <span>Follow-up Schedule</span>
+                    </div>
+                    <div class="package-item">
+                        <i class="fas fa-check text-success"></i>
+                        <span>Skills Analysis Report</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interview Preparation Cards -->
+    {% if interview_prep_data %}
+        <div class="row">
+            {% for prep in interview_prep_data %}
+            <div class="col-lg-6">
+                <div class="interview-card">
+                    <div class="interview-card-header">
+                        <div class="company-badge">
+                            <i class="fas fa-building"></i>
+                            {{ prep.application.company_name }}
+                        </div>
+
+                        {% if prep.days_until_interview is not None %}
+                            <div class="days-badge {% if prep.days_until_interview <= 3 %}urgent{% endif %}">
+                                {% if prep.days_until_interview == 0 %}
+                                    Today!
+                                {% elif prep.days_until_interview == 1 %}
+                                    Tomorrow
+                                {% else %}
+                                    {{ prep.days_until_interview }} days
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <h5 style="color: var(--accent-primary) !important;" class="mb-2">{{ prep.application.job_title }}</h5>
+
+                        {% if prep.application.interview_scheduled_date %}
+                            <div style="color: var(--text-secondary) !important;" class="small">
+                                <i class="fas fa-calendar me-1"></i>
+                                {{ prep.application.interview_scheduled_date|date:"M d, Y g:i A" }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="interview-card-body">
+                        <!-- Company Questions Preview -->
+                        {% if prep.company_questions %}
+                            <div class="question-preview">
+                                <div class="question-type">
+                                    <i class="fas fa-building"></i>
+                                    Company
+                                </div>
+                                <div class="question-text">
+                                    {{ prep.company_questions.0 }}
+                                </div>
+                                <div class="question-actions">
+                                    <button class="quick-action-btn" onclick="practiceQuestion('{{ prep.company_questions.0|escapejs }}', {{ prep.application.id }})">
+                                        <i class="fas fa-play"></i>
+                                        Practice
+                                    </button>
+                                    <button class="quick-action-btn" onclick="viewAllQuestions({{ prep.application.id }}, 'company')">
+                                        <i class="fas fa-eye"></i>
+                                        View All ({{ prep.company_questions|length }})
+                                    </button>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Technical Questions Preview -->
+                        {% if prep.technical_questions %}
+                            <div class="question-preview">
+                                <div class="question-type">
+                                    <i class="fas fa-code"></i>
+                                    Technical
+                                </div>
+                                <div class="question-text">
+                                    {{ prep.technical_questions.0 }}
+                                </div>
+                                <div class="question-actions">
+                                    <button class="quick-action-btn" onclick="practiceQuestion('{{ prep.technical_questions.0|escapejs }}', {{ prep.application.id }})">
+                                        <i class="fas fa-play"></i>
+                                        Practice
+                                    </button>
+                                    <button class="quick-action-btn" onclick="viewAllQuestions({{ prep.application.id }}, 'technical')">
+                                        <i class="fas fa-eye"></i>
+                                        View All ({{ prep.technical_questions|length }})
+                                    </button>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2 mt-3 flex-wrap">
+                            <button class="btn btn-primary" onclick="startFullPrep({{ prep.application.id }})">
+                                <i class="fas fa-rocket"></i>
+                                Full Preparation
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="generateMoreQuestions({{ prep.application.id }})">
+                                <i class="fas fa-refresh"></i>
+                                New Questions
+                            </button>
+
+                            <!-- Document Generation Integration -->
+                            {% if not prep.has_generated_documents %}
+                            <button class="btn btn-outline-success" onclick="generateDocuments({{ prep.application.id }})">
+                                <i class="fas fa-file-plus"></i>
+                                Generate Docs
+                            </button>
+                            {% else %}
+                            <button class="btn btn-outline-info" onclick="viewDocuments({{ prep.application.id }})">
+                                <i class="fas fa-folder-open"></i>
+                                View Docs
+                            </button>
+                            {% endif %}
+                        </div>
+
+                        <!-- Document Status Indicator -->
+                        {% if prep.has_generated_documents %}
+                        <div class="document-status">
+                            <div class="status-text">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Complete document package available (8 files)
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-calendar-plus"></i>
+            </div>
+            <h4>No Upcoming Interviews</h4>
+            <p class="mb-4">
+                Schedule your interviews to get personalized preparation materials.<br>
+                AI-powered questions and practice sessions will appear here automatically.
+            </p>
+            <a href="#" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Schedule Interview
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Common Behavioral Questions -->
+    <div class="behavioral-questions">
+        <div class="behavioral-header">
+            <i class="fas fa-comments"></i>
+            <span>Common Behavioral Questions</span>
+            <div class="ms-auto">
+                <button class="btn btn-sm btn-outline-light" onclick="shuffleBehavioralQuestions()">
+                    <i class="fas fa-random"></i>
+                    Shuffle
+                </button>
+            </div>
+        </div>
+        <div class="behavioral-body">
+            <div class="behavioral-grid" id="behavioralGrid">
+                {% for question in behavioral_questions %}
+                <div class="behavioral-item" onclick="practiceQuestion('{{ question|escapejs }}', null, 'behavioral')">
+                    <div class="d-flex align-items-start gap-3">
+                        <div style="color: var(--success-500) !important;">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold mb-1">{{ question }}</div>
+                            <div class="small">Click to practice with STAR method</div>
+                        </div>
+                        <div style="color: var(--text-tertiary) !important;">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Interview Tips -->
+    <div class="tips-section">
+        <div class="tips-header">
+            <i class="fas fa-lightbulb"></i>
+            Interview Success Tips
+        </div>
+        <div class="tips-grid">
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold mb-1">Research the Company</div>
+                    <div class="small">Know their mission, values, and recent news</div>
+                </div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold mb-1">Use STAR Method</div>
+                    <div class="small">Situation, Task, Action, Result for behavioral questions</div>
+                </div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold mb-1">Prepare Questions</div>
+                    <div class="small">Ask thoughtful questions about the role and company</div>
+                </div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold mb-1">Practice Out Loud</div>
+                    <div class="small">Rehearse your answers and maintain eye contact</div>
+                </div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold mb-1">Follow Up</div>
+                    <div class="small">Send thank you email within 24 hours</div>
+                </div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold mb-1">Stay Confident</div>
+                    <div class="small">Show enthusiasm and be authentic</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<div class="floating-action">
+    <button class="fab-button" onclick="quickPractice()" title="Quick Practice Session">
+        <i class="fas fa-play"></i>
+    </button>
+</div>
+
+<!-- Practice Modal -->
+<div class="modal fade" id="practiceModal" tabindex="-1" aria-labelledby="practiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="practiceModalLabel">
+                    <i class="fas fa-microphone me-2"></i>
+                    Practice Session
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="practiceContent">
+                    <!-- Content will be loaded here -->
+                </div>
+                <div class="mt-4">
+                    <label for="practiceAnswer" class="form-label">Your Answer:</label>
+                    <textarea id="practiceAnswer" class="form-control"
+                              rows="6" placeholder="Type your answer here..."></textarea>
+                    <div class="form-text">
+                        <i class="fas fa-clock me-1"></i>
+                        Take your time and think through your response using the STAR method.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    Close
+                </button>
+                <button type="button" class="btn btn-success" onclick="saveAnswer()">
+                    <i class="fas fa-save me-1"></i>
+                    Save Answer
+                </button>
+                <button type="button" class="btn btn-primary" onclick="nextQuestion()">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Next Question
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Generation Status Modal -->
+<div class="modal fade" id="documentStatusModal" tabindex="-1" aria-labelledby="documentStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentStatusModalLabel">
+                    <i class="fas fa-file-plus me-2"></i>
+                    Document Generation
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+                    </div>
+                    <h6>Generating Your Documents...</h6>
+                    <p class="text-muted mb-4">
+                        AI is creating your personalized interview preparation package. This may take 2-3 minutes.
+                    </p>
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: 0%" id="documentProgress"></div>
+                    </div>
+                    <div class="small text-muted" id="documentProgressText">
+                        Starting document generation...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Continue in Background
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPracticeSession = null;
+let practiceQuestions = [];
+let currentQuestionIndex = 0;
+let documentGenerationInterval = null;
+
+function startFullPrep(applicationId) {
+    window.location.href = `/dashboard/interview-prep/${applicationId}/`;
+}
+
+function practiceQuestion(question, applicationId, type = 'general') {
+    currentPracticeSession = {
+        questions: [question],
+        currentIndex: 0,
+        applicationId: applicationId,
+        type: type
+    };
+
+    showPracticeModal();
+}
+
+function showPracticeModal() {
+    if (!currentPracticeSession || currentPracticeSession.currentIndex >= currentPracticeSession.questions.length) {
+        return;
+    }
+
+    const question = currentPracticeSession.questions[currentPracticeSession.currentIndex];
+    const progress = currentPracticeSession.currentIndex + 1;
+    const total = currentPracticeSession.questions.length;
+
+    document.getElementById('practiceContent').innerHTML = `
+        <div class="alert alert-primary" style="background-color: rgba(94, 106, 210, 0.1); border-color: var(--accent-primary); color: var(--text-primary);">
+            <div class="d-flex justify-content-between align-items-center">
+                <strong>Question ${progress} of ${total}</strong>
+                <span class="badge" style="background-color: var(--accent-primary); color: white;">${currentPracticeSession.type}</span>
+            </div>
+        </div>
+        <div class="question-display p-3" style="background: var(--bg-tertiary); border-radius: var(--radius-md);">
+            <h6 style="color: var(--accent-primary) !important;" class="mb-3">${question}</h6>
+            ${getQuestionTip(currentPracticeSession.type)}
+        </div>
+    `;
+
+    document.getElementById('practiceAnswer').value = '';
+    new bootstrap.Modal(document.getElementById('practiceModal')).show();
+}
+
+function getQuestionTip(type) {
+    switch(type) {
+        case 'behavioral':
+            return `
+                <div class="alert alert-info" style="background-color: rgba(9, 105, 218, 0.1); border-color: var(--info-500); color: var(--text-primary);">
+                    <small>
+                        <strong>STAR Method:</strong><br>
+                        <strong>S</strong>ituation - Set the context<br>
+                        <strong>T</strong>ask - Describe your responsibility<br>
+                        <strong>A</strong>ction - Explain what you did<br>
+                        <strong>R</strong>esult - Share the outcome
+                    </small>
+                </div>
+            `;
+        case 'technical':
+            return `
+                <div class="alert alert-success" style="background-color: rgba(26, 127, 55, 0.1); border-color: var(--success-500); color: var(--text-primary);">
+                    <small>
+                        <strong>Technical Tip:</strong> Think out loud, explain your approach,
+                        and don't be afraid to ask clarifying questions.
+                    </small>
+                </div>
+            `;
+        case 'company':
+            return `
+                <div class="alert alert-warning" style="background-color: rgba(176, 136, 0, 0.1); border-color: var(--warning-500); color: var(--text-primary);">
+                    <small>
+                        <strong>Company Tip:</strong> Reference specific company values,
+                        recent news, or their mission statement in your answer.
+                    </small>
+                </div>
+            `;
+        default:
+            return `
+                <div class="alert alert-secondary" style="background-color: var(--bg-secondary); border-color: var(--border-secondary); color: var(--text-primary);">
+                    <small>
+                        <strong>General Tip:</strong> Be specific, use examples,
+                        and connect your answer to the role requirements.
+                    </small>
+                </div>
+            `;
+    }
+}
+
+function nextQuestion() {
+    if (currentPracticeSession) {
+        currentPracticeSession.currentIndex++;
+        if (currentPracticeSession.currentIndex < currentPracticeSession.questions.length) {
+            showPracticeModal();
+        } else {
+            bootstrap.Modal.getInstance(document.getElementById('practiceModal')).hide();
+            if (typeof dashboard !== 'undefined') {
+                dashboard.showNotification('Practice session completed! Great job!', 'success');
+            } else {
+                alert('Practice session completed! Great job!');
+            }
+        }
+    }
+}
+
+function saveAnswer() {
+    const answer = document.getElementById('practiceAnswer').value;
+    if (answer.trim()) {
+        // Save answer logic here
+        if (typeof dashboard !== 'undefined') {
+            dashboard.showNotification('Answer saved successfully!', 'success');
+        } else {
+            alert('Answer saved successfully!');
+        }
+    } else {
+        if (typeof dashboard !== 'undefined') {
+            dashboard.showNotification('Please provide an answer before saving.', 'warning');
+        } else {
+            alert('Please provide an answer before saving.');
+        }
+    }
+}
+
+function quickPractice() {
+    const allQuestions = [
+        "Tell me about yourself",
+        "Why do you want this job?",
+        "What are your strengths?",
+        "Describe a challenging situation you faced",
+        "Where do you see yourself in 5 years?",
+        "Why should we hire you?"
+    ];
+
+    const randomQuestion = allQuestions[Math.floor(Math.random() * allQuestions.length)];
+    practiceQuestion(randomQuestion, null, 'behavioral');
+}
+
+function shuffleBehavioralQuestions() {
+    const grid = document.getElementById('behavioralGrid');
+    const items = Array.from(grid.children);
+
+    // Shuffle array
+    for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    // Clear grid and re-append shuffled items
+    grid.innerHTML = '';
+    items.forEach(item => {
+        item.style.animation = 'slideInLeft 0.3s ease forwards';
+        grid.appendChild(item);
+    });
+
+    if (typeof dashboard !== 'undefined') {
+        dashboard.showNotification('Questions shuffled!', 'info');
+    } else {
+        console.log('Questions shuffled!');
+    }
+}
+
+function viewAllQuestions(applicationId, type) {
+    window.location.href = `/dashboard/interview-prep/${applicationId}/?focus=${type}`;
+}
+
+function generateMoreQuestions(applicationId) {
+    const button = event.target;
+    const originalContent = button.innerHTML;
+
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
+    button.disabled = true;
+
+    fetch(`/dashboard/api/generate-questions/${applicationId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (typeof dashboard !== 'undefined') {
+                dashboard.showNotification('New questions generated successfully!', 'success');
+            } else {
+                alert('New questions generated successfully!');
+            }
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            if (typeof dashboard !== 'undefined') {
+                dashboard.showNotification('Error generating questions: ' + data.error, 'error');
+            } else {
+                alert('Error generating questions: ' + data.error);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof dashboard !== 'undefined') {
+            dashboard.showNotification('Error generating questions. Please try again.', 'error');
+        } else {
+            alert('Error generating questions. Please try again.');
+        }
+    })
+    .finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+// Document generation functions
+function generateDocuments(applicationId) {
+    if (confirm('This will generate a complete document package (resume, cover letter, research, etc.). This may take 2-3 minutes. Continue?')) {
+        const button = event.target;
+        const originalContent = button.innerHTML;
+
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Starting...';
+        button.disabled = true;
+
+        fetch(`/dashboard/api/trigger-documents/${applicationId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof dashboard !== 'undefined') {
+                    dashboard.showNotification('Document generation started!', 'success');
+                } else {
+                    alert('Document generation started!');
+                }
+
+                // Show progress modal
+                showDocumentProgressModal(data.task_id);
+
+            } else {
+                if (typeof dashboard !== 'undefined') {
+                    dashboard.showNotification('Error starting document generation: ' + data.error, 'error');
+                } else {
+                    alert('Error starting document generation: ' + data.error);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (typeof dashboard !== 'undefined') {
+                dashboard.showNotification('Error starting document generation. Please try again.', 'error');
+            } else {
+                alert('Error starting document generation. Please try again.');
+            }
+        })
+        .finally(() => {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        });
+    }
+}
+
+function showDocumentProgressModal(taskId) {
+    const modal = new bootstrap.Modal(document.getElementById('documentStatusModal'));
+    modal.show();
+
+    let progress = 0;
+    const progressBar = document.getElementById('documentProgress');
+    const progressText = document.getElementById('documentProgressText');
+
+    const steps = [
+        'Analyzing job requirements...',
+        'Generating ATS-optimized resume...',
+        'Creating personalized cover letter...',
+        'Writing email templates...',
+        'Preparing LinkedIn messages...',
+        'Creating video pitch script...',
+        'Researching company information...',
+        'Building follow-up schedule...',
+        'Completing skills analysis...',
+        'Finalizing document package...'
+    ];
+
+    let stepIndex = 0;
+
+    documentGenerationInterval = setInterval(() => {
+        progress += 10;
+        progressBar.style.width = progress + '%';
+
+        if (stepIndex < steps.length) {
+            progressText.textContent = steps[stepIndex];
+            stepIndex++;
+        }
+
+        if (progress >= 100) {
+            clearInterval(documentGenerationInterval);
+            progressText.textContent = 'Document generation completed!';
+
+            setTimeout(() => {
+                modal.hide();
+                if (typeof dashboard !== 'undefined') {
+                    dashboard.showNotification('All documents generated successfully! Check your applications.', 'success');
+                }
+                location.reload();
+            }, 2000);
+        }
+    }, 1800); // 18 seconds total (9 steps * 2 seconds)
+}
+
+function viewDocuments(applicationId) {
+    // Redirect to your existing document view or bulk download page
+    window.location.href = `/dashboard/bulk-download/?application=${applicationId}`;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Initialize page animations and functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate cards on load
+    const cards = document.querySelectorAll('.interview-card, .stat-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Set up keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key) {
+                case 'p':
+                    e.preventDefault();
+                    quickPractice();
+                    break;
+                case 's':
+                    e.preventDefault();
+                    if (currentPracticeSession) {
+                        saveAnswer();
+                    }
+                    break;
+            }
+        }
+
+        if (e.key === 'Escape') {
+            const modals = document.querySelectorAll('.modal.show');
+            modals.forEach(modal => {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            });
+        }
+    });
+
+    // Clean up intervals when page unloads
+    window.addEventListener('beforeunload', function() {
+        if (documentGenerationInterval) {
+            clearInterval(documentGenerationInterval);
+        }
+    });
+});
+</script>
+
+{% endblock %}

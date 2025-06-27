@@ -1,0 +1,554 @@
+<!-- templates/jobs/search_config.html -->
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Search Configurations - Job Automation{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center text-white">
+                <h5><i class="fas fa-cog"></i> Job Search Configurations</h5>
+                <a href="{% url 'jobs:create_config' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Configuration
+                </a>
+            </div>
+            <div class="card-body text-white">
+                {% if configs %}
+                    <div class="row">
+                        {% for config in configs %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card config-card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">{{ config.config_name }}</h6>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{% url 'jobs:edit_config' config.pk %}">
+                                                <i class="fas fa-edit text-primary"></i> Edit
+                                            </a></li>
+                                            <li><a class="dropdown-item text-danger" href="{% url 'jobs:delete_config' config.pk %}">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <small class="text-muted">Job Categories:</small>
+                                        <div class="mt-1">
+                                            {% for category in config.job_categories %}
+                                                <span class="badge bg-primary me-1 mb-1">{{ category }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <small class="text-muted">Locations:</small>
+                                        <div class="mt-1">
+                                            {% for location in config.target_locations %}
+                                                <span class="badge bg-secondary me-1 mb-1">{{ location }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    {% if config.salary_min or config.salary_max %}
+                                    <div class="mb-3">
+                                        <small class="text-muted">Salary Range:</small>
+                                        <div class="mt-1">
+                                            ${{ config.salary_min|default:"0" }}K - ${{ config.salary_max|default:"∞" }}K
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="mb-3">
+                                        <small class="text-muted">Last Search:</small>
+                                        <div class="mt-1">
+                                            {{ config.last_search_date|date:"M d, Y H:i"|default:"Never" }}
+                                        </div>
+                                    </div>
+
+                                    {% if config.auto_follow_up_enabled %}
+                                        <div class="mb-3">
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Auto Follow-up Enabled
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-success" onclick="executeSearch({{ config.id }})">
+                                            <i class="fas fa-search"></i> Start Search Now
+                                        </button>
+                                        <button class="btn btn-outline-info btn-sm" onclick="scheduleSearch({{ config.id }})">
+                                            <i class="fas fa-clock"></i> Schedule Search
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-white">
+                        <i class="fas fa-cog fa-4x text-muted-white mb-3"></i>
+                        <h4>No Search Configurations</h4>
+                        <p class="text-muted-white">Create your first search configuration to start finding jobs automatically.</p>
+                        <a href="{% url 'jobs:create_config' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus"></i> Create First Configuration
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Status Modal -->
+<div class="modal fade" id="searchStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Search Progress</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border text-primary me-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div>
+                        <h6 id="searchStatusText">Initializing job search...</h6>
+                        <small class="text-muted" id="searchDetailText">This may take a few minutes</small>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 10px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar" style="width: 0%" id="searchProgress"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Preserve dark theme while ensuring text visibility */
+.config-card {
+    transition: transform 0.2s ease-in-out;
+    border: 2px solid #dee2e6;
+}
+
+.config-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #007bff;
+}
+
+/* Ensure text is visible in dark/light themes */
+.card-body small.text-muted {
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.card-body .mt-1 {
+    color: inherit;
+    opacity: 0.9;
+}
+
+/* Make sure salary and date text is visible */
+.card-body .text-dark {
+    opacity: 1;
+    font-weight: 500;
+}
+
+/* Badge visibility */
+.badge {
+    font-weight: 500;
+    opacity: 1;
+}
+
+/* Button contrast */
+.btn {
+    font-weight: 500;
+}
+
+/* Modal text visibility */
+.modal-body {
+    color: inherit;
+}
+
+.modal-body h6,
+.modal-body small {
+    opacity: 1;
+}
+
+/* Dropdown improvements */
+.dropdown-item {
+    opacity: 1;
+}
+
+/* Loading animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.config-card {
+    animation: fadeIn 0.5s ease-out;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function executeSearch(configId) {
+    // Show loading modal
+    $('#searchStatusModal').modal('show');
+
+    // Start the search
+    $.post(`/jobs/search/${configId}/`, {
+        csrfmiddlewaretoken: csrftoken
+    }).done(function(response) {
+        updateSearchProgress(25, 'Searching job boards...', 'Scanning multiple platforms');
+
+        // Simulate progress updates (in real implementation, this would be WebSocket updates)
+        setTimeout(() => {
+            updateSearchProgress(50, 'Processing job listings...', 'Filtering and analyzing jobs');
+        }, 2000);
+
+        setTimeout(() => {
+            updateSearchProgress(75, 'Generating documents...', 'Creating personalized application materials');
+        }, 4000);
+
+        setTimeout(() => {
+            updateSearchProgress(100, 'Search completed!', 'Jobs and documents are ready');
+            setTimeout(() => {
+                $('#searchStatusModal').modal('hide');
+                Swal.fire({
+                    title: 'Search Completed!',
+                    text: 'New jobs have been found and documents generated.',
+                    icon: 'success',
+                    confirmButtonText: 'View Results'
+                }).then(() => {
+                    window.location.href = '{% url "jobs:applications" %}';
+                });
+            }, 1500);
+        }, 6000);
+
+    }).fail(function(xhr) {
+        $('#searchStatusModal').modal('hide');
+        Swal.fire('Error!', 'Failed to start job search. Please try again.', 'error');
+    });
+}
+
+function updateSearchProgress(percentage, statusText, detailText) {
+    $('#searchProgress').css('width', percentage + '%');
+    $('#searchStatusText').text(statusText);
+    $('#searchDetailText').text(detailText);
+}
+
+function scheduleSearch(configId) {
+    Swal.fire({
+        title: 'Schedule Search',
+        html: `
+            <div class="mb-3 text-start">
+                <label class="form-label">Search Frequency</label>
+                <select class="form-select" id="frequency">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div class="mb-3 text-start">
+                <label class="form-label">Start Time</label>
+                <input type="time" class="form-control" id="startTime" value="09:00">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Schedule',
+        cancelButtonText: 'Cancel',
+        preConfirm: () => {
+            const frequency = document.getElementById('frequency').value;
+            const startTime = document.getElementById('startTime').value;
+
+            if (!frequency || !startTime) {
+                Swal.showValidationMessage('Please fill all fields');
+                return false;
+            }
+
+            return { frequency, startTime };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // In real implementation, this would save the schedule
+            Swal.fire('Scheduled!', 'Your search has been scheduled successfully.', 'success');
+        }
+    });
+}
+
+// Ensure proper initialization when document is ready
+$(document).ready(function() {
+    // Add loading states to buttons
+    $('.btn').on('click', function() {
+        const $btn = $(this);
+        const originalText = $btn.html();
+
+        if (!$btn.hasClass('dropdown-toggle')) {
+            $btn.prop('disabled', true);
+            setTimeout(() => {
+                $btn.prop('disabled', false);
+            }, 1000);
+        }
+    });
+
+    // Add tooltips for better UX
+    $('[data-bs-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}
+
+{#<!-- templates/jobs/search_config.html -->#}
+{#{% extends 'dashboard/../base_dashboard.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Search Configurations - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="row">#}
+{#    <div class="col-12">#}
+{#        <div class="card">#}
+{#            <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                <h5><i class="fas fa-cog"></i> Job Search Configurations</h5>#}
+{#                <a href="{% url 'jobs:create_config' %}" class="btn btn-primary">#}
+{#                    <i class="fas fa-plus"></i> New Configuration#}
+{#                </a>#}
+{#            </div>#}
+{#            <div class="card-body">#}
+{#                {% if configs %}#}
+{#                    <div class="row">#}
+{#                        {% for config in configs %}#}
+{#                        <div class="col-md-6 col-lg-4 mb-4">#}
+{#                            <div class="card config-card h-100">#}
+{#                                <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                                    <h6 class="mb-0">{{ config.config_name }}</h6>#}
+{#                                    <div class="dropdown">#}
+{#                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">#}
+{#                                            <i class="fas fa-ellipsis-v"></i>#}
+{#                                        </button>#}
+{#                                        <ul class="dropdown-menu">#}
+{#                                            <li><a class="dropdown-item" href="{% url 'jobs:edit_config' config.pk %}">#}
+{#                                                <i class="fas fa-edit"></i> Edit#}
+{#                                            </a></li>#}
+{#                                            <li><a class="dropdown-item text-danger" href="{% url 'jobs:delete_config' config.pk %}">#}
+{#                                                <i class="fas fa-trash"></i> Delete#}
+{#                                            </a></li>#}
+{#                                        </ul>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="card-body">#}
+{#                                    <div class="mb-3">#}
+{#                                        <small class="text-muted">Job Categories:</small>#}
+{#                                        <div class="mt-1">#}
+{#                                            {% for category in config.job_categories %}#}
+{#                                                <span class="badge bg-primary me-1 mb-1">{{ category }}</span>#}
+{#                                            {% endfor %}#}
+{#                                        </div>#}
+{#                                    </div>#}
+{##}
+{#                                    <div class="mb-3">#}
+{#                                        <small class="text-muted">Locations:</small>#}
+{#                                        <div class="mt-1">#}
+{#                                            {% for location in config.target_locations %}#}
+{#                                                <span class="badge bg-secondary me-1 mb-1">{{ location }}</span>#}
+{#                                            {% endfor %}#}
+{#                                        </div>#}
+{#                                    </div>#}
+{##}
+{#                                    {% if config.salary_min or config.salary_max %}#}
+{#                                    <div class="mb-3">#}
+{#                                        <small class="text-muted">Salary Range:</small>#}
+{#                                        <div class="mt-1">#}
+{#                                            ${{ config.salary_min|default:"0" }}K - ${{ config.salary_max|default:"∞" }}K#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    {% endif %}#}
+{##}
+{#                                    <div class="mb-3">#}
+{#                                        <small class="text-muted">Last Search:</small>#}
+{#                                        <div class="mt-1">#}
+{#                                            {{ config.last_search_date|date:"M d, Y H:i"|default:"Never" }}#}
+{#                                        </div>#}
+{#                                    </div>#}
+{##}
+{#                                    {% if config.auto_follow_up_enabled %}#}
+{#                                        <div class="mb-3">#}
+{#                                            <span class="badge bg-success">#}
+{#                                                <i class="fas fa-check"></i> Auto Follow-up Enabled#}
+{#                                            </span>#}
+{#                                        </div>#}
+{#                                    {% endif %}#}
+{#                                </div>#}
+{#                                <div class="card-footer">#}
+{#                                    <div class="d-grid gap-2">#}
+{#                                        <button class="btn btn-success" onclick="executeSearch({{ config.id }})">#}
+{#                                            <i class="fas fa-search"></i> Start Search Now#}
+{#                                        </button>#}
+{#                                        <button class="btn btn-outline-info btn-sm" onclick="scheduleSearch({{ config.id }})">#}
+{#                                            <i class="fas fa-clock"></i> Schedule Search#}
+{#                                        </button>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        {% endfor %}#}
+{#                    </div>#}
+{#                {% else %}#}
+{#                    <div class="text-center py-5">#}
+{#                        <i class="fas fa-cog fa-4x text-muted mb-3"></i>#}
+{#                        <h4>No Search Configurations</h4>#}
+{#                        <p class="text-muted">Create your first search configuration to start finding jobs automatically.</p>#}
+{#                        <a href="{% url 'jobs:create_config' %}" class="btn btn-primary btn-lg">#}
+{#                            <i class="fas fa-plus"></i> Create First Configuration#}
+{#                        </a>#}
+{#                    </div>#}
+{#                {% endif %}#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Search Status Modal -->#}
+{#<div class="modal fade" id="searchStatusModal" tabindex="-1">#}
+{#    <div class="modal-dialog">#}
+{#        <div class="modal-content">#}
+{#            <div class="modal-header">#}
+{#                <h5 class="modal-title">Search Progress</h5>#}
+{#                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>#}
+{#            </div>#}
+{#            <div class="modal-body">#}
+{#                <div class="d-flex align-items-center">#}
+{#                    <div class="spinner-border text-primary me-3" role="status">#}
+{#                        <span class="visually-hidden">Loading...</span>#}
+{#                    </div>#}
+{#                    <div>#}
+{#                        <h6 id="searchStatusText">Initializing job search...</h6>#}
+{#                        <small class="text-muted" id="searchDetailText">This may take a few minutes</small>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="progress mt-3">#}
+{#                    <div class="progress-bar progress-bar-striped progress-bar-animated"#}
+{#                         role="progressbar" style="width: 0%" id="searchProgress"></div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.config-card {#}
+{#    transition: transform 0.2s ease-in-out;#}
+{#    border: 2px solid #dee2e6;#}
+{#}#}
+{#.config-card:hover {#}
+{#    transform: translateY(-2px);#}
+{#    box-shadow: 0 4px 8px rgba(0,0,0,0.1);#}
+{#    border-color: #007bff;#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#function executeSearch(configId) {#}
+{#    // Show loading modal#}
+{#    $('#searchStatusModal').modal('show');#}
+{##}
+{#    // Start the search#}
+{#    $.post(`/jobs/search/${configId}/`, {#}
+{#        csrfmiddlewaretoken: csrftoken#}
+{#    }).done(function(response) {#}
+{#        updateSearchProgress(25, 'Searching job boards...', 'Scanning multiple platforms');#}
+{##}
+{#        // Simulate progress updates (in real implementation, this would be WebSocket updates)#}
+{#        setTimeout(() => {#}
+{#            updateSearchProgress(50, 'Processing job listings...', 'Filtering and analyzing jobs');#}
+{#        }, 2000);#}
+{##}
+{#        setTimeout(() => {#}
+{#            updateSearchProgress(75, 'Generating documents...', 'Creating personalized application materials');#}
+{#        }, 4000);#}
+{##}
+{#        setTimeout(() => {#}
+{#            updateSearchProgress(100, 'Search completed!', 'Jobs and documents are ready');#}
+{#            setTimeout(() => {#}
+{#                $('#searchStatusModal').modal('hide');#}
+{#                Swal.fire({#}
+{#                    title: 'Search Completed!',#}
+{#                    text: 'New jobs have been found and documents generated.',#}
+{#                    icon: 'success',#}
+{#                    confirmButtonText: 'View Results'#}
+{#                }).then(() => {#}
+{#                    window.location.href = '{% url "jobs:applications" %}';#}
+{#                });#}
+{#            }, 1500);#}
+{#        }, 6000);#}
+{##}
+{#    }).fail(function(xhr) {#}
+{#        $('#searchStatusModal').modal('hide');#}
+{#        Swal.fire('Error!', 'Failed to start job search. Please try again.', 'error');#}
+{#    });#}
+{#}#}
+{##}
+{#function updateSearchProgress(percentage, statusText, detailText) {#}
+{#    $('#searchProgress').css('width', percentage + '%');#}
+{#    $('#searchStatusText').text(statusText);#}
+{#    $('#searchDetailText').text(detailText);#}
+{#}#}
+{##}
+{#function scheduleSearch(configId) {#}
+{#    Swal.fire({#}
+{#        title: 'Schedule Search',#}
+{#        html: `#}
+{#            <div class="mb-3">#}
+{#                <label class="form-label">Search Frequency</label>#}
+{#                <select class="form-select" id="frequency">#}
+{#                    <option value="daily">Daily</option>#}
+{#                    <option value="weekly">Weekly</option>#}
+{#                    <option value="monthly">Monthly</option>#}
+{#                </select>#}
+{#            </div>#}
+{#            <div class="mb-3">#}
+{#                <label class="form-label">Start Time</label>#}
+{#                <input type="time" class="form-control" id="startTime" value="09:00">#}
+{#            </div>#}
+{#        `,#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Schedule',#}
+{#        preConfirm: () => {#}
+{#            const frequency = document.getElementById('frequency').value;#}
+{#            const startTime = document.getElementById('startTime').value;#}
+{##}
+{#            if (!frequency || !startTime) {#}
+{#                Swal.showValidationMessage('Please fill all fields');#}
+{#                return false;#}
+{#            }#}
+{##}
+{#            return { frequency, startTime };#}
+{#        }#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            // In real implementation, this would save the schedule#}
+{#            Swal.fire('Scheduled!', 'Your search has been scheduled successfully.', 'success');#}
+{#        }#}
+{#    });#}
+{#}#}
+{#</script>#}
+{#{% endblock %}#}

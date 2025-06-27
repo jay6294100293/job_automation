@@ -1,0 +1,2662 @@
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Job Applications - Job Automation{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.css" rel="stylesheet">
+<style>
+/* Elegant Applications Page - Premium Design */
+
+:root {
+    --app-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --app-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --app-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --app-gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --app-gradient-5: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --app-gradient-6: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --card-shadow-focus: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Page Header Enhancements */
+.page-header {
+    margin-bottom: 2.5rem;
+    padding: 1.5rem 0;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+}
+
+.page-subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin: 0;
+}
+
+/* Refined Statistics Cards */
+.stats-container {
+    margin-bottom: 2.5rem;
+}
+
+.stats-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 1.75rem 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--card-shadow);
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--app-gradient-1);
+    border-radius: 1rem 1rem 0 0;
+}
+
+.stats-card:nth-child(2)::before { background: var(--app-gradient-2); }
+.stats-card:nth-child(3)::before { background: var(--app-gradient-3); }
+.stats-card:nth-child(4)::before { background: var(--app-gradient-4); }
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--border-secondary);
+}
+
+.stats-number {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.025em;
+    line-height: 1;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0.5rem 0 0 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Sophisticated Filter Section */
+.filter-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 1.75rem;
+    margin-bottom: 2.5rem;
+    box-shadow: var(--card-shadow);
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.25rem;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.025em;
+}
+
+.form-select, .form-control {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    height: 44px;
+}
+
+.form-select:focus, .form-control:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: var(--card-shadow-focus);
+    background: var(--bg-secondary);
+}
+
+/* Elegant Pipeline Design */
+.pipeline-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.pipeline-column {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 0;
+    min-height: 600px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--card-shadow);
+}
+
+.pipeline-column:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.pipeline-header {
+    background: var(--bg-primary);
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-primary);
+    position: relative;
+    overflow: hidden;
+}
+
+.pipeline-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--column-gradient, var(--app-gradient-1));
+}
+
+.pipeline-column[data-status="found"] .pipeline-header::before { background: var(--app-gradient-1); }
+.pipeline-column[data-status="applied"] .pipeline-header::before { background: var(--app-gradient-2); }
+.pipeline-column[data-status="responded"] .pipeline-header::before { background: var(--app-gradient-3); }
+.pipeline-column[data-status="interview"] .pipeline-header::before { background: var(--app-gradient-4); }
+.pipeline-column[data-status="offer"] .pipeline-header::before { background: var(--app-gradient-5); }
+.pipeline-column[data-status="closed"] .pipeline-header::before { background: var(--app-gradient-6); }
+
+.pipeline-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pipeline-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    color: white;
+    background: var(--column-gradient, var(--app-gradient-1));
+    margin-right: 0.75rem;
+}
+
+.pipeline-column[data-status="found"] .pipeline-icon { background: var(--app-gradient-1); }
+.pipeline-column[data-status="applied"] .pipeline-icon { background: var(--app-gradient-2); }
+.pipeline-column[data-status="responded"] .pipeline-icon { background: var(--app-gradient-3); }
+.pipeline-column[data-status="interview"] .pipeline-icon { background: var(--app-gradient-4); }
+.pipeline-column[data-status="offer"] .pipeline-icon { background: var(--app-gradient-5); }
+.pipeline-column[data-status="closed"] .pipeline-icon { background: var(--app-gradient-6); }
+
+.pipeline-count {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 0.25rem 0.625rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid var(--border-primary);
+}
+
+.pipeline-body {
+    padding: 1.5rem;
+    height: calc(100% - 80px);
+    overflow-y: auto;
+}
+
+/* Refined Application Cards */
+.application-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    cursor: move;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.application-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border-color: var(--border-secondary);
+}
+
+.application-card.dragging {
+    opacity: 0.6;
+    transform: rotate(3deg) scale(1.02);
+    z-index: 1000;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.company-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    letter-spacing: -0.01em;
+}
+
+.job-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.urgency-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 0.125rem;
+}
+
+.urgency-low { background: #10b981; }
+.urgency-medium { background: #f59e0b; }
+.urgency-high { background: #f97316; }
+.urgency-urgent { background: #ef4444; }
+
+.job-meta {
+    margin: 0.75rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
+}
+
+.meta-icon {
+    width: 14px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.job-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+    color: var(--text-primary);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.action-btn.primary {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.action-btn.primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: white;
+}
+
+/* Sophisticated Empty States */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    min-height: 300px;
+}
+
+.empty-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.75rem;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    color: var(--text-tertiary);
+    border: 1px solid var(--border-primary);
+}
+
+.empty-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Elegant CTA Section */
+.no-applications-cta {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1.5rem;
+    padding: 4rem 2rem;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    margin: 3rem 0;
+}
+
+.cta-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 1rem;
+    background: var(--app-gradient-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.cta-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    letter-spacing: -0.025em;
+}
+
+.cta-description {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 0 0 2rem 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cta-button {
+    background: var(--app-gradient-1);
+    border: none;
+    border-radius: 0.75rem;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 1rem 2rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    color: white;
+    text-decoration: none;
+}
+
+/* Bulk Actions Refinement */
+.bulk-actions-bar {
+    background: var(--warning-50);
+    border: 1px solid rgba(176, 136, 0, 0.15);
+    border-radius: 0.75rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    display: none;
+    align-items: center;
+    gap: 1rem;
+}
+
+.bulk-actions-bar.show {
+    display: flex;
+    animation: slideDown 0.3s ease;
+}
+
+.bulk-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.bulk-select {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    min-width: 160px;
+}
+
+.bulk-btn {
+    background: var(--warning-500);
+    border: none;
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bulk-btn:hover {
+    background: #9a6d00;
+    transform: translateY(-1px);
+}
+
+.bulk-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .pipeline-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .filter-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .stats-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .pipeline-column {
+        min-height: 400px;
+    }
+
+    .application-card {
+        padding: 1rem;
+    }
+
+    .job-actions {
+        flex-direction: column;
+    }
+
+    .action-btn {
+        flex: none;
+    }
+}
+
+/* Smooth Animations */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pipeline-column,
+.application-card,
+.stats-card {
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom Scrollbar */
+.pipeline-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.pipeline-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pipeline-body::-webkit-scrollbar-thumb {
+    background: var(--border-secondary);
+    border-radius: 2px;
+}
+
+.pipeline-body::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Elegant Page Header -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="page-title">
+                    <i class="fas fa-briefcase me-2"></i>
+                    Job Applications
+                </h1>
+                <p class="page-subtitle">Track and manage your job application pipeline</p>
+            </div>
+            <div class="d-flex gap-3">
+                <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-search"></i>
+                    Find More Jobs
+                </a>
+                <a href="{% url 'jobs:search_config' %}" class="btn btn-primary">
+                    <i class="fas fa-cog"></i>
+                    Search Configs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refined Statistics Cards -->
+    <div class="stats-container">
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ applications.count|default:0 }}</div>
+                    <div class="stats-label">Total Applications</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ pipeline.applied.count|default:0 }}</div>
+                    <div class="stats-label">Applied</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ pipeline.interview.count|default:0 }}</div>
+                    <div class="stats-label">Interviews</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ pipeline.offer.count|default:0 }}</div>
+                    <div class="stats-label">Offers</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sophisticated Filter Section -->
+    <div class="filter-section">
+        <form method="get" id="filterForm">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="found" {% if request.GET.status == 'found' %}selected{% endif %}>Found</option>
+                        <option value="applied" {% if request.GET.status == 'applied' %}selected{% endif %}>Applied</option>
+                        <option value="responded" {% if request.GET.status == 'responded' %}selected{% endif %}>Responded</option>
+                        <option value="interview" {% if request.GET.status == 'interview' %}selected{% endif %}>Interview</option>
+                        <option value="offer" {% if request.GET.status == 'offer' %}selected{% endif %}>Offer</option>
+                        <option value="hired" {% if request.GET.status == 'hired' %}selected{% endif %}>Hired</option>
+                        <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Urgency</label>
+                    <select name="urgency" class="form-select">
+                        <option value="">All Urgency</option>
+                        <option value="urgent" {% if request.GET.urgency == 'urgent' %}selected{% endif %}>Urgent</option>
+                        <option value="high" {% if request.GET.urgency == 'high' %}selected{% endif %}>High</option>
+                        <option value="medium" {% if request.GET.urgency == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="low" {% if request.GET.urgency == 'low' %}selected{% endif %}>Low</option>
+                    </select>
+                </div>
+                <div class="filter-group ">
+                    <label class="filter-label">Search</label>
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Company, job title..."
+                           value="{{ request.GET.search }}">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Filter
+                    </button>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">&nbsp;</label>
+                    <a href="{% url 'jobs:applications' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                        Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="bulk-actions-bar" id="bulkActionsBar">
+        <form method="post" action="{% url 'jobs:bulk_action' %}" id="bulkForm">
+            {% csrf_token %}
+            <div class="bulk-text">
+                <span id="selectedCount">0</span> applications selected
+            </div>
+            <select name="action" class="bulk-select" required id="bulkAction">
+                <option value="">Select action...</option>
+                <option value="send_followup">Send Follow-up</option>
+                <option value="mark_applied">Mark as Applied</option>
+                <option value="update_status">Update Status</option>
+                <option value="download_docs">Download Documents</option>
+            </select>
+            <div class="filter-group" id="statusField" style="display: none;">
+                <select name="new_status" class="bulk-select">
+                    <option value="">Select status...</option>
+                    <option value="found">Found</option>
+                    <option value="applied">Applied</option>
+                    <option value="responded">Responded</option>
+                    <option value="interview">Interview Scheduled</option>
+                    <option value="offer">Offer Received</option>
+                    <option value="hired">Hired</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="withdrawn">Withdrawn</option>
+                </select>
+            </div>
+            <button type="submit" class="bulk-btn" id="executeButton" disabled>
+                <i class="fas fa-play"></i>
+                Execute
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">
+                <i class="fas fa-times"></i>
+                Clear
+            </button>
+        </form>
+    </div>
+
+    <!-- Elegant Pipeline Design -->
+    <div class="pipeline-container" id="pipelineView">
+        <!-- Found Column -->
+        <div class="pipeline-column" data-status="found">
+            <div class="pipeline-header">
+                <div class="pipeline-title">
+                    <div class="d-flex align-items-center">
+                        <div class="pipeline-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        Found
+                    </div>
+                    <div class="pipeline-count">{{ pipeline.found.count|default:0 }}</div>
+                </div>
+            </div>
+            <div class="pipeline-body">
+                {% for app in pipeline.found %}
+                    <div class="application-card" data-id="{{ app.id }}">
+                        <div class="card-header-row">
+                            <div>
+                                <div class="company-name">{{ app.company_name }}</div>
+                                <div class="job-title">{{ app.job_title }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>
+                                <input type="checkbox" class="app-checkbox" name="applications" value="{{ app.id }}">
+                            </div>
+                        </div>
+
+                        <div class="job-meta">
+                            {% if app.location %}
+                                <div class="meta-item">
+                                    <i class="fas fa-map-marker-alt meta-icon"></i>
+                                    <span>{{ app.location }}</span>
+                                </div>
+                            {% endif %}
+                            {% if app.salary_range %}
+                                <div class="meta-item">
+                                    <i class="fas fa-dollar-sign meta-icon"></i>
+                                    <span>{{ app.salary_range }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="meta-item">
+                                <i class="fas fa-calendar meta-icon"></i>
+                                <span>{{ app.created_at|date:"M d" }}</span>
+                            </div>
+                            {% if app.match_percentage %}
+                                <div class="meta-item">
+                                    <i class="fas fa-percentage meta-icon"></i>
+                                    <span>{{ app.match_percentage }}% match</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="job-actions">
+                            <button class="action-btn primary" onclick="markAsApplied({{ app.id }})">
+                                <i class="fas fa-paper-plane"></i>
+                                Apply
+                            </button>
+                            <a href="{% url 'jobs:application_detail' app.id %}" class="action-btn">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </a>
+                            {% if app.documents_generated %}
+                                <a href="{% url 'documents:download' app.id %}" class="action-btn">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="empty-title">No jobs found yet</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Applied Column -->
+        <div class="pipeline-column" data-status="applied">
+            <div class="pipeline-header">
+                <div class="pipeline-title">
+                    <div class="d-flex align-items-center">
+                        <div class="pipeline-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        Applied
+                    </div>
+                    <div class="pipeline-count">{{ pipeline.applied.count|default:0 }}</div>
+                </div>
+            </div>
+            <div class="pipeline-body">
+                {% for app in pipeline.applied %}
+                    <div class="application-card" data-id="{{ app.id }}">
+                        <div class="card-header-row">
+                            <div>
+                                <div class="company-name">{{ app.company_name }}</div>
+                                <div class="job-title">{{ app.job_title }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>
+                                <input type="checkbox" class="app-checkbox" name="applications" value="{{ app.id }}">
+                            </div>
+                        </div>
+
+                        <div class="job-meta">
+                            {% if app.applied_date %}
+                                <div class="meta-item">
+                                    <i class="fas fa-calendar-check meta-icon"></i>
+                                    <span>Applied {{ app.applied_date|date:"M d" }}</span>
+                                </div>
+                            {% endif %}
+                            {% if app.next_follow_up_date %}
+                                <div class="meta-item">
+                                    <i class="fas fa-clock meta-icon"></i>
+                                    <span>Follow-up {% if app.is_follow_up_due %}due{% else %}{{ app.next_follow_up_date|date:"M d" }}{% endif %}</span>
+                                </div>
+                            {% endif %}
+                            <div class="meta-item">
+                                <i class="fas fa-envelope meta-icon"></i>
+                                <span>{{ app.follow_up_count }} follow-up{{ app.follow_up_count|pluralize }}</span>
+                            </div>
+                        </div>
+
+                        <div class="job-actions">
+                            <button class="action-btn primary" onclick="sendFollowUp({{ app.id }})">
+                                <i class="fas fa-envelope"></i>
+                                Follow-up
+                            </button>
+                            <a href="{% url 'jobs:application_detail' app.id %}" class="action-btn">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </a>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <div class="empty-title">No applications yet</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Responded Column -->
+        <div class="pipeline-column" data-status="responded">
+            <div class="pipeline-header">
+                <div class="pipeline-title">
+                    <div class="d-flex align-items-center">
+                        <div class="pipeline-icon">
+                            <i class="fas fa-reply"></i>
+                        </div>
+                        Responded
+                    </div>
+                    <div class="pipeline-count">{{ pipeline.responded.count|default:0 }}</div>
+                </div>
+            </div>
+            <div class="pipeline-body">
+                {% for app in pipeline.responded %}
+                    <div class="application-card" data-id="{{ app.id }}">
+                        <div class="card-header-row">
+                            <div>
+                                <div class="company-name">{{ app.company_name }}</div>
+                                <div class="job-title">{{ app.job_title }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>
+                                <input type="checkbox" class="app-checkbox" name="applications" value="{{ app.id }}">
+                            </div>
+                        </div>
+
+                        <div class="job-meta">
+                            {% if app.last_follow_up_date %}
+                                <div class="meta-item">
+                                    <i class="fas fa-reply meta-icon"></i>
+                                    <span>Response {{ app.last_follow_up_date|date:"M d" }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="meta-item">
+                                <i class="fas fa-check-circle meta-icon"></i>
+                                <span>Active conversation</span>
+                            </div>
+                        </div>
+
+                        <div class="job-actions">
+                            <button class="action-btn primary" onclick="scheduleInterview({{ app.id }})">
+                                <i class="fas fa-calendar-plus"></i>
+                                Interview
+                            </button>
+                            <a href="{% url 'jobs:application_detail' app.id %}" class="action-btn">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </a>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-reply"></i>
+                        </div>
+                        <div class="empty-title">No responses yet</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Interview Column -->
+        <div class="pipeline-column" data-status="interview">
+            <div class="pipeline-header">
+                <div class="pipeline-title">
+                    <div class="d-flex align-items-center">
+                        <div class="pipeline-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        Interview
+                    </div>
+                    <div class="pipeline-count">{{ pipeline.interview.count|default:0 }}</div>
+                </div>
+            </div>
+            <div class="pipeline-body">
+                {% for app in pipeline.interview %}
+                    <div class="application-card" data-id="{{ app.id }}">
+                        <div class="card-header-row">
+                            <div>
+                                <div class="company-name">{{ app.company_name }}</div>
+                                <div class="job-title">{{ app.job_title }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>
+                                <input type="checkbox" class="app-checkbox" name="applications" value="{{ app.id }}">
+                            </div>
+                        </div>
+
+                        <div class="job-meta">
+                            {% if app.interview_scheduled_date %}
+                                <div class="meta-item">
+                                    <i class="fas fa-calendar meta-icon"></i>
+                                    <span>{{ app.interview_scheduled_date|date:"M d, H:i" }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="meta-item">
+                                <i class="fas fa-clock meta-icon"></i>
+                                <span>Interview scheduled</span>
+                            </div>
+                        </div>
+
+                        <div class="job-actions">
+                            <button class="action-btn primary" onclick="markOffer({{ app.id }})">
+                                <i class="fas fa-handshake"></i>
+                                Offer
+                            </button>
+                            <a href="{% url 'jobs:application_detail' app.id %}" class="action-btn">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </a>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="empty-title">No interviews scheduled</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Offer Column -->
+        <div class="pipeline-column" data-status="offer">
+            <div class="pipeline-header">
+                <div class="pipeline-title">
+                    <div class="d-flex align-items-center">
+                        <div class="pipeline-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        Offer
+                    </div>
+                    <div class="pipeline-count">{{ pipeline.offer.count|default:0 }}</div>
+                </div>
+            </div>
+            <div class="pipeline-body">
+                {% for app in pipeline.offer %}
+                    <div class="application-card" data-id="{{ app.id }}">
+                        <div class="card-header-row">
+                            <div>
+                                <div class="company-name">{{ app.company_name }}</div>
+                                <div class="job-title">{{ app.job_title }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>
+                                <input type="checkbox" class="app-checkbox" name="applications" value="{{ app.id }}">
+                            </div>
+                        </div>
+
+                        <div class="job-meta">
+                            {% if app.offer_amount %}
+                                <div class="meta-item">
+                                    <i class="fas fa-dollar-sign meta-icon"></i>
+                                    <span>${{ app.offer_amount|floatformat:0 }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="meta-item">
+                                <i class="fas fa-star meta-icon"></i>
+                                <span>Offer received</span>
+                            </div>
+                        </div>
+
+                        <div class="job-actions">
+                            <button class="action-btn primary" onclick="acceptOffer({{ app.id }})">
+                                <i class="fas fa-check"></i>
+                                Accept
+                            </button>
+                            <a href="{% url 'jobs:application_detail' app.id %}" class="action-btn">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </a>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="empty-title">No offers yet</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Closed Column -->
+        <div class="pipeline-column" data-status="closed">
+            <div class="pipeline-header">
+                <div class="pipeline-title">
+                    <div class="d-flex align-items-center">
+                        <div class="pipeline-icon">
+                            <i class="fas fa-archive"></i>
+                        </div>
+                        Closed
+                    </div>
+                    <div class="pipeline-count">
+                        {% with hired_count=0 rejected_count=0 %}
+                            {% for app in applications %}
+                                {% if app.application_status == 'hired' %}
+                                    {% with hired_count=hired_count|add:1 %}{% endwith %}
+                                {% elif app.application_status == 'rejected' %}
+                                    {% with rejected_count=rejected_count|add:1 %}{% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ hired_count|add:rejected_count }}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+            <div class="pipeline-body">
+                {% for app in applications %}
+                    {% if app.application_status == 'hired' or app.application_status == 'rejected' %}
+                        <div class="application-card" data-id="{{ app.id }}">
+                            <div class="card-header-row">
+                                <div>
+                                    <div class="company-name">{{ app.company_name }}</div>
+                                    <div class="job-title">{{ app.job_title }}</div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>
+                                    <input type="checkbox" class="app-checkbox" name="applications" value="{{ app.id }}">
+                                </div>
+                            </div>
+
+                            <div class="job-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-{% if app.application_status == 'hired' %}check-circle{% else %}times-circle{% endif %} meta-icon"></i>
+                                    <span>{{ app.get_application_status_display }}</span>
+                                </div>
+                            </div>
+
+                            <div class="job-actions">
+                                <a href="{% url 'jobs:application_detail' app.id %}" class="action-btn">
+                                    <i class="fas fa-eye"></i>
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-archive"></i>
+                        </div>
+                        <div class="empty-title">No closed applications</div>
+                    </div>
+                {% endfor %}
+
+                {% if not applications %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-archive"></i>
+                        </div>
+                        <div class="empty-title">No closed applications</div>
+                    </div>
+                {% else %}
+                    {% with has_closed=False %}
+                        {% for app in applications %}
+                            {% if app.application_status == 'hired' or app.application_status == 'rejected' %}
+                                {% with has_closed=True %}{% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if not has_closed %}
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-archive"></i>
+                                </div>
+                                <div class="empty-title">No closed applications</div>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Elegant CTA Section -->
+    {% if not applications %}
+        <div class="no-applications-cta">
+            <div class="cta-icon">
+                <i class="fas fa-briefcase"></i>
+            </div>
+            <h2 class="cta-title">No Job Applications Yet</h2>
+            <p class="cta-description">Start by finding jobs and building your application pipeline with our AI-powered job search.</p>
+            <a href="{% url 'jobs:job_list' %}" class="cta-button">
+                <i class="fas fa-search"></i>
+                Find Jobs Now
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// Initialize drag and drop
+document.addEventListener('DOMContentLoaded', function() {
+    const columns = document.querySelectorAll('.pipeline-column');
+
+    columns.forEach(column => {
+        new Sortable(column, {
+            group: 'applications',
+            animation: 150,
+            ghostClass: 'dragging',
+            onEnd: function(evt) {
+                const applicationId = evt.item.dataset.id;
+                const newStatus = evt.to.dataset.status;
+
+                if (evt.from !== evt.to) {
+                    updateApplicationStatus(applicationId, newStatus);
+                }
+            }
+        });
+    });
+});
+
+// Checkbox selection handling
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('app-checkbox')) {
+        updateBulkActionsBar();
+    }
+});
+
+function updateBulkActionsBar() {
+    const selected = document.querySelectorAll('.app-checkbox:checked').length;
+    const bulkBar = document.getElementById('bulkActionsBar');
+    const selectedCount = document.getElementById('selectedCount');
+
+    selectedCount.textContent = selected;
+
+    if (selected > 0) {
+        bulkBar.classList.add('show');
+    } else {
+        bulkBar.classList.remove('show');
+    }
+
+    updateExecuteButton();
+}
+
+function updateExecuteButton() {
+    const selected = document.querySelectorAll('.app-checkbox:checked').length;
+    const action = document.getElementById('bulkAction').value;
+    const executeButton = document.getElementById('executeButton');
+
+    executeButton.disabled = selected === 0 || !action;
+}
+
+function clearSelection() {
+    document.querySelectorAll('.app-checkbox:checked').forEach(cb => {
+        cb.checked = false;
+    });
+    updateBulkActionsBar();
+}
+
+// Bulk action dropdown handler
+document.getElementById('bulkAction').addEventListener('change', function() {
+    const statusField = document.getElementById('statusField');
+    if (this.value === 'update_status') {
+        statusField.style.display = 'block';
+    } else {
+        statusField.style.display = 'none';
+    }
+    updateExecuteButton();
+});
+
+// Application status update via drag and drop
+function updateApplicationStatus(applicationId, newStatus) {
+    fetch(`/jobs/applications/${applicationId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: `application_status=${newStatus}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Updated!',
+                text: 'Application status updated successfully.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } else {
+            Swal.fire('Error!', 'Failed to update status', 'error');
+            location.reload(); // Reload to reset position
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error!', 'Failed to update status', 'error');
+        location.reload();
+    });
+}
+
+// Quick action functions
+function markAsApplied(applicationId) {
+    Swal.fire({
+        title: 'Mark as Applied?',
+        text: 'This will update the status and start follow-up tracking.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, mark as applied',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            updateApplicationStatus(applicationId, 'applied');
+        }
+    });
+}
+
+function sendFollowUp(applicationId) {
+    Swal.fire({
+        title: 'Send Follow-up?',
+        text: 'This will send a follow-up email to the company.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, send follow-up',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Trigger follow-up via bulk action
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "jobs:bulk_action" %}';
+
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'send_followup';
+
+            const appInput = document.createElement('input');
+            appInput.type = 'hidden';
+            appInput.name = 'applications';
+            appInput.value = applicationId;
+
+            form.appendChild(csrfInput);
+            form.appendChild(actionInput);
+            form.appendChild(appInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+function scheduleInterview(applicationId) {
+    updateApplicationStatus(applicationId, 'interview');
+}
+
+function markOffer(applicationId) {
+    updateApplicationStatus(applicationId, 'offer');
+}
+
+function acceptOffer(applicationId) {
+    updateApplicationStatus(applicationId, 'hired');
+}
+
+// Pipeline view toggle
+function togglePipelineView() {
+    const pipelineView = document.getElementById('pipelineView');
+    if (pipelineView.style.display === 'none') {
+        pipelineView.style.display = 'block';
+    } else {
+        pipelineView.style.display = 'none';
+    }
+}
+
+// Form submission handler
+document.getElementById('bulkForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const selected = document.querySelectorAll('.app-checkbox:checked').length;
+    const action = document.getElementById('bulkAction').value;
+
+    if (selected === 0) {
+        Swal.fire('No Selection', 'Please select at least one application.', 'warning');
+        return;
+    }
+
+    if (!action) {
+        Swal.fire('No Action', 'Please select an action to perform.', 'warning');
+        return;
+    }
+
+    const actionText = document.getElementById('bulkAction').selectedOptions[0].text;
+
+    Swal.fire({
+        title: `${actionText}?`,
+        text: `This will ${actionText.toLowerCase()} for ${selected} selected applications.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Proceed',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Add selected applications to form
+            const form = this;
+            const checkboxes = document.querySelectorAll('.app-checkbox:checked');
+
+            checkboxes.forEach(checkbox => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'applications';
+                input.value = checkbox.value;
+                form.appendChild(input);
+            });
+
+            form.submit();
+        }
+    });
+});
+
+// Auto-filter form submission
+document.getElementById('filterForm').addEventListener('change', function() {
+    this.submit();
+});
+</script>
+{% endblock %}
+
+{#{% extends 'dashboard/../base_dashboard.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Job Applications - Job Automation{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<link href="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.css" rel="stylesheet">#}
+{#<style>#}
+{#.pipeline-column {#}
+{#    min-height: 400px;#}
+{#    background-color: #f8f9fa;#}
+{#    border-radius: 8px;#}
+{#    padding: 15px;#}
+{#    margin-bottom: 20px;#}
+{#}#}
+{##}
+{#.pipeline-header {#}
+{#    background: linear-gradient(45deg, #007bff, #0056b3);#}
+{#    color: white;#}
+{#    padding: 10px 15px;#}
+{#    border-radius: 6px;#}
+{#    margin-bottom: 15px;#}
+{#    text-align: center;#}
+{#    font-weight: 600;#}
+{#}#}
+{##}
+{#.application-card {#}
+{#    background: white;#}
+{#    border: 1px solid #e9ecef;#}
+{#    border-radius: 8px;#}
+{#    padding: 15px;#}
+{#    margin-bottom: 10px;#}
+{#    cursor: move;#}
+{#    transition: all 0.3s ease;#}
+{#    box-shadow: 0 2px 4px rgba(0,0,0,0.1);#}
+{#}#}
+{##}
+{#.application-card:hover {#}
+{#    box-shadow: 0 4px 8px rgba(0,0,0,0.15);#}
+{#    transform: translateY(-2px);#}
+{#}#}
+{##}
+{#.application-card.dragging {#}
+{#    opacity: 0.5;#}
+{#    transform: rotate(5deg);#}
+{#}#}
+{##}
+{#.company-name {#}
+{#    font-weight: 600;#}
+{#    color: #2c3e50;#}
+{#    font-size: 1.1em;#}
+{#}#}
+{##}
+{#.job-title {#}
+{#    color: #3498db;#}
+{#    font-size: 0.95em;#}
+{#    margin-bottom: 8px;#}
+{#}#}
+{##}
+{#.job-meta {#}
+{#    font-size: 0.8em;#}
+{#    color: #6c757d;#}
+{#}#}
+{##}
+{#.job-actions {#}
+{#    margin-top: 10px;#}
+{#}#}
+{##}
+{#.status-badge {#}
+{#    font-size: 0.7em;#}
+{#    padding: 4px 8px;#}
+{#}#}
+{##}
+{#.urgency-indicator {#}
+{#    width: 4px;#}
+{#    height: 100%;#}
+{#    position: absolute;#}
+{#    left: 0;#}
+{#    top: 0;#}
+{#    border-radius: 8px 0 0 8px;#}
+{#}#}
+{##}
+{#.urgency-low { background-color: #28a745; }#}
+{#.urgency-medium { background-color: #ffc107; }#}
+{#.urgency-high { background-color: #fd7e14; }#}
+{#.urgency-urgent { background-color: #dc3545; }#}
+{##}
+{#.filter-section {#}
+{#    background: #f8f9fa;#}
+{#    padding: 20px;#}
+{#    border-radius: 8px;#}
+{#    margin-bottom: 20px;#}
+{#}#}
+{##}
+{#.stats-card {#}
+{#    background: linear-gradient(45deg, #28a745, #20c997);#}
+{#    color: white;#}
+{#    padding: 20px;#}
+{#    border-radius: 8px;#}
+{#    text-align: center;#}
+{#}#}
+{##}
+{#.bulk-actions-bar {#}
+{#    background: #fff3cd;#}
+{#    border: 1px solid #ffeaa7;#}
+{#    border-radius: 8px;#}
+{#    padding: 15px;#}
+{#    margin-bottom: 20px;#}
+{#    display: none;#}
+{#}#}
+{##}
+{#.bulk-actions-bar.show {#}
+{#    display: block;#}
+{#}#}
+{##}
+{#@media (max-width: 768px) {#}
+{#    .pipeline-column {#}
+{#        margin-bottom: 20px;#}
+{#    }#}
+{##}
+{#    .application-card {#}
+{#        padding: 10px;#}
+{#        font-size: 0.9em;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container-fluid">#}
+{#    <!-- Page Header -->#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="d-flex justify-content-between align-items-center">#}
+{#                <div>#}
+{#                    <h2 class="display-6 fw-bold text-primary">#}
+{#                        <i class="fas fa-briefcase"></i> Job Applications#}
+{#                    </h2>#}
+{#                    <p class="text-muted mb-0">Track and manage your job application pipeline</p>#}
+{#                </div>#}
+{#                <div>#}
+{#                    <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-primary me-2">#}
+{#                        <i class="fas fa-search"></i> Find More Jobs#}
+{#                    </a>#}
+{#                    <a href="{% url 'jobs:search_config' %}" class="btn btn-primary">#}
+{#                        <i class="fas fa-cog"></i> Search Configs#}
+{#                    </a>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Statistics Cards -->#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-md-3">#}
+{#            <div class="stats-card">#}
+{#                <h3>{{ applications.count }}</h3>#}
+{#                <p class="mb-0">Total Applications</p>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="col-md-3">#}
+{#            <div class="stats-card" style="background: linear-gradient(45deg, #007bff, #0056b3);">#}
+{#                <h3>{{ pipeline.applied.count }}</h3>#}
+{#                <p class="mb-0">Applied</p>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="col-md-3">#}
+{#            <div class="stats-card" style="background: linear-gradient(45deg, #ffc107, #e0a800);">#}
+{#                <h3>{{ pipeline.interview.count }}</h3>#}
+{#                <p class="mb-0">Interviews</p>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="col-md-3">#}
+{#            <div class="stats-card" style="background: linear-gradient(45deg, #17a2b8, #138496);">#}
+{#                <h3>{{ pipeline.offer.count }}</h3>#}
+{#                <p class="mb-0">Offers</p>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Filters and Search -->#}
+{#    <div class="filter-section">#}
+{#        <form method="get" id="filterForm">#}
+{#            <div class="row align-items-end">#}
+{#                <div class="col-md-2">#}
+{#                    <label class="form-label">Status</label>#}
+{#                    <select name="status" class="form-select">#}
+{#                        <option value="">All Statuses</option>#}
+{#                        <option value="found" {% if request.GET.status == 'found' %}selected{% endif %}>Found</option>#}
+{#                        <option value="applied" {% if request.GET.status == 'applied' %}selected{% endif %}>Applied</option>#}
+{#                        <option value="responded" {% if request.GET.status == 'responded' %}selected{% endif %}>Responded</option>#}
+{#                        <option value="interview" {% if request.GET.status == 'interview' %}selected{% endif %}>Interview</option>#}
+{#                        <option value="offer" {% if request.GET.status == 'offer' %}selected{% endif %}>Offer</option>#}
+{#                        <option value="hired" {% if request.GET.status == 'hired' %}selected{% endif %}>Hired</option>#}
+{#                        <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>#}
+{#                    </select>#}
+{#                </div>#}
+{#                <div class="col-md-2">#}
+{#                    <label class="form-label">Urgency</label>#}
+{#                    <select name="urgency" class="form-select">#}
+{#                        <option value="">All Urgency</option>#}
+{#                        <option value="urgent" {% if request.GET.urgency == 'urgent' %}selected{% endif %}>Urgent</option>#}
+{#                        <option value="high" {% if request.GET.urgency == 'high' %}selected{% endif %}>High</option>#}
+{#                        <option value="medium" {% if request.GET.urgency == 'medium' %}selected{% endif %}>Medium</option>#}
+{#                        <option value="low" {% if request.GET.urgency == 'low' %}selected{% endif %}>Low</option>#}
+{#                    </select>#}
+{#                </div>#}
+{#                <div class="col-md-3">#}
+{#                    <label class="form-label">Search</label>#}
+{#                    <input type="text" name="search" class="form-control"#}
+{#                           placeholder="Company, job title..."#}
+{#                           value="{{ request.GET.search }}">#}
+{#                </div>#}
+{#                <div class="col-md-2">#}
+{#                    <button type="submit" class="btn btn-primary w-100">#}
+{#                        <i class="fas fa-filter"></i> Filter#}
+{#                    </button>#}
+{#                </div>#}
+{#                <div class="col-md-2">#}
+{#                    <a href="{% url 'jobs:applications' %}" class="btn btn-outline-secondary w-100">#}
+{#                        <i class="fas fa-times"></i> Clear#}
+{#                    </a>#}
+{#                </div>#}
+{#                <div class="col-md-1">#}
+{#                    <button type="button" class="btn btn-outline-info w-100" onclick="togglePipelineView()">#}
+{#                        <i class="fas fa-columns"></i>#}
+{#                    </button>#}
+{#                </div>#}
+{#            </div>#}
+{#        </form>#}
+{#    </div>#}
+{##}
+{#    <!-- Bulk Actions Bar -->#}
+{#    <div class="bulk-actions-bar" id="bulkActionsBar">#}
+{#        <form method="post" action="{% url 'jobs:bulk_action' %}" id="bulkForm">#}
+{#            {% csrf_token %}#}
+{#            <div class="row align-items-center">#}
+{#                <div class="col-md-1">#}
+{#                    <span class="fw-bold">#}
+{#                        <span id="selectedCount">0</span> selected#}
+{#                    </span>#}
+{#                </div>#}
+{#                <div class="col-md-3">#}
+{#                    <select name="action" class="form-select" required id="bulkAction">#}
+{#                        <option value="">Select action...</option>#}
+{#                        <option value="send_followup">Send Follow-up</option>#}
+{#                        <option value="mark_applied">Mark as Applied</option>#}
+{#                        <option value="update_status">Update Status</option>#}
+{#                        <option value="download_docs">Download Documents</option>#}
+{#                    </select>#}
+{#                </div>#}
+{#                <div class="col-md-3" id="statusField" style="display: none;">#}
+{#                    <select name="new_status" class="form-select">#}
+{#                        <option value="">Select status...</option>#}
+{#                        <option value="found">Found</option>#}
+{#                        <option value="applied">Applied</option>#}
+{#                        <option value="responded">Responded</option>#}
+{#                        <option value="interview">Interview Scheduled</option>#}
+{#                        <option value="offer">Offer Received</option>#}
+{#                        <option value="hired">Hired</option>#}
+{#                        <option value="rejected">Rejected</option>#}
+{#                        <option value="withdrawn">Withdrawn</option>#}
+{#                    </select>#}
+{#                </div>#}
+{#                <div class="col-md-2">#}
+{#                    <button type="submit" class="btn btn-warning" id="executeButton" disabled>#}
+{#                        <i class="fas fa-play"></i> Execute#}
+{#                    </button>#}
+{#                </div>#}
+{#                <div class="col-md-2">#}
+{#                    <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">#}
+{#                        <i class="fas fa-times"></i> Clear Selection#}
+{#                    </button>#}
+{#                </div>#}
+{#            </div>#}
+{#        </form>#}
+{#    </div>#}
+{##}
+{#    <!-- Pipeline View -->#}
+{#    <div id="pipelineView">#}
+{#        <div class="row">#}
+{#            <!-- Found Column -->#}
+{#            <div class="col-lg-2 col-md-4">#}
+{#                <div class="pipeline-column" data-status="found">#}
+{#                    <div class="pipeline-header">#}
+{#                        <i class="fas fa-search"></i> Found#}
+{#                        <span class="badge bg-light text-dark ms-2">{{ pipeline.found.count }}</span>#}
+{#                    </div>#}
+{#                    {% for app in pipeline.found %}#}
+{#                        <div class="application-card position-relative" data-id="{{ app.id }}">#}
+{#                            <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>#}
+{#                            <input type="checkbox" class="app-checkbox position-absolute top-0 end-0 m-2"#}
+{#                                   name="applications" value="{{ app.id }}" style="z-index: 10;">#}
+{##}
+{#                            <div class="company-name">{{ app.company_name }}</div>#}
+{#                            <div class="job-title">{{ app.job_title }}</div>#}
+{##}
+{#                            <div class="job-meta">#}
+{#                                {% if app.location %}#}
+{#                                    <div><i class="fas fa-map-marker-alt"></i> {{ app.location }}</div>#}
+{#                                {% endif %}#}
+{#                                {% if app.salary_range %}#}
+{#                                    <div><i class="fas fa-dollar-sign"></i> {{ app.salary_range }}</div>#}
+{#                                {% endif %}#}
+{#                                <div><i class="fas fa-calendar"></i> {{ app.created_at|date:"M d" }}</div>#}
+{#                                {% if app.match_percentage %}#}
+{#                                    <div>#}
+{#                                        <i class="fas fa-percentage"></i>#}
+{#                                        {{ app.match_percentage }}% match#}
+{#                                    </div>#}
+{#                                {% endif %}#}
+{#                            </div>#}
+{##}
+{#                            <div class="job-actions">#}
+{#                                <div class="btn-group btn-group-sm w-100">#}
+{#                                    <button class="btn btn-primary" onclick="markAsApplied({{ app.id }})">#}
+{#                                        <i class="fas fa-paper-plane"></i> Apply#}
+{#                                    </button>#}
+{#                                    <a href="{% url 'jobs:application_detail' app.id %}" class="btn btn-outline-info">#}
+{#                                        <i class="fas fa-eye"></i> View#}
+{#                                    </a>#}
+{#                                    {% if app.documents_generated %}#}
+{#                                        <a href="{% url 'documents:download' app.id %}" class="btn btn-outline-success" title="Download Documents">#}
+{#                                            <i class="fas fa-download"></i>#}
+{#                                        </a>#}
+{#                                    {% endif %}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    {% empty %}#}
+{#                        <div class="text-center text-muted py-4">#}
+{#                            <i class="fas fa-inbox fa-2x mb-2"></i>#}
+{#                            <p>No jobs found yet</p>#}
+{#                        </div>#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Applied Column -->#}
+{#            <div class="col-lg-2 col-md-4">#}
+{#                <div class="pipeline-column" data-status="applied">#}
+{#                    <div class="pipeline-header" style="background: linear-gradient(45deg, #007bff, #0056b3);">#}
+{#                        <i class="fas fa-paper-plane"></i> Applied#}
+{#                        <span class="badge bg-light text-dark ms-2">{{ pipeline.applied.count }}</span>#}
+{#                    </div>#}
+{#                    {% for app in pipeline.applied %}#}
+{#                        <div class="application-card position-relative" data-id="{{ app.id }}">#}
+{#                            <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>#}
+{#                            <input type="checkbox" class="app-checkbox position-absolute top-0 end-0 m-2"#}
+{#                                   name="applications" value="{{ app.id }}" style="z-index: 10;">#}
+{##}
+{#                            <div class="company-name">{{ app.company_name }}</div>#}
+{#                            <div class="job-title">{{ app.job_title }}</div>#}
+{##}
+{#                            <div class="job-meta">#}
+{#                                {% if app.applied_date %}#}
+{#                                    <div><i class="fas fa-calendar-check"></i> Applied {{ app.applied_date|date:"M d" }}</div>#}
+{#                                {% endif %}#}
+{#                                {% if app.next_follow_up_date %}#}
+{#                                    <div class="{% if app.is_follow_up_due %}text-danger{% else %}text-warning{% endif %}">#}
+{#                                        <i class="fas fa-clock"></i>#}
+{#                                        Follow-up {% if app.is_follow_up_due %}due{% else %}{{ app.next_follow_up_date|date:"M d" }}{% endif %}#}
+{#                                    </div>#}
+{#                                {% endif %}#}
+{#                                <div>#}
+{#                                    <i class="fas fa-envelope"></i>#}
+{#                                    {{ app.follow_up_count }} follow-up{{ app.follow_up_count|pluralize }}#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="job-actions">#}
+{#                                <div class="btn-group btn-group-sm w-100">#}
+{#                                    <button class="btn btn-success" onclick="sendFollowUp({{ app.id }})">#}
+{#                                        <i class="fas fa-envelope"></i> Follow-up#}
+{#                                    </button>#}
+{#                                    <a href="{% url 'jobs:application_detail' app.id %}" class="btn btn-outline-info">#}
+{#                                        <i class="fas fa-eye"></i> View#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    {% empty %}#}
+{#                        <div class="text-center text-muted py-4">#}
+{#                            <i class="fas fa-inbox fa-2x mb-2"></i>#}
+{#                            <p>No applications yet</p>#}
+{#                        </div>#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Responded Column -->#}
+{#            <div class="col-lg-2 col-md-4">#}
+{#                <div class="pipeline-column" data-status="responded">#}
+{#                    <div class="pipeline-header" style="background: linear-gradient(45deg, #28a745, #20c997);">#}
+{#                        <i class="fas fa-reply"></i> Responded#}
+{#                        <span class="badge bg-light text-dark ms-2">{{ pipeline.responded.count }}</span>#}
+{#                    </div>#}
+{#                    {% for app in pipeline.responded %}#}
+{#                        <div class="application-card position-relative" data-id="{{ app.id }}">#}
+{#                            <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>#}
+{#                            <input type="checkbox" class="app-checkbox position-absolute top-0 end-0 m-2"#}
+{#                                   name="applications" value="{{ app.id }}" style="z-index: 10;">#}
+{##}
+{#                            <div class="company-name">{{ app.company_name }}</div>#}
+{#                            <div class="job-title">{{ app.job_title }}</div>#}
+{##}
+{#                            <div class="job-meta">#}
+{#                                {% if app.last_follow_up_date %}#}
+{#                                    <div><i class="fas fa-reply"></i> Response {{ app.last_follow_up_date|date:"M d" }}</div>#}
+{#                                {% endif %}#}
+{#                                <div class="text-success">#}
+{#                                    <i class="fas fa-check-circle"></i> Active conversation#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="job-actions">#}
+{#                                <div class="btn-group btn-group-sm w-100">#}
+{#                                    <button class="btn btn-warning" onclick="scheduleInterview({{ app.id }})">#}
+{#                                        <i class="fas fa-calendar-plus"></i> Interview#}
+{#                                    </button>#}
+{#                                    <a href="{% url 'jobs:application_detail' app.id %}" class="btn btn-outline-info">#}
+{#                                        <i class="fas fa-eye"></i> View#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    {% empty %}#}
+{#                        <div class="text-center text-muted py-4">#}
+{#                            <i class="fas fa-inbox fa-2x mb-2"></i>#}
+{#                            <p>No responses yet</p>#}
+{#                        </div>#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Interview Column -->#}
+{#            <div class="col-lg-2 col-md-4">#}
+{#                <div class="pipeline-column" data-status="interview">#}
+{#                    <div class="pipeline-header" style="background: linear-gradient(45deg, #ffc107, #e0a800);">#}
+{#                        <i class="fas fa-users"></i> Interview#}
+{#                        <span class="badge bg-light text-dark ms-2">{{ pipeline.interview.count }}</span>#}
+{#                    </div>#}
+{#                    {% for app in pipeline.interview %}#}
+{#                        <div class="application-card position-relative" data-id="{{ app.id }}">#}
+{#                            <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>#}
+{#                            <input type="checkbox" class="app-checkbox position-absolute top-0 end-0 m-2"#}
+{#                                   name="applications" value="{{ app.id }}" style="z-index: 10;">#}
+{##}
+{#                            <div class="company-name">{{ app.company_name }}</div>#}
+{#                            <div class="job-title">{{ app.job_title }}</div>#}
+{##}
+{#                            <div class="job-meta">#}
+{#                                {% if app.interview_scheduled_date %}#}
+{#                                    <div><i class="fas fa-calendar"></i> {{ app.interview_scheduled_date|date:"M d, H:i" }}</div>#}
+{#                                {% endif %}#}
+{#                                <div class="text-warning">#}
+{#                                    <i class="fas fa-clock"></i> Interview scheduled#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="job-actions">#}
+{#                                <div class="btn-group btn-group-sm w-100">#}
+{#                                    <button class="btn btn-info" onclick="markOffer({{ app.id }})">#}
+{#                                        <i class="fas fa-handshake"></i> Offer#}
+{#                                    </button>#}
+{#                                    <a href="{% url 'jobs:application_detail' app.id %}" class="btn btn-outline-info">#}
+{#                                        <i class="fas fa-eye"></i> View#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    {% empty %}#}
+{#                        <div class="text-center text-muted py-4">#}
+{#                            <i class="fas fa-inbox fa-2x mb-2"></i>#}
+{#                            <p>No interviews scheduled</p>#}
+{#                        </div>#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Offer Column -->#}
+{#            <div class="col-lg-2 col-md-4">#}
+{#                <div class="pipeline-column" data-status="offer">#}
+{#                    <div class="pipeline-header" style="background: linear-gradient(45deg, #17a2b8, #138496);">#}
+{#                        <i class="fas fa-star"></i> Offer#}
+{#                        <span class="badge bg-light text-dark ms-2">{{ pipeline.offer.count }}</span>#}
+{#                    </div>#}
+{#                    {% for app in pipeline.offer %}#}
+{#                        <div class="application-card position-relative" data-id="{{ app.id }}">#}
+{#                            <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>#}
+{#                            <input type="checkbox" class="app-checkbox position-absolute top-0 end-0 m-2"#}
+{#                                   name="applications" value="{{ app.id }}" style="z-index: 10;">#}
+{##}
+{#                            <div class="company-name">{{ app.company_name }}</div>#}
+{#                            <div class="job-title">{{ app.job_title }}</div>#}
+{##}
+{#                            <div class="job-meta">#}
+{#                                {% if app.offer_amount %}#}
+{#                                    <div><i class="fas fa-dollar-sign"></i> ${{ app.offer_amount|floatformat:0 }}</div>#}
+{#                                {% endif %}#}
+{#                                <div class="text-info">#}
+{#                                    <i class="fas fa-star"></i> Offer received#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="job-actions">#}
+{#                                <div class="btn-group btn-group-sm w-100">#}
+{#                                    <button class="btn btn-success" onclick="acceptOffer({{ app.id }})">#}
+{#                                        <i class="fas fa-check"></i> Accept#}
+{#                                    </button>#}
+{#                                    <a href="{% url 'jobs:application_detail' app.id %}" class="btn btn-outline-info">#}
+{#                                        <i class="fas fa-eye"></i> View#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    {% empty %}#}
+{#                        <div class="text-center text-muted py-4">#}
+{#                            <i class="fas fa-inbox fa-2x mb-2"></i>#}
+{#                            <p>No offers yet</p>#}
+{#                        </div>#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Closed Column (Hired/Rejected) -->#}
+{#            <div class="col-lg-2 col-md-4">#}
+{#                <div class="pipeline-column" data-status="closed">#}
+{#                    <div class="pipeline-header" style="background: linear-gradient(45deg, #6c757d, #5a6268);">#}
+{#                        <i class="fas fa-archive"></i> Closed#}
+{#                        <span class="badge bg-light text-dark ms-2">#}
+{#                            {{ pipeline.hired.count|add:pipeline.rejected.count }}#}
+{#                        </span>#}
+{#                    </div>#}
+{##}
+{#                    <!-- Hired Applications -->#}
+{#                    {% for app in applications %}#}
+{#                        {% if app.application_status == 'hired' or app.application_status == 'rejected' %}#}
+{#                            <div class="application-card position-relative" data-id="{{ app.id }}">#}
+{#                                <div class="urgency-indicator urgency-{{ app.urgency_level }}"></div>#}
+{#                                <input type="checkbox" class="app-checkbox position-absolute top-0 end-0 m-2"#}
+{#                                       name="applications" value="{{ app.id }}" style="z-index: 10;">#}
+{##}
+{#                                <div class="company-name">{{ app.company_name }}</div>#}
+{#                                <div class="job-title">{{ app.job_title }}</div>#}
+{##}
+{#                                <div class="job-meta">#}
+{#                                    <div class="{% if app.application_status == 'hired' %}text-success{% else %}text-danger{% endif %}">#}
+{#                                        <i class="fas fa-{% if app.application_status == 'hired' %}check-circle{% else %}times-circle{% endif %}"></i>#}
+{#                                        {{ app.get_application_status_display }}#}
+{#                                    </div>#}
+{#                                </div>#}
+{##}
+{#                                <div class="job-actions">#}
+{#                                    <a href="{% url 'jobs:application_detail' app.id %}" class="btn btn-outline-info btn-sm w-100">#}
+{#                                        <i class="fas fa-eye"></i> View Details#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        {% endif %}#}
+{#                    {% empty %}#}
+{#                        <div class="text-center text-muted py-4">#}
+{#                            <i class="fas fa-inbox fa-2x mb-2"></i>#}
+{#                            <p>No closed applications</p>#}
+{#                        </div>#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- No Applications Message -->#}
+{#    {% if not applications %}#}
+{#        <div class="text-center py-5">#}
+{#            <i class="fas fa-briefcase fa-4x text-muted mb-3"></i>#}
+{#            <h4>No Job Applications Yet</h4>#}
+{#            <p class="text-muted mb-4">Start by finding jobs and building your application pipeline.</p>#}
+{#            <a href="{% url 'jobs:job_list' %}" class="btn btn-primary btn-lg">#}
+{#                <i class="fas fa-search"></i> Find Jobs Now#}
+{#            </a>#}
+{#        </div>#}
+{#    {% endif %}#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>#}
+{#<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>#}
+{#<script>#}
+{#// Initialize drag and drop#}
+{#document.addEventListener('DOMContentLoaded', function() {#}
+{#    const columns = document.querySelectorAll('.pipeline-column');#}
+{##}
+{#    columns.forEach(column => {#}
+{#        new Sortable(column, {#}
+{#            group: 'applications',#}
+{#            animation: 150,#}
+{#            ghostClass: 'dragging',#}
+{#            onEnd: function(evt) {#}
+{#                const applicationId = evt.item.dataset.id;#}
+{#                const newStatus = evt.to.dataset.status;#}
+{##}
+{#                if (evt.from !== evt.to) {#}
+{#                    updateApplicationStatus(applicationId, newStatus);#}
+{#                }#}
+{#            }#}
+{#        });#}
+{#    });#}
+{#});#}
+{##}
+{#// Checkbox selection handling#}
+{#document.addEventListener('change', function(e) {#}
+{#    if (e.target.classList.contains('app-checkbox')) {#}
+{#        updateBulkActionsBar();#}
+{#    }#}
+{#});#}
+{##}
+{#function updateBulkActionsBar() {#}
+{#    const selected = document.querySelectorAll('.app-checkbox:checked').length;#}
+{#    const bulkBar = document.getElementById('bulkActionsBar');#}
+{#    const selectedCount = document.getElementById('selectedCount');#}
+{##}
+{#    selectedCount.textContent = selected;#}
+{##}
+{#    if (selected > 0) {#}
+{#        bulkBar.classList.add('show');#}
+{#    } else {#}
+{#        bulkBar.classList.remove('show');#}
+{#    }#}
+{##}
+{#    updateExecuteButton();#}
+{#}#}
+{##}
+{#function updateExecuteButton() {#}
+{#    const selected = document.querySelectorAll('.app-checkbox:checked').length;#}
+{#    const action = document.getElementById('bulkAction').value;#}
+{#    const executeButton = document.getElementById('executeButton');#}
+{##}
+{#    executeButton.disabled = selected === 0 || !action;#}
+{#}#}
+{##}
+{#function clearSelection() {#}
+{#    document.querySelectorAll('.app-checkbox:checked').forEach(cb => {#}
+{#        cb.checked = false;#}
+{#    });#}
+{#    updateBulkActionsBar();#}
+{#}#}
+{##}
+{#// Bulk action dropdown handler#}
+{#document.getElementById('bulkAction').addEventListener('change', function() {#}
+{#    const statusField = document.getElementById('statusField');#}
+{#    if (this.value === 'update_status') {#}
+{#        statusField.style.display = 'block';#}
+{#    } else {#}
+{#        statusField.style.display = 'none';#}
+{#    }#}
+{#    updateExecuteButton();#}
+{#});#}
+{##}
+{#// Application status update via drag and drop#}
+{#function updateApplicationStatus(applicationId, newStatus) {#}
+{#    fetch(`/jobs/applications/${applicationId}/update-status/`, {#}
+{#        method: 'POST',#}
+{#        headers: {#}
+{#            'Content-Type': 'application/x-www-form-urlencoded',#}
+{#            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,#}
+{#            'X-Requested-With': 'XMLHttpRequest'#}
+{#        },#}
+{#        body: `application_status=${newStatus}`#}
+{#    })#}
+{#    .then(response => response.json())#}
+{#    .then(data => {#}
+{#        if (data.success) {#}
+{#            Swal.fire({#}
+{#                icon: 'success',#}
+{#                title: 'Updated!',#}
+{#                text: 'Application status updated successfully.',#}
+{#                timer: 2000,#}
+{#                showConfirmButton: false#}
+{#            });#}
+{#        } else {#}
+{#            Swal.fire('Error!', 'Failed to update status', 'error');#}
+{#            location.reload(); // Reload to reset position#}
+{#        }#}
+{#    })#}
+{#    .catch(error => {#}
+{#        console.error('Error:', error);#}
+{#        Swal.fire('Error!', 'Failed to update status', 'error');#}
+{#        location.reload();#}
+{#    });#}
+{#}#}
+{##}
+{#// Quick action functions#}
+{#function markAsApplied(applicationId) {#}
+{#    Swal.fire({#}
+{#        title: 'Mark as Applied?',#}
+{#        text: 'This will update the status and start follow-up tracking.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Yes, mark as applied',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            updateApplicationStatus(applicationId, 'applied');#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function sendFollowUp(applicationId) {#}
+{#    Swal.fire({#}
+{#        title: 'Send Follow-up?',#}
+{#        text: 'This will send a follow-up email to the company.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Yes, send follow-up',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            // Trigger follow-up via bulk action#}
+{#            const form = document.createElement('form');#}
+{#            form.method = 'POST';#}
+{#            form.action = '{% url "jobs:bulk_action" %}';#}
+{##}
+{#            const csrfInput = document.createElement('input');#}
+{#            csrfInput.type = 'hidden';#}
+{#            csrfInput.name = 'csrfmiddlewaretoken';#}
+{#            csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;#}
+{##}
+{#            const actionInput = document.createElement('input');#}
+{#            actionInput.type = 'hidden';#}
+{#            actionInput.name = 'action';#}
+{#            actionInput.value = 'send_followup';#}
+{##}
+{#            const appInput = document.createElement('input');#}
+{#            appInput.type = 'hidden';#}
+{#            appInput.name = 'applications';#}
+{#            appInput.value = applicationId;#}
+{##}
+{#            form.appendChild(csrfInput);#}
+{#            form.appendChild(actionInput);#}
+{#            form.appendChild(appInput);#}
+{##}
+{#            document.body.appendChild(form);#}
+{#            form.submit();#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function scheduleInterview(applicationId) {#}
+{#    updateApplicationStatus(applicationId, 'interview');#}
+{#}#}
+{##}
+{#function markOffer(applicationId) {#}
+{#    updateApplicationStatus(applicationId, 'offer');#}
+{#}#}
+{##}
+{#function acceptOffer(applicationId) {#}
+{#    updateApplicationStatus(applicationId, 'hired');#}
+{#}#}
+{##}
+{#// Pipeline view toggle#}
+{#function togglePipelineView() {#}
+{#    const pipelineView = document.getElementById('pipelineView');#}
+{#    if (pipelineView.style.display === 'none') {#}
+{#        pipelineView.style.display = 'block';#}
+{#    } else {#}
+{#        pipelineView.style.display = 'none';#}
+{#    }#}
+{#}#}
+{##}
+{#// Form submission handler#}
+{#document.getElementById('bulkForm').addEventListener('submit', function(e) {#}
+{#    e.preventDefault();#}
+{##}
+{#    const selected = document.querySelectorAll('.app-checkbox:checked').length;#}
+{#    const action = document.getElementById('bulkAction').value;#}
+{##}
+{#    if (selected === 0) {#}
+{#        Swal.fire('No Selection', 'Please select at least one application.', 'warning');#}
+{#        return;#}
+{#    }#}
+{##}
+{#    if (!action) {#}
+{#        Swal.fire('No Action', 'Please select an action to perform.', 'warning');#}
+{#        return;#}
+{#    }#}
+{##}
+{#    const actionText = document.getElementById('bulkAction').selectedOptions[0].text;#}
+{##}
+{#    Swal.fire({#}
+{#        title: `${actionText}?`,#}
+{#        text: `This will ${actionText.toLowerCase()} for ${selected} selected applications.`,#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Proceed',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            // Add selected applications to form#}
+{#            const form = this;#}
+{#            const checkboxes = document.querySelectorAll('.app-checkbox:checked');#}
+{##}
+{#            checkboxes.forEach(checkbox => {#}
+{#                const input = document.createElement('input');#}
+{#                input.type = 'hidden';#}
+{#                input.name = 'applications';#}
+{#                input.value = checkbox.value;#}
+{#                form.appendChild(input);#}
+{#            });#}
+{##}
+{#            form.submit();#}
+{#        }#}
+{#    });#}
+{#});#}
+{##}
+{#// Auto-filter form submission#}
+{#document.getElementById('filterForm').addEventListener('change', function() {#}
+{#    this.submit();#}
+{#});#}
+{#</script>#}
+{#{% endblock %}#}
+{##}
+{#<!-- templates/jobs/applications.html -->#}
+{#{% extends 'base.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Applications - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<!-- Filter Bar -->#}
+{#<div class="row mb-4">#}
+{#    <div class="col-12">#}
+{#        <div class="card">#}
+{#            <div class="card-body">#}
+{#                <form method="get" class="row g-3">#}
+{#                    <div class="col-md-3">#}
+{#                        <label class="form-label">Status</label>#}
+{#                        <select name="status" class="form-select">#}
+{#                            <option value="">All Statuses</option>#}
+{#                            <option value="found">Found</option>#}
+{#                            <option value="applied">Applied</option>#}
+{#                            <option value="responded">Responded</option>#}
+{#                            <option value="interview">Interview</option>#}
+{#                            <option value="offer">Offer</option>#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div class="col-md-3">#}
+{#                        <label class="form-label">Urgency</label>#}
+{#                        <select name="urgency" class="form-select">#}
+{#                            <option value="">All Urgency</option>#}
+{#                            <option value="urgent">Urgent</option>#}
+{#                            <option value="high">High</option>#}
+{#                            <option value="medium">Medium</option>#}
+{#                            <option value="low">Low</option>#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div class="col-md-4">#}
+{#                        <label class="form-label">Search</label>#}
+{#                        <input type="text" name="search" class="form-control" placeholder="Job title or company">#}
+{#                    </div>#}
+{#                    <div class="col-md-2">#}
+{#                        <label class="form-label">&nbsp;</label>#}
+{#                        <button type="submit" class="btn btn-primary d-block">Filter</button>#}
+{#                    </div>#}
+{#                </form>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Pipeline View -->#}
+{#<div class="row mb-4">#}
+{#    <div class="col-12">#}
+{#        <div class="card">#}
+{#            <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                <h5><i class="fas fa-project-diagram"></i> Application Pipeline</h5>#}
+{#                <div class="btn-group" role="group">#}
+{#                    <input type="radio" class="btn-check" name="view" id="pipeline-view" autocomplete="off" checked>#}
+{#                    <label class="btn btn-outline-primary" for="pipeline-view">Pipeline</label>#}
+{##}
+{#                    <input type="radio" class="btn-check" name="view" id="list-view" autocomplete="off">#}
+{#                    <label class="btn btn-outline-primary" for="list-view">List</label>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="card-body" id="pipeline-container">#}
+{#                <div class="row">#}
+{#                    {% for status, apps in pipeline.items %}#}
+{#                    <div class="col-md pipeline-column">#}
+{#                        <div class="pipeline-header text-center mb-3">#}
+{#                            <h6>{{ status|title }} ({{ apps.count }})</h6>#}
+{#                        </div>#}
+{#                        <div class="pipeline-items" data-status="{{ status }}">#}
+{#                            {% for app in apps %}#}
+{#                            <div class="pipeline-item" data-id="{{ app.id }}" draggable="true">#}
+{#                                <div class="d-flex justify-content-between align-items-start mb-2">#}
+{#                                    <h6 class="mb-0 pipeline-job-title">{{ app.job_title }}</h6>#}
+{#                                    <div class="dropdown">#}
+{#                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">#}
+{#                                            <i class="fas fa-ellipsis-v"></i>#}
+{#                                        </button>#}
+{#                                        <ul class="dropdown-menu">#}
+{#                                            <li><a class="dropdown-item" href="{% url 'jobs:application_detail' app.pk %}">#}
+{#                                                <i class="fas fa-eye"></i> View Details#}
+{#                                            </a></li>#}
+{#                                            {% if app.documents_generated %}#}
+{#                                            <li><a class="dropdown-item" href="{% url 'documents:download' app.id %}">#}
+{#                                                <i class="fas fa-download"></i> Download Docs#}
+{#                                            </a></li>#}
+{#                                            {% endif %}#}
+{#                                            {% if app.application_status == 'applied' or app.application_status == 'responded' %}#}
+{#                                            <li><a class="dropdown-item" href="#" onclick="sendFollowup({{ app.id }})">#}
+{#                                                <i class="fas fa-envelope"></i> Send Follow-up#}
+{#                                            </a></li>#}
+{#                                            {% endif %}#}
+{#                                            <li><hr class="dropdown-divider"></li>#}
+{#                                            <li><a class="dropdown-item text-danger" href="#" onclick="updateStatus({{ app.id }}, 'withdrawn')">#}
+{#                                                <i class="fas fa-times"></i> Withdraw#}
+{#                                            </a></li>#}
+{#                                        </ul>#}
+{#                                    </div>#}
+{#                                </div>#}
+{##}
+{#                                <p class="mb-1 text-muted small">{{ app.company_name }}</p>#}
+{##}
+{#                                {% if app.salary_range %}#}
+{#                                <p class="mb-1 small"><i class="fas fa-dollar-sign"></i> {{ app.salary_range }}</p>#}
+{#                                {% endif %}#}
+{##}
+{#                                {% if app.location %}#}
+{#                                <p class="mb-1 small"><i class="fas fa-map-marker-alt"></i> {{ app.location }}</p>#}
+{#                                {% endif %}#}
+{##}
+{#                                {% if app.match_percentage %}#}
+{#                                <div class="progress mb-2" style="height: 4px;">#}
+{#                                    <div class="progress-bar" style="width: {{ app.match_percentage }}%"></div>#}
+{#                                </div>#}
+{#                                <small class="text-muted">{{ app.match_percentage }}% match</small>#}
+{#                                {% endif %}#}
+{##}
+{#                                <div class="mt-2">#}
+{#                                    <span class="badge bg-{% if app.urgency_level == 'urgent' %}danger{% elif app.urgency_level == 'high' %}warning{% elif app.urgency_level == 'medium' %}info{% else %}secondary{% endif %} me-1">#}
+{#                                        {{ app.get_urgency_level_display }}#}
+{#                                    </span>#}
+{##}
+{#                                    {% if app.remote_option %}#}
+{#                                    <span class="badge bg-success">{{ app.remote_option }}</span>#}
+{#                                    {% endif %}#}
+{#                                </div>#}
+{##}
+{#                                <div class="mt-2 d-flex justify-content-between align-items-center">#}
+{#                                    <small class="text-muted">{{ app.created_at|date:"M d" }}</small>#}
+{#                                    {% if app.application_status == 'found' %}#}
+{#                                        <button class="btn btn-sm btn-primary" onclick="markAsApplied({{ app.id }})">#}
+{#                                            <i class="fas fa-paper-plane"></i> Applied#}
+{#                                        </button>#}
+{#                                    {% elif app.next_follow_up_date %}#}
+{#                                        <small class="text-warning">#}
+{#                                            <i class="fas fa-clock"></i> Follow-up {{ app.next_follow_up_date|date:"M d" }}#}
+{#                                        </small>#}
+{#                                    {% endif %}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% empty %}#}
+{#                            <div class="text-center text-muted py-3">#}
+{#                                <i class="fas fa-inbox"></i>#}
+{#                                <br>No applications#}
+{#                            </div>#}
+{#                            {% endfor %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    {% endfor %}#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Bulk Actions -->#}
+{#{% if applications %}#}
+{#<div class="row">#}
+{#    <div class="col-12">#}
+{#        <div class="card">#}
+{#            <div class="card-header">#}
+{#                <h6><i class="fas fa-tasks"></i> Bulk Actions</h6>#}
+{#            </div>#}
+{#            <div class="card-body">#}
+{#                <form method="post" action="{% url 'jobs:bulk_action' %}">#}
+{#                    {% csrf_token %}#}
+{#                    <div class="row align-items-end">#}
+{#                        <div class="col-md-3">#}
+{#                            <label class="form-label">Action</label>#}
+{#                            <select name="action" class="form-select" required>#}
+{#                                <option value="">Select action...</option>#}
+{#                                <option value="send_followup">Send Follow-up</option>#}
+{#                                <option value="mark_applied">Mark as Applied</option>#}
+{#                                <option value="download_docs">Download Documents</option>#}
+{#                                <option value="update_status">Update Status</option>#}
+{#                            </select>#}
+{#                        </div>#}
+{#                        <div class="col-md-6">#}
+{#                            <label class="form-label">Select Applications</label>#}
+{#                            <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">#}
+{#                                <div class="form-check">#}
+{#                                    <input class="form-check-input" type="checkbox" id="selectAll">#}
+{#                                    <label class="form-check-label fw-bold" for="selectAll">#}
+{#                                        Select All#}
+{#                                    </label>#}
+{#                                </div>#}
+{#                                <hr class="my-2">#}
+{#                                {% for app in applications %}#}
+{#                                <div class="form-check">#}
+{#                                    <input class="form-check-input app-checkbox" type="checkbox" name="applications" value="{{ app.id }}" id="app{{ app.id }}">#}
+{#                                    <label class="form-check-label" for="app{{ app.id }}">#}
+{#                                        {{ app.job_title }} at {{ app.company_name }}#}
+{#                                    </label>#}
+{#                                </div>#}
+{#                                {% endfor %}#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="col-md-3">#}
+{#                            <button type="submit" class="btn btn-success">#}
+{#                                <i class="fas fa-play"></i> Execute#}
+{#                            </button>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </form>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endif %}#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.pipeline-column {#}
+{#    background-color: #f8f9fa;#}
+{#    border-radius: 8px;#}
+{#    padding: 15px;#}
+{#    margin: 0 5px;#}
+{#    min-height: 600px;#}
+{#}#}
+{##}
+{#.pipeline-item {#}
+{#    background: white;#}
+{#    border: 1px solid #dee2e6;#}
+{#    border-radius: 6px;#}
+{#    padding: 12px;#}
+{#    margin-bottom: 12px;#}
+{#    cursor: move;#}
+{#    transition: all 0.3s ease;#}
+{#}#}
+{##}
+{#.pipeline-item:hover {#}
+{#    box-shadow: 0 4px 8px rgba(0,0,0,0.1);#}
+{#    transform: translateY(-2px);#}
+{#}#}
+{##}
+{#.pipeline-item.dragging {#}
+{#    opacity: 0.5;#}
+{#    transform: rotate(5deg);#}
+{#}#}
+{##}
+{#.pipeline-items {#}
+{#    min-height: 500px;#}
+{#    border: 2px dashed transparent;#}
+{#    border-radius: 8px;#}
+{#    transition: all 0.3s ease;#}
+{#}#}
+{##}
+{#.pipeline-items.drag-over {#}
+{#    border-color: #007bff;#}
+{#    background-color: rgba(0, 123, 255, 0.1);#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#// Drag and drop functionality#}
+{#let draggedElement = null;#}
+{##}
+{#document.querySelectorAll('.pipeline-item').forEach(item => {#}
+{#    item.addEventListener('dragstart', handleDragStart);#}
+{#    item.addEventListener('dragend', handleDragEnd);#}
+{#});#}
+{##}
+{#document.querySelectorAll('.pipeline-items').forEach(column => {#}
+{#    column.addEventListener('dragover', handleDragOver);#}
+{#    column.addEventListener('drop', handleDrop);#}
+{#    column.addEventListener('dragenter', handleDragEnter);#}
+{#    column.addEventListener('dragleave', handleDragLeave);#}
+{#});#}
+{##}
+{#function handleDragStart(e) {#}
+{#    draggedElement = this;#}
+{#    this.classList.add('dragging');#}
+{#    e.dataTransfer.effectAllowed = 'move';#}
+{#    e.dataTransfer.setData('text/html', this.outerHTML);#}
+{#}#}
+{##}
+{#function handleDragEnd(e) {#}
+{#    this.classList.remove('dragging');#}
+{#    draggedElement = null;#}
+{#}#}
+{##}
+{#function handleDragOver(e) {#}
+{#    if (e.preventDefault) {#}
+{#        e.preventDefault();#}
+{#    }#}
+{#    e.dataTransfer.dropEffect = 'move';#}
+{#    return false;#}
+{#}#}
+{##}
+{#function handleDragEnter(e) {#}
+{#    this.classList.add('drag-over');#}
+{#}#}
+{##}
+{#function handleDragLeave(e) {#}
+{#    this.classList.remove('drag-over');#}
+{#}#}
+{##}
+{#function handleDrop(e) {#}
+{#    if (e.stopPropagation) {#}
+{#        e.stopPropagation();#}
+{#    }#}
+{##}
+{#    this.classList.remove('drag-over');#}
+{##}
+{#    if (draggedElement !== null) {#}
+{#        const newStatus = this.getAttribute('data-status');#}
+{#        const applicationId = draggedElement.getAttribute('data-id');#}
+{##}
+{#        // Update status via AJAX#}
+{#        updateApplicationStatus(applicationId, newStatus);#}
+{##}
+{#        // Move element to new column#}
+{#        this.appendChild(draggedElement);#}
+{#    }#}
+{##}
+{#    return false;#}
+{#}#}
+{##}
+{#function updateApplicationStatus(applicationId, newStatus) {#}
+{#    $.ajax({#}
+{#        url: `/jobs/applications/${applicationId}/update-status/`,#}
+{#        method: 'POST',#}
+{#        data: {#}
+{#            'status': newStatus,#}
+{#            'csrfmiddlewaretoken': csrftoken#}
+{#        },#}
+{#        success: function(response) {#}
+{#            if (response.success) {#}
+{#                Swal.fire({#}
+{#                    toast: true,#}
+{#                    position: 'top-end',#}
+{#                    showConfirmButton: false,#}
+{#                    timer: 3000,#}
+{#                    icon: 'success',#}
+{#                    title: 'Status updated successfully'#}
+{#                });#}
+{#            }#}
+{#        },#}
+{#        error: function() {#}
+{#            Swal.fire('Error!', 'Failed to update status', 'error');#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function markAsApplied(applicationId) {#}
+{#    Swal.fire({#}
+{#        title: 'Mark as Applied?',#}
+{#        text: 'This will update the application status and start follow-up tracking.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Mark Applied',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            updateApplicationStatus(applicationId, 'applied');#}
+{#            location.reload();#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function sendFollowup(applicationId) {#}
+{#    Swal.fire({#}
+{#        title: 'Send Follow-up?',#}
+{#        text: 'This will send a follow-up email using your default template.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Send Follow-up',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            $.post(`/followups/send/${applicationId}/`, {#}
+{#                csrfmiddlewaretoken: csrftoken#}
+{#            }).done(function(data) {#}
+{#                Swal.fire('Success!', 'Follow-up email sent successfully.', 'success');#}
+{#                setTimeout(() => location.reload(), 1500);#}
+{#            }).fail(function() {#}
+{#                Swal.fire('Error!', 'Failed to send follow-up email.', 'error');#}
+{#            });#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Bulk selection functionality#}
+{#document.getElementById('selectAll').addEventListener('change', function() {#}
+{#    const checkboxes = document.querySelectorAll('.app-checkbox');#}
+{#    checkboxes.forEach(checkbox => {#}
+{#        checkbox.checked = this.checked;#}
+{#    });#}
+{#});#}
+{##}
+{#// View toggle#}
+{#document.getElementById('list-view').addEventListener('change', function() {#}
+{#    if (this.checked) {#}
+{#        // Switch to list view (implement as needed)#}
+{#        console.log('Switching to list view');#}
+{#    }#}
+{#});#}
+{##}
+{#document.getElementById('pipeline-view').addEventListener('change', function() {#}
+{#    if (this.checked) {#}
+{#        // Switch to pipeline view (already shown)#}
+{#        console.log('Switching to pipeline view');#}
+{#    }#}
+{#});#}
+{#</script>#}
+{#{% endblock %>#}

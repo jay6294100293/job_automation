@@ -1,0 +1,560 @@
+<!-- templates/dashboard/interview_prep_detail.html -->
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Interview Prep: {{ application.company_name }} - Job Automation{% endblock %}
+
+{% block extra_css %}
+<style>
+    .prep-card {
+        transition: transform 0.2s;
+    }
+    .prep-card:hover {
+        transform: translateY(-2px);
+    }
+    .question-item {
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
+    .research-point {
+        background: #e7f3ff;
+        border-left: 4px solid #28a745;
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 4px;
+    }
+    .countdown-timer {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+    }
+    .practice-session {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:interview_prep' %}">Interview Prep</a></li>
+                    <li class="breadcrumb-item active">{{ application.company_name }}</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="display-6 fw-bold text-primary mb-1">
+                        <i class="fas fa-building"></i> {{ application.company_name }}
+                    </h2>
+                    <h4 class="text-muted">{{ application.job_title }}</h4>
+                </div>
+                <div class="text-end">
+                    {% if application.interview_scheduled_date %}
+                        <div class="countdown-timer p-3">
+                            {% if days_until_interview is not None %}
+                                <h3 class="mb-0">{{ days_until_interview }}</h3>
+                                <small>days until interview</small>
+                            {% endif %}
+                            <div class="mt-2">
+                                <small>{{ application.interview_scheduled_date|date:"M d, Y g:i A" }}</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">Quick Actions</h6>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary" onclick="startFullPractice()">
+                            <i class="fas fa-play"></i> Start Practice Session
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="printPrep()">
+                            <i class="fas fa-print"></i> Print Prep Sheet
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="generateNewQuestions()">
+                            <i class="fas fa-refresh"></i> Generate New Questions
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="exportToPDF()">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Left Column - Questions -->
+        <div class="col-lg-8">
+            <!-- Company-Specific Questions -->
+            <div class="card prep-card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-building"></i> Company-Specific Questions
+                        <span class="badge bg-light text-primary ms-2">{{ company_questions|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for question in company_questions %}
+                    <div class="question-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>Q{{ forloop.counter }}:</strong> {{ question }}
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary ms-2" onclick="practiceQuestion('{{ question|escapejs }}', 'company')">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb"></i>
+                                Tip: Research {{ application.company_name }}'s values and recent achievements
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        No company questions generated yet. Click "Generate New Questions" to create some.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Technical Questions -->
+            <div class="card prep-card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-code"></i> Technical Questions
+                        <span class="badge bg-light text-success ms-2">{{ technical_questions|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for question in technical_questions %}
+                    <div class="question-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>Q{{ forloop.counter }}:</strong> {{ question }}
+                            </div>
+                            <button class="btn btn-sm btn-outline-success ms-2" onclick="practiceQuestion('{{ question|escapejs }}', 'technical')">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb"></i>
+                                Tip: Provide specific examples and explain your thought process
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        No technical questions generated yet. Click "Generate New Questions" to create some.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Behavioral Questions -->
+            <div class="card prep-card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users"></i> Behavioral Questions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for question in "Tell me about yourself,Why do you want this job?,What are your strengths?,What are your weaknesses?,Describe a challenging situation,Why should we hire you?,Where do you see yourself in 5 years?,Tell me about a time you failed"|split:"," %}
+                    <div class="question-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>Q{{ forloop.counter }}:</strong> {{ question }}?
+                            </div>
+                            <button class="btn btn-sm btn-outline-warning ms-2" onclick="practiceQuestion('{{ question|escapejs }}', 'behavioral')">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb"></i>
+                                Tip: Use the STAR method (Situation, Task, Action, Result)
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Research & Tips -->
+        <div class="col-lg-4">
+            <!-- Company Research -->
+            <div class="card prep-card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-search"></i> Company Research Points
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for point in company_research %}
+                    <div class="research-point">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        {{ point }}
+                    </div>
+                    {% empty %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Research points will be generated automatically.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Job Details -->
+            <div class="card prep-card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-briefcase"></i> Job Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Position:</strong>
+                        <p class="mb-1">{{ application.job_title }}</p>
+                    </div>
+
+                    {% if application.location %}
+                    <div class="mb-3">
+                        <strong>Location:</strong>
+                        <p class="mb-1">{{ application.location }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if application.salary_range %}
+                    <div class="mb-3">
+                        <strong>Salary Range:</strong>
+                        <p class="mb-1">{{ application.salary_range }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if application.remote_option %}
+                    <div class="mb-3">
+                        <strong>Remote Options:</strong>
+                        <p class="mb-1">{{ application.remote_option }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <strong>Applied Date:</strong>
+                        <p class="mb-1">{{ application.applied_date|date:"M d, Y" }}</p>
+                    </div>
+
+                    {% if application.job_url %}
+                    <div class="mb-3">
+                        <a href="{{ application.job_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt"></i> View Job Posting
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Interview Tips -->
+            <div class="card prep-card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Interview Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>STAR Method</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>S</strong>ituation - Set the context</li>
+                            <li><strong>T</strong>ask - Describe your responsibility</li>
+                            <li><strong>A</strong>ction - Explain what you did</li>
+                            <li><strong>R</strong>esult - Share the outcome</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>Key Reminders</h6>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Arrive 10-15 minutes early</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Bring copies of your resume</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Prepare questions to ask them</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Practice good eye contact</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Send thank you email within 24h</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Practice Session -->
+            <div class="card prep-card shadow-sm practice-session">
+                <div class="card-body text-center">
+                    <h6><i class="fas fa-stopwatch"></i> Quick Practice</h6>
+                    <p class="small text-muted">Practice with random questions</p>
+                    <button class="btn btn-warning btn-sm" onclick="startQuickPractice()">
+                        <i class="fas fa-random"></i> Random Question
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Practice Modal -->
+<div class="modal fade" id="practiceModal" tabindex="-1" aria-labelledby="practiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="practiceModalLabel">
+                    <i class="fas fa-microphone"></i> Practice Session
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="practiceContent">
+                    <!-- Content will be loaded here -->
+                </div>
+                <div class="mt-3">
+                    <label for="practiceAnswer" class="form-label">Your Answer:</label>
+                    <textarea id="practiceAnswer" class="form-control" rows="6" placeholder="Type your answer here..."></textarea>
+                    <div class="form-text">
+                        <i class="fas fa-clock"></i> Take your time to think through your response.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="saveAnswer()">
+                    <i class="fas fa-save"></i> Save Answer
+                </button>
+                <button type="button" class="btn btn-primary" onclick="nextPracticeQuestion()">
+                    <i class="fas fa-arrow-right"></i> Next Question
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes Modal -->
+<div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notesModalLabel">Interview Notes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="interviewNotes" class="form-control" rows="8" placeholder="Add your interview preparation notes here...">{{ application.notes }}</textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPracticeQuestions = [];
+let currentQuestionIndex = 0;
+let practiceAnswers = {};
+
+function startFullPractice() {
+    // Combine all questions for full practice
+    currentPracticeQuestions = [
+        ...{{ company_questions|safe }},
+        ...{{ technical_questions|safe }},
+        'Tell me about yourself',
+        'Why do you want this job?',
+        'What are your strengths?'
+    ];
+    currentQuestionIndex = 0;
+    practiceAnswers = {};
+
+    showPracticeQuestion();
+}
+
+function practiceQuestion(question, type) {
+    currentPracticeQuestions = [question];
+    currentQuestionIndex = 0;
+
+    showPracticeQuestion();
+}
+
+function showPracticeQuestion() {
+    if (currentQuestionIndex < currentPracticeQuestions.length) {
+        const question = currentPracticeQuestions[currentQuestionIndex];
+
+        document.getElementById('practiceContent').innerHTML = `
+            <div class="alert alert-primary">
+                <strong>Question ${currentQuestionIndex + 1} of ${currentPracticeQuestions.length}</strong>
+            </div>
+            <h5>${question}</h5>
+            <div class="mt-3">
+                <div class="d-flex justify-content-between">
+                    <small class="text-muted">Practice tip: Think before you speak</small>
+                    <small class="text-muted">Time: <span id="timer">00:00</span></small>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('practiceAnswer').value = practiceAnswers[question] || '';
+
+        new bootstrap.Modal(document.getElementById('practiceModal')).show();
+        startTimer();
+    } else {
+        alert('Practice session completed! Great job!');
+    }
+}
+
+function nextPracticeQuestion() {
+    saveCurrentAnswer();
+    currentQuestionIndex++;
+    showPracticeQuestion();
+}
+
+function saveCurrentAnswer() {
+    if (currentQuestionIndex < currentPracticeQuestions.length) {
+        const question = currentPracticeQuestions[currentQuestionIndex];
+        const answer = document.getElementById('practiceAnswer').value;
+        practiceAnswers[question] = answer;
+    }
+}
+
+function saveAnswer() {
+    saveCurrentAnswer();
+    alert('Answer saved!');
+}
+
+function startQuickPractice() {
+    const allQuestions = [
+        ...{{ company_questions|safe }},
+        ...{{ technical_questions|safe }},
+        'Tell me about yourself',
+        'Why do you want this job?',
+        'What are your strengths?',
+        'What are your weaknesses?',
+        'Describe a challenging situation you faced'
+    ];
+
+    if (allQuestions.length > 0) {
+        const randomQuestion = allQuestions[Math.floor(Math.random() * allQuestions.length)];
+        practiceQuestion(randomQuestion, 'random');
+    }
+}
+
+function generateNewQuestions() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    button.disabled = true;
+
+    fetch(`/dashboard/api/generate-questions/{{ application.id }}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error generating questions: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error generating questions. Please try again.');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function saveNotes() {
+    const notes = document.getElementById('interviewNotes').value;
+
+    fetch(`/dashboard/api/save-notes/{{ application.id }}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({notes: notes})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
+            alert('Notes saved successfully!');
+        } else {
+            alert('Error saving notes: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving notes. Please try again.');
+    });
+}
+
+function printPrep() {
+    window.print();
+}
+
+function exportToPDF() {
+    alert('PDF export feature coming soon!');
+}
+
+let timerInterval;
+let seconds = 0;
+
+function startTimer() {
+    seconds = 0;
+    timerInterval = setInterval(() => {
+        seconds++;
+        const minutes = Math.floor(seconds / 60);
+        const displaySeconds = seconds % 60;
+        document.getElementById('timer').textContent =
+            `${minutes.toString().padStart(2, '0')}:${displaySeconds.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+function stopTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+}
+
+// Clean up timer when modal closes
+document.getElementById('practiceModal').addEventListener('hidden.bs.modal', function () {
+    stopTimer();
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,1543 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Analytics - Job Automation{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* Analytics-specific styles */
+    .analytics-header {
+        margin-bottom: var(--space-xl);
+        animation: slideUp 0.5s ease forwards;
+    }
+
+    .analytics-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--space-sm);
+        letter-spacing: -0.025em;
+    }
+
+    .analytics-subtitle {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-lg);
+    }
+
+    /* Stats Overview */
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+    }
+
+    .stat-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-slow);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        opacity: 0;
+        transition: opacity var(--transition-slow);
+    }
+
+    .stat-card.success::before {
+        background: linear-gradient(90deg, var(--success-500), #22c55e);
+    }
+
+    .stat-card.warning::before {
+        background: linear-gradient(90deg, var(--warning-500), #f59e0b);
+    }
+
+    .stat-card.info::before {
+        background: linear-gradient(90deg, var(--info-500), #3b82f6);
+    }
+
+    .stat-card.primary::before {
+        background: linear-gradient(90deg, var(--accent-primary), var(--primary-600));
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent-primary);
+    }
+
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--space-md);
+    }
+
+    .stat-title {
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .stat-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        transition: all var(--transition-slow);
+    }
+
+    .stat-icon.success {
+        background: var(--success-50);
+        color: var(--success-500);
+    }
+
+    .stat-icon.warning {
+        background: var(--warning-50);
+        color: var(--warning-500);
+    }
+
+    .stat-icon.info {
+        background: var(--info-50);
+        color: var(--info-500);
+    }
+
+    .stat-icon.primary {
+        background: var(--accent-light);
+        color: var(--accent-primary);
+    }
+
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--space-xs);
+        line-height: 1;
+    }
+
+    .stat-change {
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .stat-change.positive { color: var(--success-500); }
+    .stat-change.negative { color: var(--danger-500); }
+    .stat-change.neutral { color: var(--text-tertiary); }
+
+    /* Chart Container */
+    .chart-container {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        box-shadow: var(--shadow-md);
+        margin-bottom: var(--space-xl);
+        transition: all var(--transition-slow);
+    }
+
+    .chart-container:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .chart-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .chart-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .chart-subtitle {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    /* Mock Chart Styles */
+    .chart-placeholder {
+        height: 300px;
+        background: linear-gradient(135deg, var(--accent-light) 0%, var(--info-50) 100%);
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-bottom: var(--space-md);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chart-placeholder::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    /* Progress Ring */
+    .progress-ring {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto var(--space-md);
+    }
+
+    .progress-ring-circle {
+        fill: none;
+        stroke: var(--border-primary);
+        stroke-width: 4;
+        transition: stroke-dasharray 0.5s ease;
+    }
+
+    .progress-ring-fill {
+        fill: none;
+        stroke: var(--accent-primary);
+        stroke-width: 4;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dasharray 0.5s ease;
+    }
+
+    /* Insight Cards */
+    .insight-card {
+        background: linear-gradient(135deg, var(--accent-light) 0%, var(--info-50) 100%);
+        border: 1px solid var(--accent-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+    }
+
+    .insight-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+    }
+
+    .insight-icon {
+        width: 24px;
+        height: 24px;
+        background: var(--accent-primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+    }
+
+    .insight-title {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .insight-content {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    /* Monthly Chart Bars */
+    .monthly-chart {
+        display: flex;
+        align-items: end;
+        gap: var(--space-md);
+        height: 200px;
+        padding: var(--space-md) 0;
+    }
+
+    .monthly-bar {
+        flex: 1;
+        background: linear-gradient(to top, var(--accent-primary), var(--info-500));
+        border-radius: var(--radius-sm);
+        min-height: 20px;
+        position: relative;
+        transition: all var(--transition-slow);
+        cursor: pointer;
+    }
+
+    .monthly-bar:hover {
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+
+    .bar-label {
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .bar-value {
+        position: absolute;
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: var(--bg-secondary);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+    }
+
+    .monthly-bar:hover .bar-value {
+        opacity: 1;
+    }
+
+    /* Grid Layouts */
+    .analytics-grid {
+        display: grid;
+        gap: var(--space-xl);
+        margin-bottom: var(--space-xl);
+    }
+
+    .analytics-grid.two-column {
+        grid-template-columns: 2fr 1fr;
+    }
+
+    .analytics-grid.three-column {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .analytics-grid.two-column {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-overview {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .analytics-grid.three-column {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-md);
+        }
+
+        .monthly-chart {
+            height: 150px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats-overview {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Analytics Header -->
+<div class="analytics-header">
+    <h1 class="analytics-title">
+        <i class="fas fa-chart-bar"></i>
+        Analytics Dashboard
+    </h1>
+    <p class="analytics-subtitle">
+        Comprehensive insights into your job search performance and trends
+    </p>
+</div>
+
+<!-- Stats Overview - Using Real Data from success_metrics -->
+<div class="stats-overview">
+    <div class="stat-card primary" style="animation-delay: 0.1s;">
+        <div class="stat-header">
+            <div class="stat-title">Total Applications</div>
+            <div class="stat-icon primary">
+                <i class="fas fa-briefcase"></i>
+            </div>
+        </div>
+        <div class="stat-value" data-value="{{ success_metrics.total_applications }}">{{ success_metrics.total_applications }}</div>
+        <div class="stat-change neutral">
+            <i class="fas fa-info-circle"></i>
+            Applications submitted
+        </div>
+    </div>
+
+    <div class="stat-card success" style="animation-delay: 0.2s;">
+        <div class="stat-header">
+            <div class="stat-title">Response Rate</div>
+            <div class="stat-icon success">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <div class="stat-value" data-value="{{ success_metrics.response_rate|floatformat:1 }}">{{ success_metrics.response_rate|floatformat:1 }}%</div>
+        <div class="stat-change {% if success_metrics.response_rate > 15 %}positive{% elif success_metrics.response_rate > 10 %}neutral{% else %}negative{% endif %}">
+            <i class="fas fa-{% if success_metrics.response_rate > 15 %}arrow-up{% elif success_metrics.response_rate > 10 %}minus{% else %}arrow-down{% endif %}"></i>
+            {% if success_metrics.response_rate > 15 %}Above average{% elif success_metrics.response_rate > 10 %}Average performance{% else %}Room for improvement{% endif %}
+        </div>
+    </div>
+
+    <div class="stat-card warning" style="animation-delay: 0.3s;">
+        <div class="stat-header">
+            <div class="stat-title">Interview Rate</div>
+            <div class="stat-icon warning">
+                <i class="fas fa-handshake"></i>
+            </div>
+        </div>
+        <div class="stat-value" data-value="{{ success_metrics.interview_rate|floatformat:1 }}">{{ success_metrics.interview_rate|floatformat:1 }}%</div>
+        <div class="stat-change {% if success_metrics.interview_rate > 10 %}positive{% elif success_metrics.interview_rate > 5 %}neutral{% else %}negative{% endif %}">
+            <i class="fas fa-{% if success_metrics.interview_rate > 10 %}arrow-up{% elif success_metrics.interview_rate > 5 %}minus{% else %}arrow-down{% endif %}"></i>
+            {% if success_metrics.interview_rate > 0 %}{{ success_metrics.interview_rate|floatformat:1 }}% of applications{% else %}No interviews yet{% endif %}
+        </div>
+    </div>
+
+    <div class="stat-card info" style="animation-delay: 0.4s;">
+        <div class="stat-header">
+            <div class="stat-title">Offer Rate</div>
+            <div class="stat-icon info">
+                <i class="fas fa-star"></i>
+            </div>
+        </div>
+        <div class="stat-value" data-value="{{ success_metrics.offer_rate|floatformat:1 }}">{{ success_metrics.offer_rate|floatformat:1 }}%</div>
+        <div class="stat-change {% if success_metrics.offer_rate > 5 %}positive{% elif success_metrics.offer_rate > 0 %}neutral{% else %}negative{% endif %}">
+            <i class="fas fa-{% if success_metrics.offer_rate > 5 %}arrow-up{% elif success_metrics.offer_rate > 0 %}star{% else %}circle{% endif %}"></i>
+            {% if success_metrics.offer_rate > 0 %}{{ success_metrics.offer_rate|floatformat:1 }}% success rate{% else %}Keep applying!{% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Grid -->
+<div class="analytics-grid two-column">
+    <!-- Monthly Trends Chart - Using Real monthly_data -->
+    <div class="chart-container">
+        <div class="chart-header">
+            <div>
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-line"></i>
+                    Monthly Application Trends
+                </h3>
+                <p class="chart-subtitle">Applications submitted over the last 6 months</p>
+            </div>
+        </div>
+
+        {% if monthly_data %}
+        <div class="monthly-chart">
+            {% for month_data in monthly_data %}
+            <div class="monthly-bar" style="height: {% if month_data.applications > 0 %}{{ month_data.applications|add:0 }}0{% else %}20{% endif %}%;">
+                <div class="bar-label">{{ month_data.month|slice:":3" }}</div>
+                <div class="bar-value">{{ month_data.applications }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="chart-placeholder">
+            <div style="text-align: center; z-index: 1;">
+                <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <div>Start applying to jobs to see monthly trends</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Performance Overview -->
+    <div class="chart-container">
+        <div class="chart-header">
+            <div>
+                <h3 class="chart-title">
+                    <i class="fas fa-bullseye"></i>
+                    Performance Overview
+                </h3>
+                <p class="chart-subtitle">Current success metrics</p>
+            </div>
+        </div>
+
+        <!-- Progress Rings -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg); text-align: center;">
+            <div>
+                <svg class="progress-ring" viewBox="0 0 80 80">
+                    <circle class="progress-ring-circle" cx="40" cy="40" r="30"></circle>
+                    <circle class="progress-ring-fill" cx="40" cy="40" r="30"
+                            style="stroke-dasharray: 157 157; stroke-dashoffset: {{ 157|floatformat:0|add:0|add:'-'|add:success_metrics.response_rate|floatformat:0|add:'57'|floatformat:0 }};"></circle>
+                </svg>
+                <div class="text-sm font-bold text-primary">Response Rate</div>
+                <div class="text-xs text-secondary">{{ success_metrics.response_rate|floatformat:1 }}% of applications</div>
+            </div>
+            <div>
+                <svg class="progress-ring" viewBox="0 0 80 80">
+                    <circle class="progress-ring-circle" cx="40" cy="40" r="30"></circle>
+                    <circle class="progress-ring-fill" cx="40" cy="40" r="30"
+                            style="stroke-dasharray: 157 157; stroke-dashoffset: {{ 157|floatformat:0|add:0|add:'-'|add:success_metrics.interview_rate|floatformat:0|add:'57'|floatformat:0 }}; stroke: var(--success-500);"></circle>
+                </svg>
+                <div class="text-sm font-bold text-primary">Interview Rate</div>
+                <div class="text-xs text-secondary">{{ success_metrics.interview_rate|floatformat:1 }}% of applications</div>
+            </div>
+        </div>
+
+        <!-- Key Insights -->
+        <div style="margin-top: var(--space-lg);">
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h4 class="insight-title">Performance Insight</h4>
+                </div>
+                <div class="insight-content">
+                    {% if success_metrics.total_applications > 0 %}
+                        {% if success_metrics.response_rate > 20 %}
+                            Excellent! Your {{ success_metrics.response_rate|floatformat:1 }}% response rate is well above average. Keep applying to similar positions.
+                        {% elif success_metrics.response_rate > 15 %}
+                            Good performance! Your {{ success_metrics.response_rate|floatformat:1 }}% response rate is above the typical 10-15% range.
+                        {% elif success_metrics.response_rate > 10 %}
+                            You're on track with a {{ success_metrics.response_rate|floatformat:1 }}% response rate. Consider optimizing your applications for better results.
+                        {% elif success_metrics.response_rate > 0 %}
+                            Your {{ success_metrics.response_rate|floatformat:1 }}% response rate has room for improvement. Try refining your resume and targeting more relevant positions.
+                        {% else %}
+                            Keep applying! It often takes multiple applications before getting responses. Consider reviewing and optimizing your approach.
+                        {% endif %}
+                    {% else %}
+                        Start applying to jobs to get personalized insights about your application performance and optimization opportunities.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Application Status Breakdown -->
+<div class="chart-container">
+    <div class="chart-header">
+        <div>
+            <h3 class="chart-title">
+                <i class="fas fa-tasks"></i>
+                Application Status Distribution
+            </h3>
+            <p class="chart-subtitle">Current status of all your applications</p>
+        </div>
+    </div>
+
+    {% if success_metrics.total_applications > 0 %}
+    <div class="analytics-grid three-column">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="text-2xl font-bold text-primary mb-2">Applications</div>
+                <div class="text-xl font-bold text-accent mb-2">{{ success_metrics.total_applications }}</div>
+                <div class="text-sm text-secondary mb-3">Total Submitted</div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-briefcase"></i>
+                    100% of your activity
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="text-2xl font-bold text-primary mb-2">Responses</div>
+                <div class="text-xl font-bold text-success-500 mb-2">{% widthratio success_metrics.response_rate 100 success_metrics.total_applications %}</div>
+                <div class="text-sm text-secondary mb-3">Companies Replied</div>
+                <div class="stat-change {% if success_metrics.response_rate > 15 %}positive{% else %}neutral{% endif %}">
+                    <i class="fas fa-reply"></i>
+                    {{ success_metrics.response_rate|floatformat:1 }}% response rate
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="text-2xl font-bold text-primary mb-2">Interviews</div>
+                <div class="text-xl font-bold text-warning-500 mb-2">{% widthratio success_metrics.interview_rate 100 success_metrics.total_applications %}</div>
+                <div class="text-sm text-secondary mb-3">Scheduled</div>
+                <div class="stat-change {% if success_metrics.interview_rate > 5 %}positive{% else %}neutral{% endif %}">
+                    <i class="fas fa-calendar-check"></i>
+                    {{ success_metrics.interview_rate|floatformat:1 }}% interview rate
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="chart-placeholder">
+        <div style="text-align: center; z-index: 1;">
+            <i class="fas fa-chart-pie" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+            <div>No applications yet</div>
+            <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">
+                Start applying to jobs to see your application status distribution
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Success Tips -->
+<div class="insight-card">
+    <div class="insight-header">
+        <div class="insight-icon">
+            <i class="fas fa-rocket"></i>
+        </div>
+        <h4 class="insight-title">Tips to Improve Your Success Rate</h4>
+    </div>
+    <div class="insight-content">
+        <div class="analytics-grid three-column" style="margin-top: var(--space-md);">
+            <div>
+                <strong><i class="fas fa-target"></i> Targeting:</strong> Focus on jobs that closely match your skills and experience. Quality applications often outperform quantity.
+            </div>
+            <div>
+                <strong><i class="fas fa-clock"></i> Timing:</strong> Apply to new job postings within the first 24-48 hours when possible. Early applications get more attention.
+            </div>
+            <div>
+                <strong><i class="fas fa-paper-plane"></i> Follow-up:</strong> Send polite follow-up emails 1-2 weeks after applying to show continued interest and professionalism.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate stat values on load
+    const statValues = document.querySelectorAll('.stat-value');
+    statValues.forEach((stat, index) => {
+        const textContent = stat.textContent;
+        const numericValue = parseFloat(textContent.replace(/[^\d.]/g, ''));
+
+        if (!isNaN(numericValue)) {
+            let currentValue = 0;
+            const increment = numericValue / 50;
+            const suffix = textContent.replace(/[\d.]/g, '');
+
+            setTimeout(() => {
+                const timer = setInterval(() => {
+                    currentValue += increment;
+                    if (currentValue >= numericValue) {
+                        currentValue = numericValue;
+                        clearInterval(timer);
+                    }
+
+                    if (textContent.includes('%')) {
+                        stat.textContent = currentValue.toFixed(1) + '%';
+                    } else {
+                        stat.textContent = Math.round(currentValue) + suffix;
+                    }
+                }, 30);
+            }, index * 200);
+        }
+    });
+
+    // Animate monthly chart bars
+    setTimeout(() => {
+        const monthlyBars = document.querySelectorAll('.monthly-bar');
+        monthlyBars.forEach((bar, index) => {
+            const originalHeight = bar.style.height;
+            bar.style.height = '20px';
+            setTimeout(() => {
+                bar.style.height = originalHeight;
+            }, index * 100);
+        });
+    }, 1000);
+
+    // Add click handlers to monthly bars
+    document.querySelectorAll('.monthly-bar').forEach(bar => {
+        bar.addEventListener('click', function() {
+            const month = this.querySelector('.bar-label').textContent;
+            const value = this.querySelector('.bar-value').textContent;
+            dashboard.showNotification(`${month}: ${value} applications`, 'info', 3000);
+        });
+    });
+});
+
+// Export analytics data for potential chart library integration
+window.analyticsData = {
+    monthlyData: {{ monthly_data|safe }},
+    successMetrics: {{ success_metrics|safe }},
+
+    // Helper function to format data for Chart.js
+    getMonthlyChartData: function() {
+        return {
+            labels: this.monthlyData.map(item => item.month),
+            datasets: [{
+                label: 'Applications',
+                data: this.monthlyData.map(item => item.applications),
+                backgroundColor: 'var(--accent-primary)',
+                borderColor: 'var(--primary-600)',
+                borderWidth: 2,
+                borderRadius: 4,
+            }]
+        };
+    }
+};
+
+console.log('Analytics data loaded:', window.analyticsData);
+</script>
+{% endblock %}
+
+{#{% extends 'base.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Analytics - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container-fluid">#}
+{#    <!-- Page Header -->#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="d-flex justify-content-between align-items-center">#}
+{#                <div>#}
+{#                    <h2 class="display-6 fw-bold text-primary">#}
+{#                        <i class="fas fa-chart-line"></i> Job Search Analytics#}
+{#                    </h2>#}
+{#                    <p class="text-muted">Track your job search performance and optimize your strategy</p>#}
+{#                </div>#}
+{#                <div class="btn-group" role="group">#}
+{#                    <input type="radio" class="btn-check" name="timeRange" id="week" value="7" checked>#}
+{#                    <label class="btn btn-outline-primary" for="week">7 Days</label>#}
+{#                    #}
+{#                    <input type="radio" class="btn-check" name="timeRange" id="month" value="30">#}
+{#                    <label class="btn btn-outline-primary" for="month">30 Days</label>#}
+{#                    #}
+{#                    <input type="radio" class="btn-check" name="timeRange" id="quarter" value="90">#}
+{#                    <label class="btn btn-outline-primary" for="quarter">90 Days</label>#}
+{#                    #}
+{#                    <input type="radio" class="btn-check" name="timeRange" id="year" value="365">#}
+{#                    <label class="btn btn-outline-primary" for="year">1 Year</label>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Key Metrics Row -->#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-md-3">#}
+{#            <div class="card stats-card border-primary">#}
+{#                <div class="card-body text-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h3 class="text-primary fw-bold" id="totalApplications">{{ success_metrics.total_applications }}</h3>#}
+{#                            <p class="text-muted mb-0">Total Applications</p>#}
+{#                        </div>#}
+{#                        <div class="stats-icon bg-primary">#}
+{#                            <i class="fas fa-clipboard-list text-white"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="progress mt-2" style="height: 4px;">#}
+{#                        <div class="progress-bar bg-primary" style="width: 100%"></div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        #}
+{#        <div class="col-md-3">#}
+{#            <div class="card stats-card border-success">#}
+{#                <div class="card-body text-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h3 class="text-success fw-bold" id="responseRate">{{ success_metrics.response_rate|floatformat:1 }}%</h3>#}
+{#                            <p class="text-muted mb-0">Response Rate</p>#}
+{#                        </div>#}
+{#                        <div class="stats-icon bg-success">#}
+{#                            <i class="fas fa-reply text-white"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="progress mt-2" style="height: 4px;">#}
+{#                        <div class="progress-bar bg-success" style="width: {{ success_metrics.response_rate }}%"></div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        #}
+{#        <div class="col-md-3">#}
+{#            <div class="card stats-card border-warning">#}
+{#                <div class="card-body text-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h3 class="text-warning fw-bold" id="interviewRate">{{ success_metrics.interview_rate|floatformat:1 }}%</h3>#}
+{#                            <p class="text-muted mb-0">Interview Rate</p>#}
+{#                        </div>#}
+{#                        <div class="stats-icon bg-warning">#}
+{#                            <i class="fas fa-calendar-check text-white"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="progress mt-2" style="height: 4px;">#}
+{#                        <div class="progress-bar bg-warning" style="width: {{ success_metrics.interview_rate }}%"></div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        #}
+{#        <div class="col-md-3">#}
+{#            <div class="card stats-card border-info">#}
+{#                <div class="card-body text-center">#}
+{#                    <div class="d-flex justify-content-between align-items-center">#}
+{#                        <div>#}
+{#                            <h3 class="text-info fw-bold" id="offerRate">{{ success_metrics.offer_rate|floatformat:1 }}%</h3>#}
+{#                            <p class="text-muted mb-0">Offer Rate</p>#}
+{#                        </div>#}
+{#                        <div class="stats-icon bg-info">#}
+{#                            <i class="fas fa-trophy text-white"></i>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <div class="progress mt-2" style="height: 4px;">#}
+{#                        <div class="progress-bar bg-info" style="width: {{ success_metrics.offer_rate }}%"></div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Charts Row -->#}
+{#    <div class="row mb-4">#}
+{#        <!-- Applications Trend Chart -->#}
+{#        <div class="col-lg-8">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-trending-up text-primary"></i> Application Trends#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <canvas id="trendsChart" height="100"></canvas>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        #}
+{#        <!-- Application Status Pie Chart -->#}
+{#        <div class="col-lg-4">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-chart-pie text-success"></i> Application Status#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <canvas id="statusChart" height="200"></canvas>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Performance Metrics Row -->#}
+{#    <div class="row mb-4">#}
+{#        <!-- Response Time Analysis -->#}
+{#        <div class="col-lg-6">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-clock text-warning"></i> Response Time Analysis#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <canvas id="responseTimeChart" height="150"></canvas>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        #}
+{#        <!-- Success Rate by Job Category -->#}
+{#        <div class="col-lg-6">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-bullseye text-info"></i> Success Rate by Category#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <canvas id="categorySuccessChart" height="150"></canvas>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Detailed Analytics Row -->#}
+{#    <div class="row mb-4">#}
+{#        <!-- Follow-up Performance -->#}
+{#        <div class="col-lg-4">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-envelope text-primary"></i> Follow-up Performance#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="row text-center">#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-primary">85</h4>#}
+{#                            <small class="text-muted">Sent</small>#}
+{#                        </div>#}
+{#                        <div class="col-6">#}
+{#                            <h4 class="text-success">23</h4>#}
+{#                            <small class="text-muted">Responses</small>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    <hr>#}
+{#                    <div class="follow-up-timeline">#}
+{#                        <div class="timeline-item">#}
+{#                            <span class="timeline-dot bg-success"></span>#}
+{#                            <div class="timeline-content">#}
+{#                                <small>1-week follow-up: <strong>65% response rate</strong></small>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="timeline-item">#}
+{#                            <span class="timeline-dot bg-warning"></span>#}
+{#                            <div class="timeline-content">#}
+{#                                <small>2-week follow-up: <strong>25% response rate</strong></small>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="timeline-item">#}
+{#                            <span class="timeline-dot bg-danger"></span>#}
+{#                            <div class="timeline-content">#}
+{#                                <small>1-month follow-up: <strong>10% response rate</strong></small>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        #}
+{#        <!-- Document Performance -->#}
+{#        <div class="col-lg-4">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-file-alt text-success"></i> Document Performance#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="document-stats">#}
+{#                        <div class="d-flex justify-content-between mb-2">#}
+{#                            <span>AI Resume v3</span>#}
+{#                            <span class="badge bg-success">32% response</span>#}
+{#                        </div>#}
+{#                        <div class="progress mb-3" style="height: 6px;">#}
+{#                            <div class="progress-bar bg-success" style="width: 32%"></div>#}
+{#                        </div>#}
+{#                        #}
+{#                        <div class="d-flex justify-content-between mb-2">#}
+{#                            <span>AI Resume v2</span>#}
+{#                            <span class="badge bg-warning">28% response</span>#}
+{#                        </div>#}
+{#                        <div class="progress mb-3" style="height: 6px;">#}
+{#                            <div class="progress-bar bg-warning" style="width: 28%"></div>#}
+{#                        </div>#}
+{#                        #}
+{#                        <div class="d-flex justify-content-between mb-2">#}
+{#                            <span>Original Resume</span>#}
+{#                            <span class="badge bg-danger">15% response</span>#}
+{#                        </div>#}
+{#                        <div class="progress mb-3" style="height: 6px;">#}
+{#                            <div class="progress-bar bg-danger" style="width: 15%"></div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    #}
+{#                    <hr>#}
+{#                    <div class="text-center">#}
+{#                        <small class="text-success">#}
+{#                            <i class="fas fa-arrow-up"></i> #}
+{#                            AI optimization improved response rate by <strong>113%</strong>#}
+{#                        </small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        #}
+{#        <!-- Market Intelligence -->#}
+{#        <div class="col-lg-4">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-market text-info"></i> Market Intelligence#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="market-stat mb-3">#}
+{#                        <div class="d-flex justify-content-between">#}
+{#                            <span>Avg. Response Time</span>#}
+{#                            <strong>5.2 days</strong>#}
+{#                        </div>#}
+{#                        <small class="text-muted">Industry average: 7.8 days</small>#}
+{#                    </div>#}
+{#                    #}
+{#                    <div class="market-stat mb-3">#}
+{#                        <div class="d-flex justify-content-between">#}
+{#                            <span>Hot Skills</span>#}
+{#                            <span class="badge bg-danger">Python, AI/ML</span>#}
+{#                        </div>#}
+{#                        <small class="text-muted">+35% demand this month</small>#}
+{#                    </div>#}
+{#                    #}
+{#                    <div class="market-stat mb-3">#}
+{#                        <div class="d-flex justify-content-between">#}
+{#                            <span>Best Apply Time</span>#}
+{#                            <strong>Tuesday 10 AM</strong>#}
+{#                        </div>#}
+{#                        <small class="text-muted">2.3x higher response rate</small>#}
+{#                    </div>#}
+{#                    #}
+{#                    <div class="market-stat">#}
+{#                        <div class="d-flex justify-content-between">#}
+{#                            <span>Salary Trend</span>#}
+{#                            <span class="text-success">#}
+{#                                <i class="fas fa-arrow-up"></i> +8.5%#}
+{#                            </span>#}
+{#                        </div>#}
+{#                        <small class="text-muted">Your target range</small>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Recommendations Row -->#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-gradient-primary text-white">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-lightbulb"></i> AI-Powered Recommendations#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="row">#}
+{#                        <div class="col-lg-4">#}
+{#                            <div class="recommendation-card">#}
+{#                                <div class="rec-icon bg-success">#}
+{#                                    <i class="fas fa-calendar-plus text-white"></i>#}
+{#                                </div>#}
+{#                                <div class="rec-content">#}
+{#                                    <h6 class="text-success">Optimize Timing</h6>#}
+{#                                    <p class="small mb-2">Apply on Tuesdays between 9-11 AM for 40% higher response rates</p>#}
+{#                                    <button class="btn btn-sm btn-outline-success">Schedule Applications</button>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        #}
+{#                        <div class="col-lg-4">#}
+{#                            <div class="recommendation-card">#}
+{#                                <div class="rec-icon bg-info">#}
+{#                                    <i class="fas fa-edit text-white"></i>#}
+{#                                </div>#}
+{#                                <div class="rec-content">#}
+{#                                    <h6 class="text-info">Improve Resume</h6>#}
+{#                                    <p class="small mb-2">Add "Machine Learning" and "Data Visualization" keywords for better ATS matching</p>#}
+{#                                    <button class="btn btn-sm btn-outline-info">Update Resume</button>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        #}
+{#                        <div class="col-lg-4">#}
+{#                            <div class="recommendation-card">#}
+{#                                <div class="rec-icon bg-warning">#}
+{#                                    <i class="fas fa-envelope text-white"></i>#}
+{#                                </div>#}
+{#                                <div class="rec-content">#}
+{#                                    <h6 class="text-warning">Follow-up Strategy</h6>#}
+{#                                    <p class="small mb-2">Send follow-ups 7 days after application for optimal results</p>#}
+{#                                    <button class="btn btn-sm btn-outline-warning">Setup Auto Follow-up</button>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Monthly Breakdown Table -->#}
+{#    <div class="row">#}
+{#        <div class="col-12">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-header bg-white d-flex justify-content-between align-items-center">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-table text-secondary"></i> Monthly Performance Breakdown#}
+{#                    </h5>#}
+{#                    <button class="btn btn-sm btn-outline-primary" onclick="exportData()">#}
+{#                        <i class="fas fa-download"></i> Export Data#}
+{#                    </button>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="table-responsive">#}
+{#                        <table class="table table-hover">#}
+{#                            <thead class="table-light">#}
+{#                                <tr>#}
+{#                                    <th>Month</th>#}
+{#                                    <th>Applications</th>#}
+{#                                    <th>Responses</th>#}
+{#                                    <th>Interviews</th>#}
+{#                                    <th>Offers</th>#}
+{#                                    <th>Response Rate</th>#}
+{#                                    <th>Success Score</th>#}
+{#                                </tr>#}
+{#                            </thead>#}
+{#                            <tbody id="monthlyData">#}
+{#                                {% for month in monthly_data %}#}
+{#                                <tr>#}
+{#                                    <td>{{ month.month }}</td>#}
+{#                                    <td>{{ month.applications }}</td>#}
+{#                                    <td>{{ month.responses|default:0 }}</td>#}
+{#                                    <td>{{ month.interviews|default:0 }}</td>#}
+{#                                    <td>{{ month.offers|default:0 }}</td>#}
+{#                                    <td>#}
+{#                                        <span class="badge bg-{% if month.response_rate >= 25 %}success{% elif month.response_rate >= 15 %}warning{% else %}danger{% endif %}">#}
+{#                                            {{ month.response_rate|default:0|floatformat:1 }}%#}
+{#                                        </span>#}
+{#                                    </td>#}
+{#                                    <td>#}
+{#                                        <div class="progress" style="height: 20px;">#}
+{#                                            <div class="progress-bar bg-gradient-success" #}
+{#                                                 style="width: {{ month.success_score|default:0 }}%">#}
+{#                                                {{ month.success_score|default:0|floatformat:0 }}#}
+{#                                            </div>#}
+{#                                        </div>#}
+{#                                    </td>#}
+{#                                </tr>#}
+{#                                {% empty %}#}
+{#                                <tr>#}
+{#                                    <td colspan="7" class="text-center text-muted">#}
+{#                                        <i class="fas fa-chart-line fa-2x mb-2"></i>#}
+{#                                        <br>No data available yet. Start applying to jobs to see analytics!#}
+{#                                    </td>#}
+{#                                </tr>#}
+{#                                {% endfor %}#}
+{#                            </tbody>#}
+{#                        </table>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.stats-card {#}
+{#    border-left: 4px solid;#}
+{#    transition: all 0.3s ease;#}
+{#}#}
+{##}
+{#.stats-card:hover {#}
+{#    transform: translateY(-2px);#}
+{#    box-shadow: 0 4px 15px rgba(0,0,0,0.1);#}
+{#}#}
+{##}
+{#.stats-icon {#}
+{#    width: 50px;#}
+{#    height: 50px;#}
+{#    border-radius: 50%;#}
+{#    display: flex;#}
+{#    align-items: center;#}
+{#    justify-content: center;#}
+{#    font-size: 1.2rem;#}
+{#}#}
+{##}
+{#.follow-up-timeline {#}
+{#    position: relative;#}
+{#    padding-left: 20px;#}
+{#}#}
+{##}
+{#.follow-up-timeline::before {#}
+{#    content: '';#}
+{#    position: absolute;#}
+{#    left: 8px;#}
+{#    top: 0;#}
+{#    height: 100%;#}
+{#    width: 2px;#}
+{#    background: #dee2e6;#}
+{#}#}
+{##}
+{#.timeline-item {#}
+{#    position: relative;#}
+{#    margin-bottom: 15px;#}
+{#}#}
+{##}
+{#.timeline-dot {#}
+{#    position: absolute;#}
+{#    left: -24px;#}
+{#    top: 3px;#}
+{#    width: 12px;#}
+{#    height: 12px;#}
+{#    border-radius: 50%;#}
+{#    border: 2px solid white;#}
+{#    box-shadow: 0 0 0 2px #dee2e6;#}
+{#}#}
+{##}
+{#.document-stats .progress {#}
+{#    border-radius: 10px;#}
+{#}#}
+{##}
+{#.market-stat {#}
+{#    padding: 10px;#}
+{#    background-color: #f8f9fa;#}
+{#    border-radius: 8px;#}
+{#    border-left: 4px solid #17a2b8;#}
+{#}#}
+{##}
+{#.recommendation-card {#}
+{#    display: flex;#}
+{#    align-items: center;#}
+{#    padding: 15px;#}
+{#    background-color: #f8f9fa;#}
+{#    border-radius: 10px;#}
+{#    margin-bottom: 15px;#}
+{#    height: 100%;#}
+{#}#}
+{##}
+{#.rec-icon {#}
+{#    width: 50px;#}
+{#    height: 50px;#}
+{#    border-radius: 50%;#}
+{#    display: flex;#}
+{#    align-items: center;#}
+{#    justify-content: center;#}
+{#    margin-right: 15px;#}
+{#    flex-shrink: 0;#}
+{#}#}
+{##}
+{#.rec-content {#}
+{#    flex-grow: 1;#}
+{#}#}
+{##}
+{#.bg-gradient-primary {#}
+{#    background: linear-gradient(135deg, #007bff, #0056b3);#}
+{#}#}
+{##}
+{#.bg-gradient-success {#}
+{#    background: linear-gradient(135deg, #28a745, #20c997);#}
+{#}#}
+{##}
+{#.table th {#}
+{#    border-top: none;#}
+{#    font-weight: 600;#}
+{#    color: #495057;#}
+{#}#}
+{##}
+{#.progress {#}
+{#    border-radius: 5px;#}
+{#}#}
+{##}
+{#.badge {#}
+{#    font-size: 0.8rem;#}
+{#    padding: 0.5em 0.75em;#}
+{#}#}
+{##}
+{#@media (max-width: 768px) {#}
+{#    .recommendation-card {#}
+{#        flex-direction: column;#}
+{#        text-align: center;#}
+{#    }#}
+{#    #}
+{#    .rec-icon {#}
+{#        margin-right: 0;#}
+{#        margin-bottom: 10px;#}
+{#    }#}
+{#    #}
+{#    .stats-card {#}
+{#        margin-bottom: 15px;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>#}
+{#<script>#}
+{#// Sample data - replace with actual data from Django context#}
+{#const monthlyData = {{ monthly_data|safe }};#}
+{##}
+{#// Application Trends Chart#}
+{#const trendsCtx = document.getElementById('trendsChart').getContext('2d');#}
+{#new Chart(trendsCtx, {#}
+{#    type: 'line',#}
+{#    data: {#}
+{#        labels: monthlyData.map(d => d.month),#}
+{#        datasets: [{#}
+{#            label: 'Applications',#}
+{#            data: monthlyData.map(d => d.applications),#}
+{#            borderColor: '#007bff',#}
+{#            backgroundColor: 'rgba(0, 123, 255, 0.1)',#}
+{#            fill: true,#}
+{#            tension: 0.4#}
+{#        }, {#}
+{#            label: 'Responses',#}
+{#            data: monthlyData.map(d => d.responses || 0),#}
+{#            borderColor: '#28a745',#}
+{#            backgroundColor: 'rgba(40, 167, 69, 0.1)',#}
+{#            fill: true,#}
+{#            tension: 0.4#}
+{#        }, {#}
+{#            label: 'Interviews',#}
+{#            data: monthlyData.map(d => d.interviews || 0),#}
+{#            borderColor: '#ffc107',#}
+{#            backgroundColor: 'rgba(255, 193, 7, 0.1)',#}
+{#            fill: true,#}
+{#            tension: 0.4#}
+{#        }]#}
+{#    },#}
+{#    options: {#}
+{#        responsive: true,#}
+{#        maintainAspectRatio: false,#}
+{#        plugins: {#}
+{#            legend: {#}
+{#                position: 'top',#}
+{#            }#}
+{#        },#}
+{#        scales: {#}
+{#            y: {#}
+{#                beginAtZero: true,#}
+{#                grid: {#}
+{#                    color: 'rgba(0,0,0,0.1)'#}
+{#                }#}
+{#            },#}
+{#            x: {#}
+{#                grid: {#}
+{#                    display: false#}
+{#                }#}
+{#            }#}
+{#        }#}
+{#    }#}
+{#});#}
+{##}
+{#// Application Status Pie Chart#}
+{#const statusCtx = document.getElementById('statusChart').getContext('2d');#}
+{#new Chart(statusCtx, {#}
+{#    type: 'doughnut',#}
+{#    data: {#}
+{#        labels: ['Found', 'Applied', 'Responded', 'Interview', 'Offer'],#}
+{#        datasets: [{#}
+{#            data: [25, 45, 15, 10, 5],#}
+{#            backgroundColor: [#}
+{#                '#6c757d',#}
+{#                '#007bff', #}
+{#                '#28a745',#}
+{#                '#ffc107',#}
+{#                '#17a2b8'#}
+{#            ],#}
+{#            borderWidth: 0#}
+{#        }]#}
+{#    },#}
+{#    options: {#}
+{#        responsive: true,#}
+{#        maintainAspectRatio: false,#}
+{#        plugins: {#}
+{#            legend: {#}
+{#                position: 'bottom',#}
+{#            }#}
+{#        }#}
+{#    }#}
+{#});#}
+{##}
+{#// Response Time Chart#}
+{#const responseTimeCtx = document.getElementById('responseTimeChart').getContext('2d');#}
+{#new Chart(responseTimeCtx, {#}
+{#    type: 'bar',#}
+{#    data: {#}
+{#        labels: ['1-3 days', '4-7 days', '1-2 weeks', '2-3 weeks', '1 month+'],#}
+{#        datasets: [{#}
+{#            label: 'Responses',#}
+{#            data: [8, 15, 12, 6, 3],#}
+{#            backgroundColor: [#}
+{#                '#28a745',#}
+{#                '#20c997',#}
+{#                '#ffc107',#}
+{#                '#fd7e14',#}
+{#                '#dc3545'#}
+{#            ]#}
+{#        }]#}
+{#    },#}
+{#    options: {#}
+{#        responsive: true,#}
+{#        maintainAspectRatio: false,#}
+{#        plugins: {#}
+{#            legend: {#}
+{#                display: false#}
+{#            }#}
+{#        },#}
+{#        scales: {#}
+{#            y: {#}
+{#                beginAtZero: true#}
+{#            }#}
+{#        }#}
+{#    }#}
+{#});#}
+{##}
+{#// Category Success Chart#}
+{#const categoryCtx = document.getElementById('categorySuccessChart').getContext('2d');#}
+{#new Chart(categoryCtx, {#}
+{#    type: 'horizontalBar',#}
+{#    data: {#}
+{#        labels: ['Data Science', 'Python Dev', 'ML Engineer', 'Data Analyst', 'Software Eng'],#}
+{#        datasets: [{#}
+{#            label: 'Success Rate %',#}
+{#            data: [32, 28, 35, 22, 25],#}
+{#            backgroundColor: [#}
+{#                '#007bff',#}
+{#                '#28a745',#}
+{#                '#17a2b8',#}
+{#                '#ffc107',#}
+{#                '#6f42c1'#}
+{#            ]#}
+{#        }]#}
+{#    },#}
+{#    options: {#}
+{#        responsive: true,#}
+{#        maintainAspectRatio: false,#}
+{#        plugins: {#}
+{#            legend: {#}
+{#                display: false#}
+{#            }#}
+{#        },#}
+{#        scales: {#}
+{#            x: {#}
+{#                beginAtZero: true,#}
+{#                max: 40#}
+{#            }#}
+{#        }#}
+{#    }#}
+{#});#}
+{##}
+{#// Time range filter#}
+{#document.querySelectorAll('input[name="timeRange"]').forEach(radio => {#}
+{#    radio.addEventListener('change', function() {#}
+{#        const days = this.value;#}
+{#        updateChartsForTimeRange(days);#}
+{#    });#}
+{#});#}
+{##}
+{#function updateChartsForTimeRange(days) {#}
+{#    // In a real implementation, this would fetch new data from the server#}
+{#    console.log(`Updating charts for ${days} days`);#}
+{#    #}
+{#    // Show loading state#}
+{#    document.querySelectorAll('canvas').forEach(canvas => {#}
+{#        canvas.style.opacity = '0.5';#}
+{#    });#}
+{#    #}
+{#    // Simulate API call#}
+{#    setTimeout(() => {#}
+{#        document.querySelectorAll('canvas').forEach(canvas => {#}
+{#            canvas.style.opacity = '1';#}
+{#        });#}
+{#        #}
+{#        // Update metrics#}
+{#        if (days === '7') {#}
+{#            document.getElementById('totalApplications').textContent = '12';#}
+{#            document.getElementById('responseRate').textContent = '25.0%';#}
+{#        } else if (days === '30') {#}
+{#            document.getElementById('totalApplications').textContent = '45';#}
+{#            document.getElementById('responseRate').textContent = '22.2%';#}
+{#        }#}
+{#        // Add more time range updates as needed#}
+{#    }, 500);#}
+{#}#}
+{##}
+{#// Export data function#}
+{#function exportData() {#}
+{#    const data = {#}
+{#        metrics: {#}
+{#            totalApplications: document.getElementById('totalApplications').textContent,#}
+{#            responseRate: document.getElementById('responseRate').textContent,#}
+{#            interviewRate: document.getElementById('interviewRate').textContent,#}
+{#            offerRate: document.getElementById('offerRate').textContent#}
+{#        },#}
+{#        monthlyData: monthlyData#}
+{#    };#}
+{#    #}
+{#    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});#}
+{#    const url = URL.createObjectURL(blob);#}
+{#    const a = document.createElement('a');#}
+{#    a.href = url;#}
+{#    a.download = `job_search_analytics_${new Date().toISOString().split('T')[0]}.json`;#}
+{#    document.body.appendChild(a);#}
+{#    a.click();#}
+{#    document.body.removeChild(a);#}
+{#    URL.revokeObjectURL(url);#}
+{#}#}
+{##}
+{#// Animate counters on page load#}
+{#function animateCounters() {#}
+{#    const counters = document.querySelectorAll('.stats-card h3');#}
+{#    #}
+{#    counters.forEach(counter => {#}
+{#        const target = parseFloat(counter.textContent);#}
+{#        const increment = target / 50;#}
+{#        let current = 0;#}
+{#        #}
+{#        const timer = setInterval(() => {#}
+{#            current += increment;#}
+{#            if (current >= target) {#}
+{#                current = target;#}
+{#                clearInterval(timer);#}
+{#            }#}
+{#            #}
+{#            if (counter.textContent.includes('%')) {#}
+{#                counter.textContent = current.toFixed(1) + '%';#}
+{#            } else {#}
+{#                counter.textContent = Math.floor(current);#}
+{#            }#}
+{#        }, 20);#}
+{#    });#}
+{#}#}
+{##}
+{#// Initialize animations#}
+{#document.addEventListener('DOMContentLoaded', function() {#}
+{#    animateCounters();#}
+{#});#}
+{##}
+{#// Refresh data every 5 minutes#}
+{#setInterval(() => {#}
+{#    console.log('Refreshing analytics data...');#}
+{#    // In real implementation, fetch new data from server#}
+{#}, 300000);#}
+{#</script>#}
+{#{% endblock %}#}

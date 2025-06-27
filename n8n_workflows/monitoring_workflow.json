@@ -1,0 +1,379 @@
+{
+  "name": "Django Monitoring Hub",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "deployment-status",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-deployment",
+      "name": "Deployment Status Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 200]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-results",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-tests",
+      "name": "Test Results Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 400]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "server-metrics",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-metrics",
+      "name": "Server Metrics Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "deployment-failed",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check-deployment",
+      "name": "Check Deployment Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "tests-failed",
+              "leftValue": "={{ $json.failed }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check-tests",
+      "name": "Check Test Results",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "server-critical",
+              "leftValue": "={{ $json.cpu_usage }}",
+              "rightValue": 90,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check-server",
+      "name": "Check Server Health",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 600]
+    },
+    {
+      "parameters": {
+        "url": "https://discordapp.com/api/webhooks/1388093515443212349/sXPEAn_GB4eKd1OxF8Ujbn75qAoaPV202ztYwcUOjzuQjRrTu9SZl-oUh03ZqXDb5Cso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "🚨 **DEPLOYMENT FAILED** 🚨\n\n📦 Repository: {{ $json.repository }}\n🌿 Branch: {{ $json.branch }}\n📝 Commit: {{ $json.commit_sha ? $json.commit_sha.substring(0, 8) : 'unknown' }}\n❌ Status: {{ $json.status }}\n⏱️ Time: {{ $json.timestamp }}\n🔗 URL: {{ $json.workflow_url }}"
+            }
+          ]
+        }
+      },
+      "id": "alert-deployment-failed",
+      "name": "Alert: Deployment Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [800, 100]
+    },
+    {
+      "parameters": {
+        "url": "https://discordapp.com/api/webhooks/1388093515443212349/sXPEAn_GB4eKd1OxF8Ujbn75qAoaPV202ztYwcUOjzuQjRrTu9SZl-oUh03ZqXDb5Cso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "❌ **TESTS FAILED** ❌\n\n✅ Passed: {{ $json.passed }}\n❌ Failed: {{ $json.failed }}\n📊 Pass Rate: {{ $json.pass_rate }}%\n📈 Coverage: {{ $json.coverage }}%\n⏱️ Time: {{ $json.timestamp }}\n🔗 Workflow: {{ $json.workflow_url }}"
+            }
+          ]
+        }
+      },
+      "id": "alert-tests-failed",
+      "name": "Alert: Tests Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://discordapp.com/api/webhooks/1388093515443212349/sXPEAn_GB4eKd1OxF8Ujbn75qAoaPV202ztYwcUOjzuQjRrTu9SZl-oUh03ZqXDb5Cso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "🚨 **SERVER CRITICAL** 🚨\n\n🖥️ CPU: {{ $json.cpu_usage }}%\n💾 Memory: {{ $json.memory_usage }}%\n💽 Disk: {{ $json.disk_usage }}%\n🐳 Containers: {{ $json.containers_running }}/{{ $json.containers_total }}\n⏱️ Time: {{ $json.timestamp }}\n🏠 Host: {{ $json.hostname }}"
+            }
+          ]
+        }
+      },
+      "id": "alert-server-critical",
+      "name": "Alert: Server Critical",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [800, 500]
+    },
+    {
+      "parameters": {
+        "url": "https://discordapp.com/api/webhooks/1388093515443212349/sXPEAn_GB4eKd1OxF8Ujbn75qAoaPV202ztYwcUOjzuQjRrTu9SZl-oUh03ZqXDb5Cso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "✅ **DEPLOYMENT SUCCESS** ✅\n\n📦 Repository: {{ $json.repository }}\n🌿 Branch: {{ $json.branch }}\n📝 Commit: {{ $json.commit_sha ? $json.commit_sha.substring(0, 8) : 'unknown' }}\n⏱️ Duration: {{ $json.duration }}s\n🌐 URL: {{ $json.deployment_url }}\n🏥 Health: {{ $json.health_status }}"
+            }
+          ]
+        }
+      },
+      "id": "success-deployment",
+      "name": "Success: Deployment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [800, 700]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  \"status\": \"received\",\n  \"event_type\": \"deployment_status\",\n  \"processed_at\": new Date().toISOString(),\n  \"severity\": $json.severity || \"medium\",\n  \"message\": \"Deployment status processed successfully\"\n}) }}"
+      },
+      "id": "respond-deployment",
+      "name": "Respond: Deployment",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  \"status\": \"received\",\n  \"event_type\": \"test_results\",\n  \"processed_at\": new Date().toISOString(),\n  \"health_status\": $json.failed > 0 ? \"unhealthy\" : \"healthy\",\n  \"message\": \"Test results processed successfully\"\n}) }}"
+      },
+      "id": "respond-tests",
+      "name": "Respond: Tests",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1100, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  \"status\": \"received\",\n  \"event_type\": \"server_metrics\",\n  \"processed_at\": new Date().toISOString(),\n  \"overall_health\": $json.cpu_usage > 90 || $json.memory_usage > 90 ? \"critical\" : \"healthy\",\n  \"message\": \"Server metrics processed successfully\"\n}) }}"
+      },
+      "id": "respond-metrics",
+      "name": "Respond: Metrics",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1100, 600]
+    }
+  ],
+  "connections": {
+    "Deployment Status Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Deployment Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Results Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Test Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Server Metrics Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Server Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Deployment Status": {
+      "main": [
+        [
+          {
+            "node": "Alert: Deployment Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Success: Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Test Results": {
+      "main": [
+        [
+          {
+            "node": "Alert: Tests Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Tests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Server Health": {
+      "main": [
+        [
+          {
+            "node": "Alert: Server Critical",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert: Deployment Failed": {
+      "main": [
+        [
+          {
+            "node": "Respond: Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success: Deployment": {
+      "main": [
+        [
+          {
+            "node": "Respond: Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,125 @@
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Documents Generated - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="display-6 fw-bold text-primary">
+                        <i class="fas fa-file-alt"></i> Documents Generated Successfully
+                    </h2>
+                    <p class="text-muted">Your application documents are ready to use</p>
+                </div>
+                <div>
+                    <a href="{% url 'jobs:applications' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Back to Applications
+                    </a>
+                    <a href="{% url 'documents:download_all' %}?application_ids={{ application_ids }}" class="btn btn-success">
+                        <i class="fas fa-download"></i> Download All Documents
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Cards -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+        {% for document in documents %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            {% if document.document_type == 'resume' %}
+                            <i class="fas fa-file-alt text-primary"></i> Resume
+                            {% elif document.document_type == 'cover_letter' %}
+                            <i class="fas fa-envelope text-success"></i> Cover Letter
+                            {% elif document.document_type == 'linkedin_messages' %}
+                            <i class="fab fa-linkedin text-info"></i> LinkedIn Messages
+                            {% elif document.document_type == 'email_templates' %}
+                            <i class="fas fa-envelope-open-text text-warning"></i> Email Templates
+                            {% elif document.document_type == 'video_pitch_script' %}
+                            <i class="fas fa-video text-danger"></i> Video Script
+                            {% elif document.document_type == 'company_research' %}
+                            <i class="fas fa-building text-secondary"></i> Company Research
+                            {% elif document.document_type == 'followup_schedule' %}
+                            <i class="fas fa-calendar-alt text-primary"></i> Follow-up Schedule
+                            {% elif document.document_type == 'skills_analysis' %}
+                            <i class="fas fa-chart-bar text-info"></i> Skills Analysis
+                            {% else %}
+                            <i class="fas fa-file text-dark"></i> {{ document.get_document_type_display }}
+                            {% endif %}
+                        </h5>
+                        <div>
+                            <a href="{% url 'documents:download' document.application.id document.document_type %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <a href="{% url 'documents:preview' document.application.id document.document_type %}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title">{{ document.application.job_title }}</h6>
+                    <p class="card-text text-muted">{{ document.application.company_name }}</p>
+                    <div class="d-flex align-items-center mt-3">
+                        <div class="badge bg-success me-2">ATS Score: 94%</div>
+                        <div class="badge bg-info">Match Score: {{ document.application.match_percentage }}%</div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <small class="text-muted">Generated on {{ document.generated_at|date:"M d, Y" }}</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Next Steps -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-list-check text-primary"></i> Next Steps</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="list-group list-group-numbered list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Review Your Documents</div>
+                                Check for any final customizations you might want to make
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Submit Your Application</div>
+                                Apply using the provided documents on the company website
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Mark as Applied</div>
+                                Update the application status to "Applied" in your dashboard
+                            </div>
+                            <a href="{% url 'jobs:applications' %}" class="btn btn-sm btn-primary">Go to Applications</a>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Set Up Follow-up</div>
+                                Schedule a follow-up email to be sent in 5-7 days
+                            </div>
+                            <a href="{% url 'followups:dashboard' %}" class="btn btn-sm btn-success">Follow-up Dashboard</a>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

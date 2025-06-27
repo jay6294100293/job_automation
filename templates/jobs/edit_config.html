@@ -1,0 +1,455 @@
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Edit Search Configuration - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="display-6 fw-bold text-primary">
+                        <i class="fas fa-edit"></i> Edit Search Configuration
+                    </h2>
+                    <p class="text-muted">Update your job search preferences: "{{ object.config_name }}"</p>
+                </div>
+                <div>
+                    <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Configurations
+                    </a>
+                </div>
+            </div>
+
+            <!-- Configuration Form -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-cog"></i> Configuration Settings
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="configForm">
+                                {% csrf_token %}
+
+                                <!-- Configuration Name -->
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-tag"></i> Configuration Name
+                                    </label>
+                                    {{ form.config_name|as_crispy_field }}
+                                </div>
+
+                                <!-- Job Categories -->
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-briefcase"></i> Job Categories
+                                    </label>
+                                    <p class="text-muted small">Select the types of positions you're interested in</p>
+                                    <div class="categories-container p-3 border rounded">
+                                        {{ form.job_categories }}
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Selected: <span id="selectedCategories" class="fw-bold">0</span> categories
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Target Locations -->
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-map-marker-alt"></i> Target Locations
+                                    </label>
+                                    <p class="text-muted small">Choose where you'd like to work</p>
+                                    <div class="locations-container p-3 border rounded">
+                                        {{ form.target_locations }}
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Selected: <span id="selectedLocations" class="fw-bold">0</span> locations
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Work Preferences -->
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">
+                                            <i class="fas fa-home"></i> Remote Preference
+                                        </label>
+                                        {{ form.remote_preference|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">
+                                            <i class="fas fa-dollar-sign"></i> Minimum Salary
+                                        </label>
+                                        {{ form.salary_min|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">
+                                            <i class="fas fa-dollar-sign"></i> Maximum Salary
+                                        </label>
+                                        {{ form.salary_max|as_crispy_field }}
+                                    </div>
+                                </div>
+
+                                <!-- Auto Follow-up -->
+                                <div class="form-group mb-4">
+                                    <div class="card border-info">
+                                        <div class="card-body">
+                                            <div class="form-check form-switch">
+                                                {{ form.auto_follow_up_enabled }}
+                                                <label class="form-check-label fw-bold" for="{{ form.auto_follow_up_enabled.id_for_label }}">
+                                                    <i class="fas fa-envelope-open-text"></i> Enable Automatic Follow-ups
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">
+                                                Automatically send follow-up emails 7 days after applying to increase response rates
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Buttons -->
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <button type="submit" class="btn btn-primary btn-lg me-3">
+                                            <i class="fas fa-save"></i> Save Changes
+                                        </button>
+                                        <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-secondary btn-lg">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-success btn-lg" onclick="testConfiguration()">
+                                            <i class="fas fa-play"></i> Test & Save
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Configuration Summary -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle"></i> Configuration Summary
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="summary-item mb-3">
+                                <strong>Created:</strong><br>
+                                <small class="text-muted">{{ object.created_at|date:"F d, Y" }}</small>
+                            </div>
+                            <div class="summary-item mb-3">
+                                <strong>Last Updated:</strong><br>
+                                <small class="text-muted">{{ object.updated_at|date:"F d, Y H:i" }}</small>
+                            </div>
+                            <div class="summary-item mb-3">
+                                <strong>Last Search:</strong><br>
+                                <small class="text-muted">
+                                    {% if object.last_search_date %}
+                                        {{ object.last_search_date|date:"F d, Y H:i" }}
+                                    {% else %}
+                                        Never used
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="summary-item">
+                                <strong>Status:</strong><br>
+                                <span class="badge bg-{% if object.is_active %}success{% else %}secondary{% endif %}">
+                                    {% if object.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Tips -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-lightbulb"></i> Optimization Tips
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Select 3-5 job categories for best results</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Include both specific and general roles</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Add "Remote" if you're open to it</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Set realistic salary expectations</small>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <small>Enable auto follow-up for 3x response rate</small>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-bolt"></i> Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" onclick="duplicateConfig()">
+                                    <i class="fas fa-copy"></i> Duplicate Config
+                                </button>
+                                <button class="btn btn-outline-success" onclick="executeSearch()">
+                                    <i class="fas fa-search"></i> Run Search Now
+                                </button>
+                                <a href="{% url 'jobs:delete_config' object.pk %}" class="btn btn-outline-danger">
+                                    <i class="fas fa-trash"></i> Delete Config
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.categories-container,
+.locations-container {
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+}
+
+.categories-container .form-check,
+.locations-container .form-check {
+    display: inline-block;
+    margin-right: 15px;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.categories-container .form-check:hover,
+.locations-container .form-check:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.1);
+}
+
+.categories-container .form-check-input:checked + .form-check-label,
+.locations-container .form-check-input:checked + .form-check-label {
+    color: #007bff;
+    font-weight: 500;
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.summary-item {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border-left: 3px solid #17a2b8;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .categories-container,
+    .locations-container {
+        max-height: 150px;
+    }
+
+    .categories-container .form-check,
+    .locations-container .form-check {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Count selected items
+function updateCounters() {
+    const selectedCategories = document.querySelectorAll('input[name="job_categories"]:checked').length;
+    const selectedLocations = document.querySelectorAll('input[name="target_locations"]:checked').length;
+
+    document.getElementById('selectedCategories').textContent = selectedCategories;
+    document.getElementById('selectedLocations').textContent = selectedLocations;
+}
+
+// Update counters on page load and change
+document.addEventListener('DOMContentLoaded', updateCounters);
+document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', updateCounters);
+});
+
+// Test configuration
+function testConfiguration() {
+    const form = document.getElementById('configForm');
+    const formData = new FormData(form);
+
+    // Show loading
+    Swal.fire({
+        title: 'Testing Configuration',
+        text: 'Running a quick test search with your settings...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // Simulate test (in real implementation, this would make an API call)
+    setTimeout(() => {
+        Swal.fire({
+            title: 'Test Successful!',
+            text: 'Found 23 potential jobs with your configuration. Saving changes...',
+            icon: 'success',
+            confirmButtonText: 'Great!'
+        }).then(() => {
+            form.submit();
+        });
+    }, 3000);
+}
+
+// Duplicate configuration
+function duplicateConfig() {
+    Swal.fire({
+        title: 'Duplicate Configuration',
+        input: 'text',
+        inputLabel: 'New configuration name',
+        inputValue: '{{ object.config_name }} (Copy)',
+        showCancelButton: true,
+        confirmButtonText: 'Duplicate',
+        inputValidator: (value) => {
+            if (!value) {
+                return 'Please enter a name for the new configuration';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // In real implementation, this would make an API call
+            Swal.fire('Duplicated!', 'Configuration has been duplicated successfully.', 'success');
+        }
+    });
+}
+
+// Execute search
+function executeSearch() {
+    Swal.fire({
+        title: 'Run Job Search?',
+        text: 'This will start a new job search with the current configuration settings.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Start Search',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Save form first, then execute search
+            const form = document.getElementById('configForm');
+            const formData = new FormData(form);
+
+            Swal.fire({
+                title: 'Search Started!',
+                text: 'Your job search is running. Results will appear in your dashboard.',
+                icon: 'success',
+                confirmButtonText: 'View Dashboard'
+            }).then(() => {
+                window.location.href = '{% url "dashboard:dashboard" %}';
+            });
+        }
+    });
+}
+
+// Form validation
+document.getElementById('configForm').addEventListener('submit', function(e) {
+    const selectedCategories = document.querySelectorAll('input[name="job_categories"]:checked').length;
+    const selectedLocations = document.querySelectorAll('input[name="target_locations"]:checked').length;
+    const configName = document.querySelector('input[name="config_name"]').value.trim();
+
+    let errors = [];
+
+    if (!configName) {
+        errors.push('Configuration name is required');
+    }
+
+    if (selectedCategories === 0) {
+        errors.push('Please select at least one job category');
+    }
+
+    if (selectedLocations === 0) {
+        errors.push('Please select at least one target location');
+    }
+
+    const salaryMin = document.querySelector('input[name="salary_min"]').value;
+    const salaryMax = document.querySelector('input[name="salary_max"]').value;
+
+    if (salaryMin && salaryMax && parseInt(salaryMin) >= parseInt(salaryMax)) {
+        errors.push('Maximum salary must be greater than minimum salary');
+    }
+
+    if (errors.length > 0) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Validation Errors',
+            html: '<ul class="text-left"><li>' + errors.join('</li><li>') + '</li></ul>',
+            icon: 'error'
+        });
+    }
+});
+
+// Auto-save draft
+let saveTimeout;
+document.querySelectorAll('input, select, textarea').forEach(element => {
+    element.addEventListener('input', function() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            console.log('Auto-saving draft...');
+            // In real implementation, save draft to localStorage or server
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}

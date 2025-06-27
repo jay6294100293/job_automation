@@ -1,0 +1,431 @@
+<!-- templates/dashboard/bulk_download.html -->
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Bulk Document Download - Job Automation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    .download-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        margin-bottom: var(--space-xl);
+        border: 1px solid var(--border-primary);
+        overflow: hidden;
+    }
+
+    .download-header {
+        padding: var(--space-md) var(--space-lg);
+        border-bottom: 1px solid var(--border-primary);
+        background: var(--bg-elevated);
+    }
+
+    .download-body {
+        padding: var(--space-lg);
+    }
+
+    .download-stats {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: var(--space-xl);
+        text-align: center;
+    }
+
+    .download-stat {
+        padding: var(--space-md);
+    }
+
+    .download-stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-500);
+        margin-bottom: var(--space-xs);
+    }
+
+    .download-stat-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .download-option {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        margin-bottom: var(--space-md);
+        cursor: pointer;
+        transition: var(--transition-fast);
+    }
+
+    .download-option:hover {
+        background: var(--bg-elevated);
+        border-color: var(--primary-400);
+    }
+
+    .download-option.active {
+        border-color: var(--primary-500);
+        background: rgba(79, 70, 229, 0.1);
+    }
+
+    .download-option-title {
+        font-weight: 500;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+    }
+
+    .download-option-title i {
+        margin-right: var(--space-sm);
+        color: var(--primary-500);
+    }
+
+    .download-option-desc {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .download-form-section {
+        display: none;
+        margin-top: var(--space-md);
+        padding: var(--space-md);
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-primary);
+    }
+
+    .download-form-section.active {
+        display: block;
+    }
+
+    .download-actions {
+        margin-top: var(--space-xl);
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .application-list, .document-type-list {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: var(--space-sm);
+    }
+
+    .application-item, .document-type-item {
+        padding: var(--space-sm);
+        margin-bottom: var(--space-xs);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        display: flex;
+        align-items: center;
+        transition: var(--transition-fast);
+    }
+
+    .application-item:hover, .document-type-item:hover {
+        background: var(--bg-elevated);
+    }
+
+    .application-checkbox, .document-type-checkbox {
+        margin-right: var(--space-sm);
+    }
+
+    .application-details {
+        flex: 1;
+    }
+
+    .application-company {
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .application-position {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .application-docs {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .document-type-label {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .document-type-name {
+        font-weight: 500;
+    }
+
+    .document-type-count {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .date-range-container {
+        display: flex;
+        gap: var(--space-md);
+    }
+
+    .date-field {
+        flex: 1;
+    }
+
+    .date-field label {
+        display: block;
+        margin-bottom: var(--space-xs);
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .date-input {
+        width: 100%;
+        padding: var(--space-sm);
+        background: var(--bg-card);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+    }
+
+    /* Custom scrollbar for lists */
+    .application-list::-webkit-scrollbar, .document-type-list::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .application-list::-webkit-scrollbar-track, .document-type-list::-webkit-scrollbar-track {
+        background: var(--bg-card);
+        border-radius: 4px;
+    }
+
+    .application-list::-webkit-scrollbar-thumb, .document-type-list::-webkit-scrollbar-thumb {
+        background: var(--bg-elevated);
+        border-radius: 4px;
+    }
+
+    .application-list::-webkit-scrollbar-thumb:hover, .document-type-list::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-400);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="download-card">
+                <div class="download-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-download text-info me-2"></i>
+                        Bulk Document Download
+                    </h4>
+                </div>
+
+                <div class="download-body">
+                    {% if total_documents > 0 %}
+                        <div class="download-stats">
+                            <div class="download-stat">
+                                <div class="download-stat-value">{{ total_documents }}</div>
+                                <div class="download-stat-label">Total Documents</div>
+                            </div>
+                            <div class="download-stat">
+                                <div class="download-stat-value">{{ applications|length }}</div>
+                                <div class="download-stat-label">Applications with Documents</div>
+                            </div>
+                            <div class="download-stat">
+                                <div class="download-stat-value">{{ document_types|length }}</div>
+                                <div class="download-stat-label">Document Types</div>
+                            </div>
+                        </div>
+
+                        <form method="post" action="{% url 'dashboard:bulk_download' %}" id="download-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="download_type" id="download_type" value="all_documents">
+
+                            <div class="download-options">
+                                <div class="download-option active" data-option="all_documents">
+                                    <div class="download-option-title">
+                                        <i class="fas fa-folder-open"></i>
+                                        Download All Documents
+                                    </div>
+                                    <div class="download-option-desc">
+                                        Get all your generated documents in a single ZIP file
+                                    </div>
+                                </div>
+
+                                <div class="download-option" data-option="selected_applications">
+                                    <div class="download-option-title">
+                                        <i class="fas fa-briefcase"></i>
+                                        Select Applications
+                                    </div>
+                                    <div class="download-option-desc">
+                                        Download documents for specific job applications
+                                    </div>
+
+                                    <div class="download-form-section" id="applications-section">
+                                        <div class="select-actions mb-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-2" id="select-all-apps">Select All</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-apps">Deselect All</button>
+                                        </div>
+
+                                        <div class="application-list">
+                                            {% for app in applications %}
+                                                <div class="application-item">
+                                                    <div class="application-checkbox">
+                                                        <input type="checkbox" name="application_ids" value="{{ app.id }}" id="app-{{ app.id }}" class="form-check-input">
+                                                    </div>
+                                                    <label class="application-details" for="app-{{ app.id }}">
+                                                        <div class="application-company">{{ app.company_name }}</div>
+                                                        <div class="application-position">{{ app.job_title }}</div>
+                                                        <div class="application-docs">
+                                                            <i class="fas fa-file-alt me-1"></i>
+                                                            {{ app.document_count }} document{{ app.document_count|pluralize }}
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="download-option" data-option="selected_document_types">
+                                    <div class="download-option-title">
+                                        <i class="fas fa-file-alt"></i>
+                                        Select Document Types
+                                    </div>
+                                    <div class="download-option-desc">
+                                        Download specific types of documents across all applications
+                                    </div>
+
+                                    <div class="download-form-section" id="document-types-section">
+                                        <div class="select-actions mb-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-2" id="select-all-types">Select All</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-types">Deselect All</button>
+                                        </div>
+
+                                        <div class="document-type-list">
+                                            {% for doc_type in document_types %}
+                                                <div class="document-type-item">
+                                                    <div class="document-type-checkbox">
+                                                        <input type="checkbox" name="document_types" value="{{ doc_type.document_type }}" id="type-{{ doc_type.document_type }}" class="form-check-input">
+                                                    </div>
+                                                    <label class="document-type-label" for="type-{{ doc_type.document_type }}">
+                                                        <span class="document-type-name">{{ doc_type.document_type|title }}</span>
+                                                        <span class="document-type-count">{{ doc_type.count }} document{{ doc_type.count|pluralize }}</span>
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="download-option" data-option="date_range">
+                                    <div class="download-option-title">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        Select Date Range
+                                    </div>
+                                    <div class="download-option-desc">
+                                        Download documents generated within a specific time period
+                                    </div>
+
+                                    <div class="download-form-section" id="date-range-section">
+                                        <div class="date-range-container">
+                                            <div class="date-field">
+                                                <label for="start_date">Start Date</label>
+                                                <input type="date" name="start_date" id="start_date" class="date-input">
+                                            </div>
+
+                                            <div class="date-field">
+                                                <label for="end_date">End Date</label>
+                                                <input type="date" name="end_date" id="end_date" class="date-input">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="download-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-download me-2"></i>
+                                    Download Documents
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="empty-state text-center py-5">
+                            <i class="fas fa-file-download text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5>No Documents Available</h5>
+                            <p class="text-muted">You don't have any generated documents yet. Apply to jobs or generate documents for your applications first.</p>
+                            <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary mt-3">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Return to Dashboard
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Download option selection
+        $('.download-option').click(function() {
+            $('.download-option').removeClass('active');
+            $(this).addClass('active');
+
+            const option = $(this).data('option');
+            $('#download_type').val(option);
+
+            $('.download-form-section').removeClass('active');
+            $('#' + option + '-section').addClass('active');
+        });
+
+        // Select/deselect all applications
+        $('#select-all-apps').click(function() {
+            $('input[name="application_ids"]').prop('checked', true);
+        });
+
+        $('#deselect-all-apps').click(function() {
+            $('input[name="application_ids"]').prop('checked', false);
+        });
+
+        // Select/deselect all document types
+        $('#select-all-types').click(function() {
+            $('input[name="document_types"]').prop('checked', true);
+        });
+
+        $('#deselect-all-types').click(function() {
+            $('input[name="document_types"]').prop('checked', false);
+        });
+
+        // Form validation before submit
+        $('#download-form').submit(function(e) {
+            const downloadType = $('#download_type').val();
+
+            if (downloadType === 'selected_applications') {
+                if (!$('input[name="application_ids"]:checked').length) {
+                    e.preventDefault();
+                    alert('Please select at least one application.');
+                }
+            } else if (downloadType === 'selected_document_types') {
+                if (!$('input[name="document_types"]:checked').length) {
+                    e.preventDefault();
+                    alert('Please select at least one document type.');
+                }
+            } else if (downloadType === 'date_range') {
+                const startDate = $('#start_date').val();
+                const endDate = $('#end_date').val();
+
+                if (!startDate || !endDate) {
+                    e.preventDefault();
+                    alert('Please select both start and end dates.');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,1405 @@
+% extends 'base_dashboard.html' %}
+
+{% block title %}Follow-up Templates - Job Automation{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-5">
+        <div>
+            <h1 class="text-2xl font-bold text-primary mb-1">
+                <i class="fas fa-file-alt text-accent"></i> Follow-up Templates
+            </h1>
+            <p class="text-secondary">Manage your email templates to maximize response rates</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'followups:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'followups:create_template' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Create New Template
+            </a>
+        </div>
+    </div>
+
+    <!-- Template Categories Tabs -->
+    <div class="card animate-slide-up">
+        <div class="card-header border-b border-gray-200">
+            <nav class="flex space-x-8" aria-label="Tabs">
+                <button class="template-tab active" data-tab="all-templates">
+                    <i class="fas fa-list mr-2"></i>All Templates ({{ templates.count }})
+                </button>
+                <button class="template-tab" data-tab="default-templates">
+                    <i class="fas fa-star mr-2"></i>Default Templates
+                </button>
+                <button class="template-tab" data-tab="custom-templates">
+                    <i class="fas fa-edit mr-2"></i>Custom Templates
+                </button>
+                <button class="template-tab" data-tab="analytics-templates">
+                    <i class="fas fa-chart-bar mr-2"></i>Performance Analytics
+                </button>
+            </nav>
+        </div>
+        <div class="card-body">
+            <!-- All Templates Tab -->
+            <div class="tab-content active" id="all-templates">
+                {% if templates %}
+                    <div class="grid grid-auto-fit gap-4">
+                        {% for template in templates %}
+                        <div class="template-card card hover:shadow-lg transition-all duration-300 {% if template.is_default %}border-warning{% endif %} animate-slide-up" style="animation-delay: {{ forloop.counter0|floatformat:1 }}s;">
+                            <div class="card-header flex justify-between items-center">
+                                <div>
+                                    <h3 class="card-title text-lg">{{ template.template_name }}</h3>
+                                    <p class="card-subtitle">{{ template.get_template_type_display }}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    {% if template.is_default %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-50 text-warning-600">Default</span>
+                                    {% endif %}
+                                    {% if not template.is_active %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Inactive</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- Template Preview -->
+                                <div class="mb-4">
+                                    <div class="font-semibold text-primary mb-2">Subject:</div>
+                                    <div class="template-subject p-3 bg-tertiary rounded border-l-4 border-accent">
+                                        {{ template.subject_template|truncatechars:60 }}
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <div class="font-semibold text-primary mb-2">Body Preview:</div>
+                                    <div class="template-body p-3 bg-tertiary rounded border-l-4 border-accent">
+                                        {{ template.body_template|truncatechars:120 }}
+                                    </div>
+                                </div>
+
+                                <!-- Template Stats -->
+                                <div class="grid grid-cols-3 gap-2 mb-4">
+                                    <div class="stat-item text-center">
+                                        <div class="text-xl font-bold text-primary">{{ template.days_after_application }}</div>
+                                        <div class="text-xs text-secondary">Days After</div>
+                                    </div>
+                                    <div class="stat-item text-center">
+                                        <div class="text-xl font-bold text-success">{{ template.success_rate }}%</div>
+                                        <div class="text-xs text-secondary">Success Rate</div>
+                                    </div>
+                                    <div class="stat-item text-center">
+                                        <div class="text-xl font-bold text-info">{{ template.times_used }}</div>
+                                        <div class="text-xs text-secondary">Times Used</div>
+                                    </div>
+                                </div>
+
+                                <!-- Performance Bar -->
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium text-primary">Performance</span>
+                                        <span class="text-xs text-secondary">{{ template.responses_received }}/{{ template.times_used }} responses</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="h-2 rounded-full {% if template.success_rate >= 30 %}bg-success-500{% elif template.success_rate >= 15 %}bg-warning-500{% else %}bg-danger-500{% endif %}"
+                                             style="width: {{ template.success_rate }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-tertiary">
+                                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                    <button class="btn btn-sm btn-secondary" onclick="previewTemplate({{ template.id }})">
+                                        <i class="fas fa-eye"></i> Preview
+                                    </button>
+                                    <a href="{% url 'followups:edit_template' template.pk %}" class="btn btn-sm btn-success">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <button class="btn btn-sm btn-secondary" onclick="duplicateTemplate({{ template.id }})">
+                                        <i class="fas fa-copy"></i> Clone
+                                    </button>
+                                    <div class="relative">
+                                        <button class="btn btn-sm btn-secondary w-full dropdown-toggle" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-h"></i>
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <a class="dropdown-item" href="#" onclick="testTemplate({{ template.id }})">
+                                                <i class="fas fa-flask mr-2"></i> Test Template
+                                            </a>
+                                            <a class="dropdown-item" href="#" onclick="exportTemplate({{ template.id }})">
+                                                <i class="fas fa-download mr-2"></i> Export
+                                            </a>
+                                            <div class="dropdown-divider"></div>
+                                            {% if template.is_active %}
+                                            <a class="dropdown-item" href="#" onclick="toggleTemplateStatus({{ template.id }}, false)">
+                                                <i class="fas fa-pause mr-2"></i> Deactivate
+                                            </a>
+                                            {% else %}
+                                            <a class="dropdown-item" href="#" onclick="toggleTemplateStatus({{ template.id }}, true)">
+                                                <i class="fas fa-play mr-2"></i> Activate
+                                            </a>
+                                            {% endif %}
+                                            <a class="dropdown-item text-danger" href="#" onclick="deleteTemplate({{ template.id }})">
+                                                <i class="fas fa-trash mr-2"></i> Delete
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-file-alt fa-4x text-tertiary mb-4"></i>
+                        <h4 class="text-xl font-semibold text-primary mb-2">No Templates Yet</h4>
+                        <p class="text-secondary mb-6">Create your first follow-up template to get started</p>
+                        <a href="{% url 'followups:create_template' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus"></i> Create Your First Template
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Default Templates Tab -->
+            <div class="tab-content" id="default-templates" style="display: none;">
+                <div class="bg-info-50 border border-info-200 rounded-lg p-4 mb-6">
+                    <h6 class="font-semibold text-info-600 mb-2">
+                        <i class="fas fa-info-circle mr-2"></i>Default Templates
+                    </h6>
+                    <p class="text-info-600 mb-0">These are your default templates that will be used automatically in follow-up sequences.</p>
+                </div>
+
+                <div class="grid grid-auto-fit gap-4">
+                    {% for template in templates %}
+                        {% if template.is_default %}
+                        <div class="card border-warning hover:shadow-lg transition-all duration-300">
+                            <div class="card-header bg-warning-50">
+                                <h3 class="card-title text-warning-600">{{ template.template_name }}</h3>
+                                <p class="card-subtitle text-warning-600">{{ template.get_template_type_display }}</p>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-secondary mb-4">{{ template.body_template|truncatechars:100 }}</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-secondary">{{ template.days_after_application }} days after application</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-600">
+                                        {{ template.success_rate }}% success
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% empty %}
+                        <div class="col-span-full text-center py-8">
+                            <i class="fas fa-star fa-3x text-tertiary mb-4"></i>
+                            <h5 class="text-lg font-semibold text-primary mb-2">No Default Templates</h5>
+                            <p class="text-secondary">Set a template as default to use it in automated sequences</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Custom Templates Tab -->
+            <div class="tab-content" id="custom-templates" style="display: none;">
+                <div class="bg-success-50 border border-success-200 rounded-lg p-4 mb-6">
+                    <h6 class="font-semibold text-success-600 mb-2">
+                        <i class="fas fa-edit mr-2"></i>Custom Templates
+                    </h6>
+                    <p class="text-success-600 mb-0">Templates you've created or customized for specific situations.</p>
+                </div>
+
+                <div class="grid grid-auto-fit gap-4">
+                    {% for template in templates %}
+                        {% if not template.is_default and template.template_type == 'custom' %}
+                        <div class="card hover:shadow-lg transition-all duration-300">
+                            <div class="card-header">
+                                <h3 class="card-title">{{ template.template_name }}</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-secondary mb-4">{{ template.body_template|truncatechars:100 }}</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-secondary">Used {{ template.times_used }} times</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent-light text-accent-primary">
+                                        {{ template.success_rate }}% success
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% empty %}
+                        <div class="col-span-full text-center py-8">
+                            <i class="fas fa-edit fa-3x text-tertiary mb-4"></i>
+                            <h5 class="text-lg font-semibold text-primary mb-2">No Custom Templates</h5>
+                            <p class="text-secondary mb-4">Create custom templates for specific scenarios</p>
+                            <a href="{% url 'followups:create_template' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Custom Template
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Performance Analytics Tab -->
+            <div class="tab-content" id="analytics-templates" style="display: none;">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="card bg-accent-primary text-white">
+                        <div class="card-body text-center">
+                            <h4 class="text-2xl font-bold">{{ templates.count }}</h4>
+                            <p class="text-sm opacity-90">Total Templates</p>
+                        </div>
+                    </div>
+                    <div class="card bg-success-500 text-white">
+                        <div class="card-body text-center">
+                            <h4 class="text-2xl font-bold">25%</h4>
+                            <p class="text-sm opacity-90">Avg Success Rate</p>
+                        </div>
+                    </div>
+                    <div class="card bg-info-500 text-white">
+                        <div class="card-body text-center">
+                            <h4 class="text-2xl font-bold">156</h4>
+                            <p class="text-sm opacity-90">Total Uses</p>
+                        </div>
+                    </div>
+                    <div class="card bg-warning-500 text-white">
+                        <div class="card-body text-center">
+                            <h4 class="text-2xl font-bold">39</h4>
+                            <p class="text-sm opacity-90">Total Responses</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Chart -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-bar mr-2"></i>Template Performance Comparison
+                        </h3>
+                        <p class="card-subtitle">Success rate and usage metrics for all templates</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 400px;">
+                            <canvas id="templatePerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Best Performing Templates -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-trophy mr-2"></i>Top Performing Templates
+                        </h3>
+                        <p class="card-subtitle">Your most successful email templates ranked by performance</p>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-tertiary">
+                                    <tr class="border-b border-gray-200">
+                                        <th class="p-4 text-left font-semibold text-primary">Rank</th>
+                                        <th class="p-4 text-left font-semibold text-primary">Template Name</th>
+                                        <th class="p-4 text-left font-semibold text-primary">Success Rate</th>
+                                        <th class="p-4 text-left font-semibold text-primary">Times Used</th>
+                                        <th class="p-4 text-left font-semibold text-primary">Responses</th>
+                                        <th class="p-4 text-left font-semibold text-primary">Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for template in templates|dictsort:"success_rate"|slice:":5" %}
+                                    <tr class="border-b border-gray-100 hover:bg-accent-light transition-colors duration-200">
+                                        <td class="p-4">
+                                            {% if forloop.counter == 1 %}
+                                                <i class="fas fa-trophy text-warning"></i>
+                                            {% elif forloop.counter == 2 %}
+                                                <i class="fas fa-medal text-gray-400"></i>
+                                            {% elif forloop.counter == 3 %}
+                                                <i class="fas fa-award text-danger"></i>
+                                            {% else %}
+                                                <span class="font-semibold">{{ forloop.counter }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="p-4 font-medium">{{ template.template_name }}</td>
+                                        <td class="p-4">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                                {% if template.success_rate >= 30 %}bg-success-50 text-success-600
+                                                {% elif template.success_rate >= 15 %}bg-warning-50 text-warning-600
+                                                {% else %}bg-danger-50 text-danger-600{% endif %}">
+                                                {{ template.success_rate }}%
+                                            </span>
+                                        </td>
+                                        <td class="p-4">{{ template.times_used }}</td>
+                                        <td class="p-4">{{ template.responses_received }}</td>
+                                        <td class="p-4">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                                {{ template.get_template_type_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Preview Modal -->
+<div class="modal fade" id="templatePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Template Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="template-preview-content">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="editFromPreview">Edit Template</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.template-card {
+    transition: all var(--transition-slow);
+    border: 1px solid var(--border-primary);
+}
+
+.template-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.template-subject,
+.template-body {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 0.875rem;
+    max-height: 60px;
+    overflow: hidden;
+    position: relative;
+}
+
+.template-body::after {
+    content: '...';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(to right, transparent, var(--bg-tertiary) 70%);
+    padding-left: 20px;
+}
+
+.stat-item {
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background-color: var(--bg-tertiary);
+    transition: all var(--transition-normal);
+}
+
+.stat-item:hover {
+    background-color: var(--accent-light);
+    transform: translateY(-1px);
+}
+
+.template-tab {
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    font-weight: 500;
+    transition: all var(--transition-normal);
+    cursor: pointer;
+}
+
+.template-tab:hover {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.template-tab.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    background: var(--accent-light);
+}
+
+.tab-content {
+    min-height: 400px;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+}
+
+.dropdown-menu {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-item:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+.dropdown-divider {
+    border-color: var(--border-primary);
+    margin: 0.5rem 0;
+}
+
+.modal-content {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-primary);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+@media (max-width: 768px) {
+    .grid-cols-2,
+    .grid-cols-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .template-tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Tab functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.template-tab');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+
+            // Remove active class from all tabs and contents
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => {
+                c.style.display = 'none';
+                c.classList.remove('active');
+            });
+
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            const targetContent = document.getElementById(targetTab);
+            if (targetContent) {
+                targetContent.style.display = 'block';
+                targetContent.classList.add('active');
+            }
+        });
+    });
+});
+
+// Template Performance Chart
+const ctx = document.getElementById('templatePerformanceChart');
+if (ctx) {
+    const templateData = [
+        {% for template in templates %}
+        {
+            name: '{{ template.template_name }}',
+            successRate: {{ template.success_rate }},
+            timesUsed: {{ template.times_used }},
+            responses: {{ template.responses_received }}
+        },
+        {% endfor %}
+    ];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: templateData.map(t => t.name),
+            datasets: [{
+                label: 'Success Rate (%)',
+                data: templateData.map(t => t.successRate),
+                backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                borderColor: 'rgba(34, 197, 94, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Times Used',
+                data: templateData.map(t => t.timesUsed),
+                backgroundColor: 'rgba(94, 106, 210, 0.8)',
+                borderColor: 'rgba(94, 106, 210, 1)',
+                borderWidth: 1,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Template Performance Metrics'
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Success Rate (%)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Times Used'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+}
+
+// Template preview function
+function previewTemplate(templateId) {
+    // Sample preview data (replace with actual API call)
+    const sampleData = {
+        subject: 'Following up on Data Scientist Application - Mrityunjay Gupta',
+        body: `Dear Hiring Manager,
+
+I hope this email finds you well. I wanted to follow up on my application for the Data Scientist position at TechCorp Inc. that I submitted 7 days ago.
+
+I remain very interested in this opportunity and believe my 5 years of experience in data science would be valuable to your team.
+
+Thank you for your time and consideration.
+
+Best regards,
+Mrityunjay Gupta`,
+        type: 'Professional Follow-up',
+        days_after: '7',
+        success_rate: '28.5',
+        times_used: '12'
+    };
+
+    const previewContent = `
+        <div class="template-full-preview">
+            <h6 class="font-semibold text-primary mb-2">Subject Line:</h6>
+            <div class="bg-accent-light p-3 rounded border-l-4 border-accent mb-4">${sampleData.subject}</div>
+
+            <h6 class="font-semibold text-primary mb-2">Email Body:</h6>
+            <div class="bg-tertiary p-4 rounded border border-gray-200 mb-4" style="white-space: pre-wrap;">${sampleData.body}</div>
+
+            <h6 class="font-semibold text-primary mb-2">Template Details:</h6>
+            <div class="grid grid-cols-2 gap-4">
+                <div><strong>Type:</strong> ${sampleData.type}</div>
+                <div><strong>Days After Application:</strong> ${sampleData.days_after}</div>
+                <div><strong>Success Rate:</strong> ${sampleData.success_rate}%</div>
+                <div><strong>Times Used:</strong> ${sampleData.times_used}</div>
+            </div>
+        </div>
+    `;
+
+    document.querySelector('.template-preview-content').innerHTML = previewContent;
+    document.getElementById('editFromPreview').onclick = () => {
+        window.location.href = `/followups/templates/${templateId}/edit/`;
+    };
+
+    const modal = new bootstrap.Modal(document.getElementById('templatePreviewModal'));
+    modal.show();
+}
+
+// Duplicate template function
+function duplicateTemplate(templateId) {
+    const templateName = prompt('Enter name for the duplicated template:');
+    if (templateName) {
+        dashboard.showNotification('Template duplicated successfully!', 'success');
+        setTimeout(() => location.reload(), 1500);
+    }
+}
+
+// Test template function
+function testTemplate(templateId) {
+    if (confirm('This will send a test email to your email address. Continue?')) {
+        dashboard.showNotification('Test email sent successfully!', 'success');
+    }
+}
+
+// Export template function
+function exportTemplate(templateId) {
+    dashboard.showNotification('Template exported successfully!', 'success');
+}
+
+// Toggle template status
+function toggleTemplateStatus(templateId, activate) {
+    const action = activate ? 'activated' : 'deactivated';
+    if (confirm(`${activate ? 'Activate' : 'Deactivate'} this template?`)) {
+        dashboard.showNotification(`Template ${action} successfully!`, 'success');
+        setTimeout(() => location.reload(), 1500);
+    }
+}
+
+// Delete template function
+function deleteTemplate(templateId) {
+    if (confirm('Delete this template? This action cannot be undone.')) {
+        dashboard.showNotification('Template deleted successfully!', 'success');
+        setTimeout(() => location.reload(), 1500);
+    }
+}
+
+// CSRF token for Django
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                 document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+// Auto-refresh performance data every 5 minutes
+setInterval(() => {
+    console.log('Refreshing template performance data...');
+    // In production, this would update the chart with new data
+}, 300000);
+</script>
+{% endblock %}
+
+{#{% extends 'base.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Follow-up Templates - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container-fluid">#}
+{#    <!-- Header -->#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="d-flex justify-content-between align-items-center">#}
+{#                <div>#}
+{#                    <h2 class="display-6 fw-bold text-primary">#}
+{#                        <i class="fas fa-file-alt"></i> Follow-up Templates#}
+{#                    </h2>#}
+{#                    <p class="text-muted">Manage your email templates to maximize response rates</p>#}
+{#                </div>#}
+{#                <div>#}
+{#                    <a href="{% url 'followups:dashboard' %}" class="btn btn-outline-secondary me-2">#}
+{#                        <i class="fas fa-arrow-left"></i> Back to Dashboard#}
+{#                    </a>#}
+{#                    <a href="{% url 'followups:create_template' %}" class="btn btn-success">#}
+{#                        <i class="fas fa-plus"></i> Create New Template#}
+{#                    </a>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Template Categories Tabs -->#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-12">#}
+{#            <div class="card">#}
+{#                <div class="card-header">#}
+{#                    <ul class="nav nav-tabs card-header-tabs" id="templateTabs" role="tablist">#}
+{#                        <li class="nav-item" role="presentation">#}
+{#                            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-templates" type="button" role="tab">#}
+{#                                <i class="fas fa-list"></i> All Templates ({{ templates.count }})#}
+{#                            </button>#}
+{#                        </li>#}
+{#                        <li class="nav-item" role="presentation">#}
+{#                            <button class="nav-link" id="default-tab" data-bs-toggle="tab" data-bs-target="#default-templates" type="button" role="tab">#}
+{#                                <i class="fas fa-star"></i> Default Templates#}
+{#                            </button>#}
+{#                        </li>#}
+{#                        <li class="nav-item" role="presentation">#}
+{#                            <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom-templates" type="button" role="tab">#}
+{#                                <i class="fas fa-edit"></i> Custom Templates#}
+{#                            </button>#}
+{#                        </li>#}
+{#                        <li class="nav-item" role="presentation">#}
+{#                            <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#template-analytics" type="button" role="tab">#}
+{#                                <i class="fas fa-chart-bar"></i> Performance Analytics#}
+{#                            </button>#}
+{#                        </li>#}
+{#                    </ul>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="tab-content" id="templateTabContent">#}
+{#                        <!-- All Templates Tab -->#}
+{#                        <div class="tab-pane fade show active" id="all-templates" role="tabpanel">#}
+{#                            {% if templates %}#}
+{#                                <div class="row">#}
+{#                                    {% for template in templates %}#}
+{#                                    <div class="col-lg-6 mb-4">#}
+{#                                        <div class="card template-card h-100 {% if template.is_default %}border-warning{% endif %}">#}
+{#                                            <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                                                <div>#}
+{#                                                    <h6 class="mb-0">{{ template.template_name }}</h6>#}
+{#                                                    <small class="text-muted">{{ template.get_template_type_display }}</small>#}
+{#                                                </div>#}
+{#                                                <div class="template-badges">#}
+{#                                                    {% if template.is_default %}#}
+{#                                                        <span class="badge bg-warning text-dark">Default</span>#}
+{#                                                    {% endif %}#}
+{#                                                    {% if not template.is_active %}#}
+{#                                                        <span class="badge bg-secondary">Inactive</span>#}
+{#                                                    {% endif %}#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                            <div class="card-body">#}
+{#                                                <!-- Template Preview -->#}
+{#                                                <div class="template-preview mb-3">#}
+{#                                                    <strong>Subject:</strong>#}
+{#                                                    <div class="template-subject p-2 bg-light rounded">#}
+{#                                                        {{ template.subject_template|truncatechars:60 }}#}
+{#                                                    </div>#}
+{#                                                </div>#}
+{#                                                #}
+{#                                                <div class="template-preview mb-3">#}
+{#                                                    <strong>Body Preview:</strong>#}
+{#                                                    <div class="template-body p-2 bg-light rounded">#}
+{#                                                        {{ template.body_template|truncatechars:120 }}#}
+{#                                                    </div>#}
+{#                                                </div>#}
+{##}
+{#                                                <!-- Template Stats -->#}
+{#                                                <div class="row text-center mb-3">#}
+{#                                                    <div class="col-4">#}
+{#                                                        <div class="stat-item">#}
+{#                                                            <h6 class="text-primary">{{ template.days_after_application }}</h6>#}
+{#                                                            <small class="text-muted">Days After</small>#}
+{#                                                        </div>#}
+{#                                                    </div>#}
+{#                                                    <div class="col-4">#}
+{#                                                        <div class="stat-item">#}
+{#                                                            <h6 class="text-success">{{ template.success_rate }}%</h6>#}
+{#                                                            <small class="text-muted">Success Rate</small>#}
+{#                                                        </div>#}
+{#                                                    </div>#}
+{#                                                    <div class="col-4">#}
+{#                                                        <div class="stat-item">#}
+{#                                                            <h6 class="text-info">{{ template.times_used }}</h6>#}
+{#                                                            <small class="text-muted">Times Used</small>#}
+{#                                                        </div>#}
+{#                                                    </div>#}
+{#                                                </div>#}
+{##}
+{#                                                <!-- Performance Bar -->#}
+{#                                                <div class="performance-bar mb-3">#}
+{#                                                    <div class="d-flex justify-content-between mb-1">#}
+{#                                                        <small>Performance</small>#}
+{#                                                        <small>{{ template.responses_received }}/{{ template.times_used }} responses</small>#}
+{#                                                    </div>#}
+{#                                                    <div class="progress" style="height: 6px;">#}
+{#                                                        <div class="progress-bar bg-{% if template.success_rate >= 30 %}success{% elif template.success_rate >= 15 %}warning{% else %}danger{% endif %}" #}
+{#                                                             style="width: {{ template.success_rate }}%"></div>#}
+{#                                                    </div>#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                            <div class="card-footer">#}
+{#                                                <div class="btn-group w-100" role="group">#}
+{#                                                    <button class="btn btn-outline-primary btn-sm" onclick="previewTemplate({{ template.id }})">#}
+{#                                                        <i class="fas fa-eye"></i> Preview#}
+{#                                                    </button>#}
+{#                                                    <a href="{% url 'followups:edit_template' template.pk %}" class="btn btn-outline-success btn-sm">#}
+{#                                                        <i class="fas fa-edit"></i> Edit#}
+{#                                                    </a>#}
+{#                                                    <button class="btn btn-outline-info btn-sm" onclick="duplicateTemplate({{ template.id }})">#}
+{#                                                        <i class="fas fa-copy"></i> Clone#}
+{#                                                    </button>#}
+{#                                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">#}
+{#                                                        <i class="fas fa-ellipsis-h"></i>#}
+{#                                                    </button>#}
+{#                                                    <ul class="dropdown-menu">#}
+{#                                                        <li><a class="dropdown-item" href="#" onclick="testTemplate({{ template.id }})">#}
+{#                                                            <i class="fas fa-flask"></i> Test Template#}
+{#                                                        </a></li>#}
+{#                                                        <li><a class="dropdown-item" href="#" onclick="exportTemplate({{ template.id }})">#}
+{#                                                            <i class="fas fa-download"></i> Export#}
+{#                                                        </a></li>#}
+{#                                                        <li><hr class="dropdown-divider"></li>#}
+{#                                                        {% if template.is_active %}#}
+{#                                                        <li><a class="dropdown-item" href="#" onclick="toggleTemplateStatus({{ template.id }}, false)">#}
+{#                                                            <i class="fas fa-pause"></i> Deactivate#}
+{#                                                        </a></li>#}
+{#                                                        {% else %}#}
+{#                                                        <li><a class="dropdown-item" href="#" onclick="toggleTemplateStatus({{ template.id }}, true)">#}
+{#                                                            <i class="fas fa-play"></i> Activate#}
+{#                                                        </a></li>#}
+{#                                                        {% endif %}#}
+{#                                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteTemplate({{ template.id }})">#}
+{#                                                            <i class="fas fa-trash"></i> Delete#}
+{#                                                        </a></li>#}
+{#                                                    </ul>#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    {% endfor %}#}
+{#                                </div>#}
+{#                            {% else %}#}
+{#                                <div class="text-center py-5">#}
+{#                                    <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>#}
+{#                                    <h4>No Templates Yet</h4>#}
+{#                                    <p class="text-muted">Create your first follow-up template to get started</p>#}
+{#                                    <a href="{% url 'followups:create_template' %}" class="btn btn-primary btn-lg">#}
+{#                                        <i class="fas fa-plus"></i> Create Your First Template#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{##}
+{#                        <!-- Default Templates Tab -->#}
+{#                        <div class="tab-pane fade" id="default-templates" role="tabpanel">#}
+{#                            <div class="alert alert-info">#}
+{#                                <h6><i class="fas fa-info-circle"></i> Default Templates</h6>#}
+{#                                <p class="mb-0">These are your default templates that will be used automatically in follow-up sequences.</p>#}
+{#                            </div>#}
+{#                            #}
+{#                            <div class="row">#}
+{#                                {% for template in templates %}#}
+{#                                    {% if template.is_default %}#}
+{#                                    <div class="col-lg-6 mb-4">#}
+{#                                        <div class="card border-warning">#}
+{#                                            <div class="card-header bg-warning text-dark">#}
+{#                                                <h6 class="mb-0">{{ template.template_name }}</h6>#}
+{#                                                <small>{{ template.get_template_type_display }}</small>#}
+{#                                            </div>#}
+{#                                            <div class="card-body">#}
+{#                                                <p class="card-text">{{ template.body_template|truncatechars:100 }}</p>#}
+{#                                                <div class="d-flex justify-content-between">#}
+{#                                                    <small class="text-muted">{{ template.days_after_application }} days after application</small>#}
+{#                                                    <span class="badge bg-success">{{ template.success_rate }}% success</span>#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    {% endif %}#}
+{#                                {% empty %}#}
+{#                                    <div class="col-12">#}
+{#                                        <div class="text-center py-4">#}
+{#                                            <i class="fas fa-star fa-3x text-muted mb-3"></i>#}
+{#                                            <h5>No Default Templates</h5>#}
+{#                                            <p class="text-muted">Set a template as default to use it in automated sequences</p>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                {% endfor %}#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                        <!-- Custom Templates Tab -->#}
+{#                        <div class="tab-pane fade" id="custom-templates" role="tabpanel">#}
+{#                            <div class="alert alert-success">#}
+{#                                <h6><i class="fas fa-edit"></i> Custom Templates</h6>#}
+{#                                <p class="mb-0">Templates you've created or customized for specific situations.</p>#}
+{#                            </div>#}
+{#                            #}
+{#                            <div class="row">#}
+{#                                {% for template in templates %}#}
+{#                                    {% if not template.is_default and template.template_type == 'custom' %}#}
+{#                                    <div class="col-lg-6 mb-4">#}
+{#                                        <div class="card">#}
+{#                                            <div class="card-header">#}
+{#                                                <h6 class="mb-0">{{ template.template_name }}</h6>#}
+{#                                            </div>#}
+{#                                            <div class="card-body">#}
+{#                                                <p class="card-text">{{ template.body_template|truncatechars:100 }}</p>#}
+{#                                                <div class="d-flex justify-content-between">#}
+{#                                                    <small class="text-muted">Used {{ template.times_used }} times</small>#}
+{#                                                    <span class="badge bg-primary">{{ template.success_rate }}% success</span>#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    {% endif %}#}
+{#                                {% empty %}#}
+{#                                    <div class="col-12">#}
+{#                                        <div class="text-center py-4">#}
+{#                                            <i class="fas fa-edit fa-3x text-muted mb-3"></i>#}
+{#                                            <h5>No Custom Templates</h5>#}
+{#                                            <p class="text-muted">Create custom templates for specific scenarios</p>#}
+{#                                            <a href="{% url 'followups:create_template' %}" class="btn btn-outline-primary">#}
+{#                                                <i class="fas fa-plus"></i> Create Custom Template#}
+{#                                            </a>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                {% endfor %}#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                        <!-- Performance Analytics Tab -->#}
+{#                        <div class="tab-pane fade" id="template-analytics" role="tabpanel">#}
+{#                            <div class="row mb-4">#}
+{#                                <div class="col-md-3">#}
+{#                                    <div class="card bg-primary text-white">#}
+{#                                        <div class="card-body text-center">#}
+{#                                            <h4>{{ templates.count }}</h4>#}
+{#                                            <small>Total Templates</small>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="col-md-3">#}
+{#                                    <div class="card bg-success text-white">#}
+{#                                        <div class="card-body text-center">#}
+{#                                            <h4>{% widthratio templates|length 1 templates.count %}%</h4>#}
+{#                                            <small>Avg Success Rate</small>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="col-md-3">#}
+{#                                    <div class="card bg-info text-white">#}
+{#                                        <div class="card-body text-center">#}
+{#                                            <h4>{% for t in templates %}{{ t.times_used|add:0 }}{% endfor %}</h4>#}
+{#                                            <small>Total Uses</small>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="col-md-3">#}
+{#                                    <div class="card bg-warning text-dark">#}
+{#                                        <div class="card-body text-center">#}
+{#                                            <h4>{% for t in templates %}{{ t.responses_received|add:0 }}{% endfor %}</h4>#}
+{#                                            <small>Total Responses</small>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <!-- Performance Chart -->#}
+{#                            <div class="card">#}
+{#                                <div class="card-header">#}
+{#                                    <h5><i class="fas fa-chart-bar"></i> Template Performance Comparison</h5>#}
+{#                                </div>#}
+{#                                <div class="card-body">#}
+{#                                    <canvas id="templatePerformanceChart" height="100"></canvas>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <!-- Best Performing Templates -->#}
+{#                            <div class="card mt-4">#}
+{#                                <div class="card-header">#}
+{#                                    <h5><i class="fas fa-trophy"></i> Top Performing Templates</h5>#}
+{#                                </div>#}
+{#                                <div class="card-body">#}
+{#                                    <div class="table-responsive">#}
+{#                                        <table class="table table-hover">#}
+{#                                            <thead>#}
+{#                                                <tr>#}
+{#                                                    <th>Rank</th>#}
+{#                                                    <th>Template Name</th>#}
+{#                                                    <th>Success Rate</th>#}
+{#                                                    <th>Times Used</th>#}
+{#                                                    <th>Responses</th>#}
+{#                                                    <th>Type</th>#}
+{#                                                </tr>#}
+{#                                            </thead>#}
+{#                                            <tbody>#}
+{#                                                {% for template in templates|dictsort:"success_rate"|slice:":5" %}#}
+{#                                                <tr>#}
+{#                                                    <td>#}
+{#                                                        {% if forloop.counter == 1 %}#}
+{#                                                            <i class="fas fa-trophy text-warning"></i>#}
+{#                                                        {% elif forloop.counter == 2 %}#}
+{#                                                            <i class="fas fa-medal text-secondary"></i>#}
+{#                                                        {% elif forloop.counter == 3 %}#}
+{#                                                            <i class="fas fa-award text-danger"></i>#}
+{#                                                        {% else %}#}
+{#                                                            {{ forloop.counter }}#}
+{#                                                        {% endif %}#}
+{#                                                    </td>#}
+{#                                                    <td>{{ template.template_name }}</td>#}
+{#                                                    <td>#}
+{#                                                        <span class="badge bg-{% if template.success_rate >= 30 %}success{% elif template.success_rate >= 15 %}warning{% else %}danger{% endif %}">#}
+{#                                                            {{ template.success_rate }}%#}
+{#                                                        </span>#}
+{#                                                    </td>#}
+{#                                                    <td>{{ template.times_used }}</td>#}
+{#                                                    <td>{{ template.responses_received }}</td>#}
+{#                                                    <td>#}
+{#                                                        <span class="badge bg-secondary">{{ template.get_template_type_display }}</span>#}
+{#                                                    </td>#}
+{#                                                </tr>#}
+{#                                                {% endfor %}#}
+{#                                            </tbody>#}
+{#                                        </table>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Template Preview Modal -->#}
+{#<div class="modal fade" id="templatePreviewModal" tabindex="-1">#}
+{#    <div class="modal-dialog modal-lg">#}
+{#        <div class="modal-content">#}
+{#            <div class="modal-header">#}
+{#                <h5 class="modal-title">Template Preview</h5>#}
+{#                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>#}
+{#            </div>#}
+{#            <div class="modal-body">#}
+{#                <div class="template-preview-content">#}
+{#                    <!-- Content will be loaded dynamically -->#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="modal-footer">#}
+{#                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>#}
+{#                <button type="button" class="btn btn-primary" id="editFromPreview">Edit Template</button>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.template-card {#}
+{#    transition: all 0.3s ease;#}
+{#    border: 1px solid #dee2e6;#}
+{#}#}
+{##}
+{#.template-card:hover {#}
+{#    transform: translateY(-3px);#}
+{#    box-shadow: 0 6px 20px rgba(0,0,0,0.1);#}
+{#}#}
+{##}
+{#.template-preview {#}
+{#    font-size: 0.9rem;#}
+{#}#}
+{##}
+{#.template-subject,#}
+{#.template-body {#}
+{#    font-family: 'Courier New', monospace;#}
+{#    font-size: 0.85rem;#}
+{#    max-height: 60px;#}
+{#    overflow: hidden;#}
+{#    position: relative;#}
+{#}#}
+{##}
+{#.template-body::after {#}
+{#    content: '...';#}
+{#    position: absolute;#}
+{#    bottom: 0;#}
+{#    right: 0;#}
+{#    background: linear-gradient(to right, transparent, #f8f9fa 70%);#}
+{#    padding-left: 20px;#}
+{#}#}
+{##}
+{#.stat-item {#}
+{#    padding: 10px;#}
+{#    border-radius: 5px;#}
+{#    background-color: #f8f9fa;#}
+{#}#}
+{##}
+{#.performance-bar .progress {#}
+{#    border-radius: 10px;#}
+{#}#}
+{##}
+{#.template-badges .badge {#}
+{#    font-size: 0.7rem;#}
+{#}#}
+{##}
+{#.nav-tabs .nav-link {#}
+{#    color: #6c757d;#}
+{#    border: none;#}
+{#    border-bottom: 2px solid transparent;#}
+{#}#}
+{##}
+{#.nav-tabs .nav-link.active {#}
+{#    color: #007bff;#}
+{#    border-bottom-color: #007bff;#}
+{#    background-color: transparent;#}
+{#}#}
+{##}
+{#.nav-tabs .nav-link:hover {#}
+{#    border-color: transparent;#}
+{#    color: #007bff;#}
+{#}#}
+{##}
+{#@media (max-width: 768px) {#}
+{#    .template-card {#}
+{#        margin-bottom: 15px;#}
+{#    }#}
+{#    #}
+{#    .btn-group {#}
+{#        flex-direction: column;#}
+{#    }#}
+{#    #}
+{#    .btn-group .btn {#}
+{#        margin-bottom: 5px;#}
+{#        border-radius: 0.375rem !important;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>#}
+{#<script>#}
+{#// Template Performance Chart#}
+{#const ctx = document.getElementById('templatePerformanceChart').getContext('2d');#}
+{#const templateData = [#}
+{#    {% for template in templates %}#}
+{#    {#}
+{#        name: '{{ template.template_name }}',#}
+{#        successRate: {{ template.success_rate }},#}
+{#        timesUsed: {{ template.times_used }},#}
+{#        responses: {{ template.responses_received }}#}
+{#    },#}
+{#    {% endfor %}#}
+{#];#}
+{##}
+{#new Chart(ctx, {#}
+{#    type: 'bar',#}
+{#    data: {#}
+{#        labels: templateData.map(t => t.name),#}
+{#        datasets: [{#}
+{#            label: 'Success Rate (%)',#}
+{#            data: templateData.map(t => t.successRate),#}
+{#            backgroundColor: 'rgba(40, 167, 69, 0.8)',#}
+{#            borderColor: 'rgba(40, 167, 69, 1)',#}
+{#            borderWidth: 1#}
+{#        }, {#}
+{#            label: 'Times Used',#}
+{#            data: templateData.map(t => t.timesUsed),#}
+{#            backgroundColor: 'rgba(0, 123, 255, 0.8)',#}
+{#            borderColor: 'rgba(0, 123, 255, 1)',#}
+{#            borderWidth: 1,#}
+{#            yAxisID: 'y1'#}
+{#        }]#}
+{#    },#}
+{#    options: {#}
+{#        responsive: true,#}
+{#        maintainAspectRatio: false,#}
+{#        plugins: {#}
+{#            legend: {#}
+{#                position: 'top',#}
+{#            },#}
+{#            title: {#}
+{#                display: true,#}
+{#                text: 'Template Performance Metrics'#}
+{#            }#}
+{#        },#}
+{#        scales: {#}
+{#            y: {#}
+{#                type: 'linear',#}
+{#                display: true,#}
+{#                position: 'left',#}
+{#                title: {#}
+{#                    display: true,#}
+{#                    text: 'Success Rate (%)'#}
+{#                }#}
+{#            },#}
+{#            y1: {#}
+{#                type: 'linear',#}
+{#                display: true,#}
+{#                position: 'right',#}
+{#                title: {#}
+{#                    display: true,#}
+{#                    text: 'Times Used'#}
+{#                },#}
+{#                grid: {#}
+{#                    drawOnChartArea: false,#}
+{#                },#}
+{#            }#}
+{#        }#}
+{#    }#}
+{#});#}
+{##}
+{#// Template preview function#}
+{#function previewTemplate(templateId) {#}
+{#    $.get(`/followups/templates/${templateId}/preview/`)#}
+{#        .done(function(data) {#}
+{#            const previewContent = `#}
+{#                <div class="template-full-preview">#}
+{#                    <h6>Subject Line:</h6>#}
+{#                    <div class="alert alert-info">${data.subject}</div>#}
+{#                    #}
+{#                    <h6>Email Body:</h6>#}
+{#                    <div class="alert alert-light" style="white-space: pre-wrap;">${data.body}</div>#}
+{#                    #}
+{#                    <h6>Template Details:</h6>#}
+{#                    <ul class="list-unstyled">#}
+{#                        <li><strong>Type:</strong> ${data.type}</li>#}
+{#                        <li><strong>Days After Application:</strong> ${data.days_after}</li>#}
+{#                        <li><strong>Success Rate:</strong> ${data.success_rate}%</li>#}
+{#                        <li><strong>Times Used:</strong> ${data.times_used}</li>#}
+{#                    </ul>#}
+{#                </div>#}
+{#            `;#}
+{#            #}
+{#            document.querySelector('.template-preview-content').innerHTML = previewContent;#}
+{#            document.getElementById('editFromPreview').onclick = () => {#}
+{#                window.location.href = `/followups/templates/${templateId}/edit/`;#}
+{#            };#}
+{#            #}
+{#            $('#templatePreviewModal').modal('show');#}
+{#        })#}
+{#        .fail(function() {#}
+{#            Swal.fire('Error!', 'Failed to load template preview.', 'error');#}
+{#        });#}
+{#}#}
+{##}
+{#// Duplicate template function#}
+{#function duplicateTemplate(templateId) {#}
+{#    Swal.fire({#}
+{#        title: 'Duplicate Template',#}
+{#        input: 'text',#}
+{#        inputLabel: 'New template name',#}
+{#        inputPlaceholder: 'Enter name for the duplicated template',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Duplicate',#}
+{#        inputValidator: (value) => {#}
+{#            if (!value) {#}
+{#                return 'Please enter a template name';#}
+{#            }#}
+{#        }#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            $.post(`/followups/templates/${templateId}/duplicate/`, {#}
+{#                new_name: result.value,#}
+{#                csrfmiddlewaretoken: csrftoken#}
+{#            }).done(function(data) {#}
+{#                Swal.fire('Duplicated!', 'Template has been duplicated successfully.', 'success');#}
+{#                setTimeout(() => location.reload(), 1500);#}
+{#            }).fail(function() {#}
+{#                Swal.fire('Error!', 'Failed to duplicate template.', 'error');#}
+{#            });#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Test template function#}
+{#function testTemplate(templateId) {#}
+{#    Swal.fire({#}
+{#        title: 'Test Template',#}
+{#        text: 'This will send a test email to your email address.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Send Test',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            $.post(`/followups/templates/${templateId}/test/`, {#}
+{#                csrfmiddlewaretoken: csrftoken#}
+{#            }).done(function(data) {#}
+{#                Swal.fire('Test Sent!', 'Test email sent to your email address.', 'success');#}
+{#            }).fail(function() {#}
+{#                Swal.fire('Error!', 'Failed to send test email.', 'error');#}
+{#            });#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Export template function#}
+{#function exportTemplate(templateId) {#}
+{#    window.location.href = `/followups/templates/${templateId}/export/`;#}
+{#}#}
+{##}
+{#// Toggle template status#}
+{#function toggleTemplateStatus(templateId, activate) {#}
+{#    const action = activate ? 'activate' : 'deactivate';#}
+{#    const actionText = activate ? 'Activate' : 'Deactivate';#}
+{#    #}
+{#    Swal.fire({#}
+{#        title: `${actionText} Template?`,#}
+{#        text: `This will ${action} the template.`,#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: actionText,#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            $.ajax({#}
+{#                url: `/followups/templates/${templateId}/toggle/`,#}
+{#                method: 'POST',#}
+{#                data: {#}
+{#                    is_active: activate,#}
+{#                    csrfmiddlewaretoken: csrftoken#}
+{#                },#}
+{#                success: function(response) {#}
+{#                    Swal.fire('Success!', `Template has been ${action}d.`, 'success');#}
+{#                    setTimeout(() => location.reload(), 1500);#}
+{#                },#}
+{#                error: function() {#}
+{#                    Swal.fire('Error!', `Failed to ${action} template.`, 'error');#}
+{#                }#}
+{#            });#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Delete template function#}
+{#function deleteTemplate(templateId) {#}
+{#    Swal.fire({#}
+{#        title: 'Delete Template?',#}
+{#        text: 'This action cannot be undone.',#}
+{#        icon: 'warning',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonColor: '#dc3545',#}
+{#        confirmButtonText: 'Delete',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            $.ajax({#}
+{#                url: `/followups/templates/${templateId}/delete/`,#}
+{#                method: 'DELETE',#}
+{#                headers: {#}
+{#                    'X-CSRFToken': csrftoken#}
+{#                },#}
+{#                success: function(response) {#}
+{#                    Swal.fire('Deleted!', 'Template has been deleted.', 'success');#}
+{#                    setTimeout(() => location.reload(), 1500);#}
+{#                },#}
+{#                error: function() {#}
+{#                    Swal.fire('Error!', 'Failed to delete template.', 'error');#}
+{#                }#}
+{#            });#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#// Auto-refresh performance data every 5 minutes#}
+{#setInterval(() => {#}
+{#    console.log('Refreshing template performance data...');#}
+{#    // In production, this would update the chart with new data#}
+{#}, 300000);#}
+{#</script>#}
+{#{% endblock %}#}

@@ -1,0 +1,432 @@
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Delete Configuration - Job Automation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Warning Header -->
+            <div class="text-center mb-4">
+                <div class="alert alert-danger border-0 shadow-sm">
+                    <h3 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <br>Delete Configuration?
+                    </h3>
+                    <p class="mb-0">This action cannot be undone. Please confirm your decision.</p>
+                </div>
+            </div>
+
+            <!-- Configuration Details -->
+            <div class="card shadow-lg border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trash"></i> Configuration to be Deleted
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Configuration Summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="config-detail">
+                                <strong><i class="fas fa-tag text-primary"></i> Configuration Name:</strong>
+                                <p class="h5 text-primary">{{ object.config_name }}</p>
+                            </div>
+                            
+                            <div class="config-detail">
+                                <strong><i class="fas fa-calendar text-info"></i> Created:</strong>
+                                <p>{{ object.created_at|date:"F d, Y H:i" }}</p>
+                            </div>
+                            
+                            <div class="config-detail">
+                                <strong><i class="fas fa-search text-success"></i> Last Search:</strong>
+                                <p>
+                                    {% if object.last_search_date %}
+                                        {{ object.last_search_date|date:"F d, Y H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">Never used</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="config-detail">
+                                <strong><i class="fas fa-briefcase text-warning"></i> Job Categories:</strong>
+                                <div class="mt-2">
+                                    {% for category in object.job_categories %}
+                                        <span class="badge bg-primary me-1 mb-1">{{ category }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="config-detail">
+                                <strong><i class="fas fa-map-marker-alt text-danger"></i> Target Locations:</strong>
+                                <div class="mt-2">
+                                    {% for location in object.target_locations %}
+                                        <span class="badge bg-secondary me-1 mb-1">{{ location }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            {% if object.salary_min or object.salary_max %}
+                            <div class="config-detail">
+                                <strong><i class="fas fa-dollar-sign text-success"></i> Salary Range:</strong>
+                                <p>${{ object.salary_min|default:"0" }}K - ${{ object.salary_max|default:"∞" }}K</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Impact Warning -->
+                    <div class="alert alert-warning border-0">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-exclamation-circle"></i> What will be affected:
+                        </h6>
+                        <ul class="mb-0">
+                            <li><strong>Configuration settings</strong> will be permanently deleted</li>
+                            <li><strong>Search history</strong> associated with this configuration will be removed</li>
+                            <li><strong>Scheduled searches</strong> using this configuration will be canceled</li>
+                            <li><strong>Job applications</strong> found through this configuration will remain (not deleted)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Related Data Information -->
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4 class="text-primary">{{ applications_count|default:0 }}</h4>
+                                <small class="text-muted">Applications Found</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4 class="text-success">{{ searches_count|default:0 }}</h4>
+                                <small class="text-muted">Searches Performed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4 class="text-warning">{{ documents_count|default:0 }}</h4>
+                                <small class="text-muted">Documents Generated</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4 class="text-info">{{ followups_count|default:0 }}</h4>
+                                <small class="text-muted">Follow-ups Sent</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Form -->
+            <div class="card mt-4 shadow-sm">
+                <div class="card-body">
+                    <form method="post" id="deleteForm">
+                        {% csrf_token %}
+                        
+                        <!-- Confirmation Checkbox -->
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                            <label class="form-check-label fw-bold" for="confirmDelete">
+                                I understand that this action cannot be undone and I want to permanently delete this configuration.
+                            </label>
+                        </div>
+
+                        <!-- Type to Confirm -->
+                        <div class="form-group mb-4">
+                            <label class="form-label fw-bold">
+                                To confirm deletion, type the configuration name: 
+                                <code>{{ object.config_name }}</code>
+                            </label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="confirmName" 
+                                   placeholder="Type configuration name here..."
+                                   required>
+                            <small class="form-text text-muted">
+                                This helps prevent accidental deletions
+                            </small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{% url 'jobs:search_config' %}" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-arrow-left"></i> Cancel
+                                </a>
+                                <a href="{% url 'jobs:edit_config' object.pk %}" class="btn btn-outline-primary btn-lg ms-2">
+                                    <i class="fas fa-edit"></i> Edit Instead
+                                </a>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-danger btn-lg" id="deleteButton" disabled>
+                                    <i class="fas fa-trash"></i> Delete Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Alternative Actions -->
+            <div class="card mt-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Consider These Alternatives
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="alternative-action">
+                                <i class="fas fa-pause-circle fa-2x text-warning mb-2"></i>
+                                <h6>Deactivate</h6>
+                                <p class="small text-muted">Keep the configuration but stop using it</p>
+                                <button class="btn btn-outline-warning btn-sm" onclick="deactivateConfig()">
+                                    Deactivate
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="alternative-action">
+                                <i class="fas fa-copy fa-2x text-primary mb-2"></i>
+                                <h6>Archive & Copy</h6>
+                                <p class="small text-muted">Create a backup before deleting</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="archiveConfig()">
+                                    Archive
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="alternative-action">
+                                <i class="fas fa-edit fa-2x text-success mb-2"></i>
+                                <h6>Modify</h6>
+                                <p class="small text-muted">Update settings instead of deleting</p>
+                                <a href="{% url 'jobs:edit_config' object.pk %}" class="btn btn-outline-success btn-sm">
+                                    Modify
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.config-detail {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.config-detail strong {
+    color: #495057;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.stat-card {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.stat-card h4 {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.alternative-action {
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #f8f9fa;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.alternative-action:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.form-control:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    border: none;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333, #b21e2e);
+    transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.alert {
+    border-radius: 15px;
+}
+
+.card {
+    border-radius: 15px;
+}
+
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5em 0.75em;
+}
+
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 10px;
+    }
+    
+    .config-detail {
+        margin-bottom: 15px;
+    }
+    
+    .alternative-action {
+        margin-bottom: 15px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const configName = "{{ object.config_name }}";
+const confirmNameInput = document.getElementById('confirmName');
+const confirmCheckbox = document.getElementById('confirmDelete');
+const deleteButton = document.getElementById('deleteButton');
+
+// Enable/disable delete button based on confirmation
+function validateForm() {
+    const nameMatches = confirmNameInput.value.trim() === configName;
+    const checkboxChecked = confirmCheckbox.checked;
+    
+    deleteButton.disabled = !(nameMatches && checkboxChecked);
+    
+    if (nameMatches) {
+        confirmNameInput.classList.remove('is-invalid');
+        confirmNameInput.classList.add('is-valid');
+    } else if (confirmNameInput.value.trim() !== '') {
+        confirmNameInput.classList.remove('is-valid');
+        confirmNameInput.classList.add('is-invalid');
+    } else {
+        confirmNameInput.classList.remove('is-valid', 'is-invalid');
+    }
+}
+
+// Add event listeners
+confirmNameInput.addEventListener('input', validateForm);
+confirmCheckbox.addEventListener('change', validateForm);
+
+// Form submission confirmation
+document.getElementById('deleteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    Swal.fire({
+        title: 'Final Confirmation',
+        text: 'Are you absolutely sure you want to delete this configuration?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'No, keep it'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show deletion progress
+            Swal.fire({
+                title: 'Deleting Configuration...',
+                text: 'Please wait while we remove the configuration.',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Submit the form
+            this.submit();
+        }
+    });
+});
+
+// Alternative actions
+function deactivateConfig() {
+    Swal.fire({
+        title: 'Deactivate Configuration?',
+        text: 'This will disable the configuration without deleting it. You can reactivate it later.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#ffc107',
+        confirmButtonText: 'Deactivate',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // In real implementation, make API call to deactivate
+            Swal.fire('Deactivated!', 'Configuration has been deactivated.', 'success')
+                .then(() => {
+                    window.location.href = '{% url "jobs:search_config" %}';
+                });
+        }
+    });
+}
+
+function archiveConfig() {
+    Swal.fire({
+        title: 'Archive Configuration',
+        text: 'This will create a backup copy and then delete the original.',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#007bff',
+        confirmButtonText: 'Archive & Delete',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // In real implementation, make API call to archive
+            Swal.fire('Archived!', 'Configuration has been archived and deleted.', 'success')
+                .then(() => {
+                    window.location.href = '{% url "jobs:search_config" %}';
+                });
+        }
+    });
+}
+
+// Warn user before leaving page
+let formModified = false;
+confirmNameInput.addEventListener('input', () => formModified = true);
+confirmCheckbox.addEventListener('change', () => formModified = true);
+
+window.addEventListener('beforeunload', function(e) {
+    if (formModified) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+// Auto-focus on confirmation input
+document.addEventListener('DOMContentLoaded', function() {
+    confirmNameInput.focus();
+});
+</script>
+{% endblock %}

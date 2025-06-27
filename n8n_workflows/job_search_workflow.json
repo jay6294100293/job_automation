@@ -1,0 +1,384 @@
+{
+  "name": "Job Search Automation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-search",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-job-search",
+      "name": "Job Search Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "job-search-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming job search request\nconst requestData = items[0].json;\nconst userId = requestData.user_id;\nconst searchCategories = requestData.categories || [];\nconst jobCount = requestData.job_count || 15;\nconst userPreferences = requestData.user_preferences || {};\n\n// Smart distribution of jobs across categories\nconst jobsPerCategory = Math.ceil(jobCount / searchCategories.length);\n\n// Prepare search parameters\nconst searchParams = {\n  user_id: userId,\n  categories: searchCategories,\n  jobs_per_category: jobsPerCategory,\n  total_jobs: jobCount,\n  location: userPreferences.location || 'Remote',\n  salary_min: userPreferences.salary_min || 50000,\n  salary_max: userPreferences.salary_max || 150000,\n  experience_level: userPreferences.experience_level || 'mid',\n  remote_preference: userPreferences.remote_preference || 'remote'\n};\n\nconsole.log('Search parameters prepared:', searchParams);\n\nreturn [{\n  json: searchParams\n}];"
+      },
+      "id": "parse-search-request",
+      "name": "Parse Search Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.indeed.com/ads/apisearch",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "publisher",
+              "value": "={{ $env.INDEED_API_KEY }}"
+            },
+            {
+              "name": "q",
+              "value": "={{ $json.categories.join(' OR ') }}"
+            },
+            {
+              "name": "l",
+              "value": "={{ $json.location }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.jobs_per_category }}"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "v",
+              "value": "2"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-indeed",
+      "name": "Search Indeed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.glassdoor.com/api/api.htm",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "t.p",
+              "value": "={{ $env.GLASSDOOR_API_KEY }}"
+            },
+            {
+              "name": "t.k",
+              "value": "={{ $env.GLASSDOOR_PARTNER_KEY }}"
+            },
+            {
+              "name": "userip",
+              "value": "0.0.0.0"
+            },
+            {
+              "name": "useragent",
+              "value": "job-automation-bot"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "v",
+              "value": "1"
+            },
+            {
+              "name": "action",
+              "value": "jobs-stats"
+            },
+            {
+              "name": "q",
+              "value": "={{ $json.categories.join(' ') }}"
+            },
+            {
+              "name": "l",
+              "value": "={{ $json.location }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-glassdoor",
+      "name": "Search Glassdoor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.linkedin.com/v2/jobSearch",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "keywords",
+              "value": "={{ $json.categories.join(' ') }}"
+            },
+            {
+              "name": "locationId",
+              "value": "103644278"
+            },
+            {
+              "name": "count",
+              "value": "={{ $json.jobs_per_category }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-linkedin",
+      "name": "Search LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine and process job results from all sources\nconst indeedJobs = items[0]?.json?.results || [];\nconst glassdoorJobs = items[1]?.json?.response?.jobs || [];\nconst linkedinJobs = items[2]?.json?.elements || [];\n\nconst allJobs = [];\n\n// Process Indeed jobs\nindeedJobs.forEach(job => {\n  allJobs.push({\n    source: 'Indeed',\n    job_title: job.jobtitle,\n    company_name: job.company,\n    location: job.formattedLocation,\n    job_url: job.url,\n    job_description: job.snippet,\n    salary_range: job.formattedSalaryMin && job.formattedSalaryMax ? \n      `$${job.formattedSalaryMin} - $${job.formattedSalaryMax}` : 'Not specified',\n    date_posted: job.date,\n    remote_option: job.formattedLocation.includes('Remote') ? 'Remote' : 'On-site',\n    urgency_level: 'medium',\n    match_percentage: calculateMatchPercentage(job, items[0].json.categories)\n  });\n});\n\n// Process Glassdoor jobs\nglassdoorJobs.forEach(job => {\n  allJobs.push({\n    source: 'Glassdoor',\n    job_title: job.jobTitle,\n    company_name: job.employer.name,\n    location: job.location,\n    job_url: job.jobUrl,\n    job_description: job.jobDescription,\n    salary_range: job.estimatedSalary ? job.estimatedSalary : 'Not specified',\n    date_posted: job.discoverDate,\n    remote_option: job.location.includes('Remote') ? 'Remote' : 'On-site',\n    urgency_level: 'medium',\n    match_percentage: calculateMatchPercentage(job, items[0].json.categories),\n    company_rating: job.employer.overallRating\n  });\n});\n\n// Process LinkedIn jobs\nlinkedinJobs.forEach(job => {\n  allJobs.push({\n    source: 'LinkedIn',\n    job_title: job.title,\n    company_name: job.companyDetails?.company?.name || 'Unknown',\n    location: job.formattedLocation,\n    job_url: `https://linkedin.com/jobs/view/${job.dashEntityUrn.split(':').pop()}`,\n    job_description: job.description?.text || '',\n    salary_range: 'Not specified',\n    date_posted: new Date(job.listedAt).toISOString(),\n    remote_option: job.workRemoteAllowed ? 'Remote' : 'On-site',\n    urgency_level: 'medium',\n    match_percentage: calculateMatchPercentage(job, items[0].json.categories)\n  });\n});\n\n// Apply smart filters\nfunction applySmartFilters(jobs, preferences) {\n  return jobs.filter(job => {\n    // Salary filter\n    if (preferences.salary_min && job.salary_range !== 'Not specified') {\n      const salaryMatch = extractSalaryRange(job.salary_range);\n      if (salaryMatch && salaryMatch.min < preferences.salary_min) {\n        return false;\n      }\n    }\n    \n    // Remote preference filter\n    if (preferences.remote_preference === 'remote' && job.remote_option !== 'Remote') {\n      return false;\n    }\n    \n    // Experience level filter (basic implementation)\n    if (preferences.experience_level === 'entry' && \n        (job.job_title.toLowerCase().includes('senior') || \n         job.job_title.toLowerCase().includes('lead'))) {\n      return false;\n    }\n    \n    return true;\n  });\n}\n\n// Calculate match percentage based on job requirements vs user skills\nfunction calculateMatchPercentage(job, categories) {\n  const jobText = `${job.jobTitle || job.job_title || ''} ${job.snippet || job.jobDescription || job.description?.text || ''}`.toLowerCase();\n  let matches = 0;\n  \n  categories.forEach(category => {\n    if (jobText.includes(category.toLowerCase())) {\n      matches++;\n    }\n  });\n  \n  return Math.min((matches / categories.length) * 100, 100);\n}\n\n// Extract salary range from string\nfunction extractSalaryRange(salaryStr) {\n  const matches = salaryStr.match(/\\$(\\d+)(?:,?(\\d+))?.*?\\$(\\d+)(?:,?(\\d+))?/);\n  if (matches) {\n    const min = parseInt(matches[1] + (matches[2] || ''));\n    const max = parseInt(matches[3] + (matches[4] || ''));\n    return { min, max };\n  }\n  return null;\n}\n\n// Apply filters and sort by relevance\nconst filteredJobs = applySmartFilters(allJobs, items[0].json);\nconst sortedJobs = filteredJobs.sort((a, b) => b.match_percentage - a.match_percentage);\n\n// Limit to requested number\nconst finalJobs = sortedJobs.slice(0, items[0].json.total_jobs);\n\nconsole.log(`Found ${allJobs.length} total jobs, filtered to ${finalJobs.length}`);\n\nreturn [{\n  json: {\n    user_id: items[0].json.user_id,\n    jobs: finalJobs,\n    search_metadata: {\n      total_found: allJobs.length,\n      filtered_count: finalJobs.length,\n      sources_used: ['Indeed', 'Glassdoor', 'LinkedIn'],\n      search_timestamp: new Date().toISOString(),\n      categories_searched: items[0].json.categories\n    }\n  }\n}];"
+      },
+      "id": "process-job-results",
+      "name": "Process Job Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DJANGO_API_URL }}/api/applications/bulk-create/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.user_id }}"
+            },
+            {
+              "name": "jobs",
+              "value": "={{ JSON.stringify($json.jobs) }}"
+            },
+            {
+              "name": "search_metadata",
+              "value": "={{ JSON.stringify($json.search_metadata) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-to-database",
+      "name": "Save to Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/webhook/document-generation",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.user_id }}"
+            },
+            {
+              "name": "applications",
+              "value": "={{ JSON.stringify($json.created_applications) }}"
+            },
+            {
+              "name": "trigger_type",
+              "value": "job_search_complete"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "trigger-document-generation",
+      "name": "Trigger Document Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Job search completed successfully\",\n  \"jobs_found\": {{ $json.search_metadata.filtered_count }},\n  \"jobs_saved\": {{ $json.created_applications.length }},\n  \"document_generation_triggered\": true,\n  \"search_id\": \"{{ $json.search_metadata.search_timestamp }}\"\n}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "🎉 **Job Search Complete!**\\n\\n📊 **Results Summary:**\\n• Jobs Found: {{ $json.search_metadata.filtered_count }}\\n• Sources: Indeed, Glassdoor, LinkedIn\\n• Categories: {{ $json.search_metadata.categories_searched.join(', ') }}\\n\\n📄 **Document Generation:** Started for all applications\\n🔗 **View Results:** [Dashboard]({{ $env.SITE_URL }}/dashboard/)\\n\\n⏰ **Search Time:** {{ $json.search_metadata.search_timestamp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "discord-notification",
+      "name": "Discord Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1340, 480]
+    }
+  ],
+  "connections": {
+    "Job Search Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Search Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Search Request": {
+      "main": [
+        [
+          {
+            "node": "Search Indeed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search Glassdoor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Indeed": {
+      "main": [
+        [
+          {
+            "node": "Process Job Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Glassdoor": {
+      "main": [
+        [
+          {
+            "node": "Process Job Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Search LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Process Job Results",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Process Job Results": {
+      "main": [
+        [
+          {
+            "node": "Save to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Database": {
+      "main": [
+        [
+          {
+            "node": "Trigger Document Generation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Discord Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Document Generation": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/Toronto"
+  },
+  "pinData": {},
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "job-search-automation",
+  "tags": [
+    {
+      "createdAt": "2024-06-15T12:00:00.000Z",
+      "updatedAt": "2024-06-15T12:00:00.000Z",
+      "id": "job-automation",
+      "name": "job-automation"
+    }
+  ]
+}

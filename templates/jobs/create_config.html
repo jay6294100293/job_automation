@@ -1,0 +1,64 @@
+<!-- templates/jobs/create_config.html -->
+{% extends 'dashboard/../base_dashboard.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Create Search Configuration - Job Automation{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus"></i> Create New Search Configuration</h5>
+            </div>
+            <div class="card-body">
+                {% crispy form %}
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-lightbulb"></i> Configuration Tips</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Job Categories</h6>
+                        <ul class="small text-muted">
+                            <li>Select 3-5 categories for best results</li>
+                            <li>Include both specific and general roles</li>
+                            <li>Consider related positions you'd accept</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Target Locations</h6>
+                        <ul class="small text-muted">
+                            <li>Include "Remote" if you're open to it</li>
+                            <li>Add nearby cities to expand options</li>
+                            <li>Consider time zones for remote work</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>Salary Range</h6>
+                        <ul class="small text-muted">
+                            <li>Set realistic expectations based on experience</li>
+                            <li>Leave blank to see all salary ranges</li>
+                            <li>Consider total compensation, not just base</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Auto Follow-up</h6>
+                        <ul class="small text-muted">
+                            <li>Automatically sends follow-up emails</li>
+                            <li>Increases response rates by 3-5x</li>
+                            <li>Uses your saved templates</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,506 @@
+<!-- templates/dashboard/market_intelligence.html -->
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Market Intelligence - Job Automation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    .intelligence-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        margin-bottom: var(--space-xl);
+        border: 1px solid var(--border-primary);
+        overflow: hidden;
+    }
+
+    .intelligence-header {
+        padding: var(--space-md) var(--space-lg);
+        border-bottom: 1px solid var(--border-primary);
+        background: var(--bg-elevated);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .intelligence-body {
+        padding: var(--space-lg);
+    }
+
+    .filter-form {
+        padding: var(--space-md);
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-xl);
+    }
+
+    .form-row {
+        display: flex;
+        gap: var(--space-md);
+        margin-bottom: var(--space-md);
+    }
+
+    .form-group {
+        flex: 1;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: var(--space-xs);
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .form-select, .form-control {
+        width: 100%;
+        padding: var(--space-sm);
+        background: var(--bg-card);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .chart-container {
+        margin-bottom: var(--space-xl);
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-md);
+    }
+
+    .chart-title {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .chart-wrapper {
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        height: 300px;
+        position: relative;
+    }
+
+    .companies-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .companies-table th, .companies-table td {
+        padding: var(--space-sm);
+        text-align: left;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .companies-table th {
+        color: var(--text-secondary);
+        font-weight: 500;
+        background: var(--bg-tertiary);
+    }
+
+    .companies-table tbody tr:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .insight-list {
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        padding: var(--space-md) var(--space-lg);
+    }
+
+    .insight-item {
+        padding: var(--space-sm) 0;
+        border-bottom: 1px solid var(--border-primary);
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .insight-item:last-child {
+        border-bottom: none;
+    }
+
+    .insight-icon {
+        color: var(--primary-500);
+        margin-right: var(--space-sm);
+        margin-top: 4px;
+    }
+
+    .insight-text {
+        flex: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="intelligence-card">
+                <div class="intelligence-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-bar text-primary me-2"></i>
+                        Market Intelligence
+                    </h4>
+                    <div>
+                        <span class="badge bg-info">Data refreshed daily</span>
+                    </div>
+                </div>
+
+                <div class="intelligence-body">
+                    <!-- Filter Form -->
+                    <form method="get" action="{% url 'dashboard:market_intelligence' %}" class="filter-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="job_title">Job Title</label>
+                                <select name="job_title" id="job_title" class="form-select">
+                                    <option value="">All Job Titles</option>
+                                    {% for title in job_titles %}
+                                        <option value="{{ title }}" {% if selected_title == title %}selected{% endif %}>{{ title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="job_category">Job Category</label>
+                                <select name="job_category" id="job_category" class="form-select">
+                                    <option value="">All Categories</option>
+                                    {% for category in job_categories %}
+                                        <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="time_period">Time Period</label>
+                                <select name="time_period" id="time_period" class="form-select">
+                                    <option value="30" {% if time_period == "30" %}selected{% endif %}>Last 30 Days</option>
+                                    <option value="90" {% if time_period == "90" %}selected{% endif %}>Last 90 Days</option>
+                                    <option value="180" {% if time_period == "180" %}selected{% endif %}>Last 6 Months</option>
+                                    <option value="365" {% if time_period == "365" %}selected{% endif %}>Last Year</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-2"></i>
+                                Apply Filters
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if selected_title or selected_category %}
+                        <div class="row">
+                            <!-- Salary Range Chart -->
+                            <div class="col-lg-6">
+                                <div class="chart-container">
+                                    <div class="chart-header">
+                                        <h5 class="chart-title">
+                                            <i class="fas fa-dollar-sign text-success me-2"></i>
+                                            Salary Distribution
+                                        </h5>
+                                    </div>
+                                    <div class="chart-wrapper">
+                                        <canvas id="salaryChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Top Skills Chart -->
+                            <div class="col-lg-6">
+                                <div class="chart-container">
+                                    <div class="chart-header">
+                                        <h5 class="chart-title">
+                                            <i class="fas fa-code text-warning me-2"></i>
+                                            Top In-Demand Skills
+                                        </h5>
+                                    </div>
+                                    <div class="chart-wrapper">
+                                        <canvas id="skillsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Job Trends Chart -->
+                            <div class="col-lg-8">
+                                <div class="chart-container">
+                                    <div class="chart-header">
+                                        <h5 class="chart-title">
+                                            <i class="fas fa-chart-line text-info me-2"></i>
+                                            Job Posting Trends
+                                        </h5>
+                                    </div>
+                                    <div class="chart-wrapper">
+                                        <canvas id="trendChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Top Locations Chart -->
+                            <div class="col-lg-4">
+                                <div class="chart-container">
+                                    <div class="chart-header">
+                                        <h5 class="chart-title">
+                                            <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                                            Top Job Locations
+                                        </h5>
+                                    </div>
+                                    <div class="chart-wrapper">
+                                        <canvas id="locationChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Top Companies Table -->
+                            <div class="col-lg-6">
+                                <div class="chart-container">
+                                    <div class="chart-header">
+                                        <h5 class="chart-title">
+                                            <i class="fas fa-building text-primary me-2"></i>
+                                            Top Hiring Companies
+                                        </h5>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="companies-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Company</th>
+                                                    <th>Job Openings</th>
+                                                    <th>Avg. Salary</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for company in top_companies %}
+                                                    <tr>
+                                                        <td>{{ company.name }}</td>
+                                                        <td>{{ company.job_count }}</td>
+                                                        <td>${{ company.avg_salary|floatformat:0|intcomma }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Market Insights -->
+                            <div class="col-lg-6">
+                                <div class="chart-container">
+                                    <div class="chart-header">
+                                        <h5 class="chart-title">
+                                            <i class="fas fa-lightbulb text-warning me-2"></i>
+                                            Market Insights
+                                        </h5>
+                                    </div>
+                                    <div class="insight-list">
+                                        {% for insight in market_insights %}
+                                            <div class="insight-item">
+                                                <div class="insight-icon">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </div>
+                                                <div class="insight-text">{{ insight }}</div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-filter text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5>Select Filters to View Market Intelligence</h5>
+                            <p class="text-muted">Choose a job title or category to analyze market trends and insights.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize chart color scheme
+        const chartColors = {
+            primary: 'rgba(79, 70, 229, 1)',
+            primaryLight: 'rgba(79, 70, 229, 0.2)',
+            success: 'rgba(16, 185, 129, 1)',
+            successLight: 'rgba(16, 185, 129, 0.2)',
+            info: 'rgba(14, 165, 233, 1)',
+            infoLight: 'rgba(14, 165, 233, 0.2)',
+            warning: 'rgba(245, 158, 11, 1)',
+            warningLight: 'rgba(245, 158, 11, 0.2)',
+            danger: 'rgba(239, 68, 68, 1)',
+            dangerLight: 'rgba(239, 68, 68, 0.2)'
+        };
+
+        // Chart.js global defaults
+        Chart.defaults.color = '#CBD5E1';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.elements.bar.borderRadius = 4;
+        Chart.defaults.elements.line.tension = 0.4;
+        Chart.defaults.scale.grid.color = 'rgba(51, 65, 85, 0.5)';
+
+        {% if salary_data %}
+            // Salary Chart
+            const salaryCtx = document.getElementById('salaryChart').getContext('2d');
+            new Chart(salaryCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ salary_data.labels|safe }},
+                    datasets: [
+                        {
+                            label: 'Salary Range (USD)',
+                            data: {{ salary_data.datasets.0.data|safe }},
+                            backgroundColor: chartColors.success,
+                            borderWidth: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        {% endif %}
+
+        {% if skills_data %}
+            // Skills Chart
+            const skillsCtx = document.getElementById('skillsChart').getContext('2d');
+            new Chart(skillsCtx, {
+                type: 'horizontalBar',
+                data: {
+                    labels: {{ skills_data.labels|safe }},
+                    datasets: [
+                        {
+                            label: 'Demand Score',
+                            data: {{ skills_data.datasets.0.data|safe }},
+                            backgroundColor: chartColors.warning,
+                            borderWidth: 0
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        {% endif %}
+
+        {% if trend_data %}
+            // Trend Chart
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ trend_data.labels|safe }},
+                    datasets: [
+                        {
+                            label: 'Job Postings',
+                            data: {{ trend_data.datasets.0.data|safe }},
+                            borderColor: chartColors.info,
+                            backgroundColor: chartColors.infoLight,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        {% endif %}
+
+        {% if location_data %}
+            // Location Chart
+            const locationCtx = document.getElementById('locationChart').getContext('2d');
+            new Chart(locationCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ location_data.labels|safe }},
+                    datasets: [
+                        {
+                            data: {{ location_data.datasets.0.data|safe }},
+                            backgroundColor: [
+                                chartColors.primary,
+                                chartColors.success,
+                                chartColors.info,
+                                chartColors.warning,
+                                chartColors.danger,
+                                'rgba(139, 92, 246, 1)',
+                                'rgba(6, 182, 212, 1)',
+                                'rgba(249, 115, 22, 1)'
+                            ],
+                            borderWidth: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 15,
+                                padding: 15
+                            }
+                        }
+                    }
+                }
+            });
+        {% endif %}
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,2218 @@
+{% extends 'base_dashboard.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Complete Your Profile - Job Automation{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --linear-bg: #fafbfc;
+        --linear-surface: #ffffff;
+        --linear-border: #e1e4e8;
+        --linear-border-hover: #d1d9e0;
+        --linear-text-primary: #0d1117;
+        --linear-text-secondary: #656d76;
+        --linear-text-tertiary: #8b949e;
+        --linear-accent: #5e6ad2;
+        --linear-accent-hover: #4c63d2;
+        --linear-accent-light: #f0f3ff;
+        --linear-success: #1a7f37;
+        --linear-success-light: #dcfce7;
+        --linear-warning: #b08800;
+        --linear-warning-light: #fef3c7;
+        --linear-info: #0969da;
+        --linear-info-light: #dbeafe;
+        --linear-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+        --linear-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --linear-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+        --linear-radius: 8px;
+        --linear-radius-lg: 12px;
+    }
+
+    body {
+        background-color: var(--linear-bg);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .completion-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .completion-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .completion-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--linear-text-primary);
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.025em;
+    }
+
+    .completion-subtitle {
+        font-size: 1.125rem;
+        color: var(--linear-text-secondary);
+        font-weight: 400;
+        line-height: 1.6;
+    }
+
+    .progress-section {
+        background: var(--linear-surface);
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius-lg);
+        box-shadow: var(--linear-shadow-md);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .progress-header {
+        display: flex;
+        align-items: center;
+        justify-content: between;
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-info {
+        flex: 1;
+    }
+
+    .progress-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--linear-text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .progress-text {
+        font-size: 0.875rem;
+        color: var(--linear-text-secondary);
+    }
+
+    .progress-percentage {
+        background: var(--linear-accent-light);
+        color: var(--linear-accent);
+        padding: 0.5rem 1rem;
+        border-radius: var(--linear-radius);
+        font-weight: 600;
+        font-size: 1.125rem;
+        text-align: center;
+        min-width: 80px;
+    }
+
+    .progress-bar-container {
+        margin-bottom: 1rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: var(--linear-border);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--linear-accent) 0%, var(--linear-success) 100%);
+        border-radius: 4px;
+        transition: width 1s ease;
+        position: relative;
+    }
+
+    .progress-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s ease-in-out infinite;
+    }
+
+    .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+        font-size: 0.8125rem;
+        color: var(--linear-text-tertiary);
+    }
+
+    .benefits-section {
+        background: var(--linear-info-light);
+        border: 1px solid rgba(9, 105, 218, 0.1);
+        border-radius: var(--linear-radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .benefits-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--linear-info);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .benefit-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: var(--linear-radius);
+    }
+
+    .benefit-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--linear-info);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+    }
+
+    .benefit-content {
+        flex: 1;
+    }
+
+    .benefit-content h6 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--linear-text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .benefit-content p {
+        font-size: 0.8125rem;
+        color: var(--linear-text-secondary);
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    .steps-section {
+        display: grid;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .step-card {
+        background: var(--linear-surface);
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius-lg);
+        box-shadow: var(--linear-shadow-sm);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        animation: slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        animation-fill-mode: both;
+    }
+
+    .step-card:nth-child(1) { animation-delay: 0.1s; }
+    .step-card:nth-child(2) { animation-delay: 0.2s; }
+    .step-card:nth-child(3) { animation-delay: 0.3s; }
+    .step-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .step-card:hover {
+        box-shadow: var(--linear-shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .step-card.completed {
+        border-color: var(--linear-success);
+        background: var(--linear-success-light);
+    }
+
+    .step-card.active {
+        border-color: var(--linear-accent);
+        box-shadow: 0 0 0 3px var(--linear-accent-light);
+    }
+
+    .step-header {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1rem;
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+    }
+
+    .step-card:not(.completed) .step-number {
+        background: var(--linear-border);
+        color: var(--linear-text-secondary);
+    }
+
+    .step-card.active .step-number {
+        background: var(--linear-accent);
+        color: white;
+    }
+
+    .step-card.completed .step-number {
+        background: var(--linear-success);
+        color: white;
+    }
+
+    .step-content {
+        flex: 1;
+    }
+
+    .step-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--linear-text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .step-description {
+        font-size: 0.875rem;
+        color: var(--linear-text-secondary);
+        line-height: 1.5;
+    }
+
+    .step-action {
+        padding: 0 1.5rem 1.5rem;
+    }
+
+    .step-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.8125rem;
+    }
+
+    .status-completed {
+        color: var(--linear-success);
+        font-weight: 500;
+    }
+
+    .status-missing {
+        color: var(--linear-warning);
+        font-weight: 500;
+    }
+
+    .status-empty {
+        color: var(--linear-text-tertiary);
+        font-weight: 500;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--linear-accent) 0%, #4c63d2 100%);
+        border: none;
+        border-radius: var(--linear-radius);
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--linear-accent-hover) 0%, #3d54d2 100%);
+        transform: translateY(-1px);
+        box-shadow: var(--linear-shadow-lg);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-secondary {
+        background: var(--linear-surface);
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius);
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--linear-text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-secondary:hover {
+        background: var(--linear-surface);
+        border-color: var(--linear-border-hover);
+        color: var(--linear-text-primary);
+        text-decoration: none;
+    }
+
+    .btn-completed {
+        background: var(--linear-success-light);
+        border: 1px solid var(--linear-success);
+        color: var(--linear-success);
+        cursor: default;
+    }
+
+    .btn-completed:hover {
+        background: var(--linear-success-light);
+        border-color: var(--linear-success);
+        color: var(--linear-success);
+        transform: none;
+    }
+
+    .completion-actions {
+        background: var(--linear-surface);
+        border: 1px solid var(--linear-border);
+        border-radius: var(--linear-radius-lg);
+        box-shadow: var(--linear-shadow-md);
+        padding: 2rem;
+        text-align: center;
+        animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .actions-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--linear-text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .actions-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .actions-buttons .btn-primary,
+    .actions-buttons .btn-secondary {
+        width: auto;
+        min-width: 160px;
+    }
+
+    .skip-notice {
+        background: var(--linear-warning-light);
+        border: 1px solid rgba(176, 136, 0, 0.2);
+        border-radius: var(--linear-radius);
+        padding: 1rem;
+        margin-top: 1.5rem;
+        font-size: 0.8125rem;
+        color: var(--linear-text-secondary);
+        text-align: center;
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(200%); }
+    }
+
+    @media (max-width: 768px) {
+        .completion-container {
+            padding: 1rem;
+        }
+
+        .completion-title {
+            font-size: 1.5rem;
+        }
+
+        .completion-subtitle {
+            font-size: 1rem;
+        }
+
+        .progress-section {
+            padding: 1.5rem;
+        }
+
+        .progress-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .step-header {
+            padding: 1.25rem;
+        }
+
+        .benefits-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .actions-buttons {
+            flex-direction: column;
+        }
+
+        .actions-buttons .btn-primary,
+        .actions-buttons .btn-secondary {
+            width: 100%;
+        }
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --linear-bg: #0d1117;
+            --linear-surface: #161b22;
+            --linear-border: #30363d;
+            --linear-border-hover: #484f58;
+            --linear-text-primary: #f0f6fc;
+            --linear-text-secondary: #8b949e;
+            --linear-text-tertiary: #656d76;
+            --linear-accent-light: rgba(94, 106, 210, 0.1);
+            --linear-success-light: rgba(26, 127, 55, 0.1);
+            --linear-warning-light: rgba(176, 136, 0, 0.1);
+            --linear-info-light: rgba(9, 105, 218, 0.1);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="completion-container">
+    <div class="completion-header">
+        <h1 class="completion-title">Complete Your Profile</h1>
+        <p class="completion-subtitle">
+            Help us personalize your job search experience by completing your profile.
+            A complete profile gets 5x more job matches and better automation results.
+        </p>
+    </div>
+
+    <div class="progress-section">
+        <div class="progress-header">
+            <div class="progress-info">
+                <h2 class="progress-title">Profile Completion Progress</h2>
+                <p class="progress-text">{{ completed_steps }} of 4 sections completed</p>
+            </div>
+            <div class="progress-percentage">{{ completion_percentage }}%</div>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ completion_percentage }}%"></div>
+            </div>
+            <div class="progress-labels">
+                <span>Getting Started</span>
+                <span>Profile Complete</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="benefits-section">
+        <h3 class="benefits-title">
+            <i class="fas fa-star"></i>
+            Why Complete Your Profile?
+        </h3>
+        <div class="benefits-grid">
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-target"></i>
+                </div>
+                <div class="benefit-content">
+                    <h6>Better Job Matches</h6>
+                    <p>Get 5x more relevant job recommendations tailored to your skills and preferences</p>
+                </div>
+            </div>
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="benefit-content">
+                    <h6>Smarter Automation</h6>
+                    <p>AI generates personalized resumes and cover letters based on your complete profile</p>
+                </div>
+            </div>
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <div class="benefit-content">
+                    <h6>Automated Follow-ups</h6>
+                    <p>Intelligent follow-up sequences that adapt to your professional background</p>
+                </div>
+            </div>
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="benefit-content">
+                    <h6>Better Success Rate</h6>
+                    <p>Complete profiles have 3x higher response rates from employers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="steps-section">
+        <div class="step-card {% if personal_completed %}completed{% elif current_step == 'personal' %}active{% endif %}">
+            <div class="step-header">
+                <div class="step-number">
+                    {% if personal_completed %}
+                        <i class="fas fa-check"></i>
+                    {% else %}
+                        1
+                    {% endif %}
+                </div>
+                <div class="step-content">
+                    <h3 class="step-title">Personal Information</h3>
+                    <p class="step-description">Add your basic details, contact information, and professional links</p>
+                </div>
+            </div>
+            <div class="step-action">
+                <div class="step-status">
+                    {% if personal_completed %}
+                        <i class="fas fa-check-circle status-completed"></i>
+                        <span class="status-completed">Completed</span>
+                    {% elif personal_fields_missing > 0 %}
+                        <i class="fas fa-exclamation-circle status-missing"></i>
+                        <span class="status-missing">{{ personal_fields_missing }} fields missing</span>
+                    {% else %}
+                        <i class="fas fa-circle status-empty"></i>
+                        <span class="status-empty">Not started</span>
+                    {% endif %}
+                </div>
+                {% if personal_completed %}
+                    <a href="{% url 'accounts:profile' %}#personal" class="btn-completed">
+                        <i class="fas fa-check"></i>
+                        Completed
+                    </a>
+                {% else %}
+                    <a href="{% url 'accounts:profile' %}#personal" class="btn-primary">
+                        <i class="fas fa-arrow-right"></i>
+                        {% if personal_fields_missing > 0 %}Complete Section{% else %}Get Started{% endif %}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="step-card {% if professional_completed %}completed{% elif current_step == 'professional' %}active{% endif %}">
+            <div class="step-header">
+                <div class="step-number">
+                    {% if professional_completed %}
+                        <i class="fas fa-check"></i>
+                    {% else %}
+                        2
+                    {% endif %}
+                </div>
+                <div class="step-content">
+                    <h3 class="step-title">Professional Details</h3>
+                    <p class="step-description">Share your work experience, skills, education, and upload your resume</p>
+                </div>
+            </div>
+            <div class="step-action">
+                <div class="step-status">
+                    {% if professional_completed %}
+                        <i class="fas fa-check-circle status-completed"></i>
+                        <span class="status-completed">Completed</span>
+                    {% elif professional_fields_missing > 0 %}
+                        <i class="fas fa-exclamation-circle status-missing"></i>
+                        <span class="status-missing">{{ professional_fields_missing }} fields missing</span>
+                    {% else %}
+                        <i class="fas fa-circle status-empty"></i>
+                        <span class="status-empty">Not started</span>
+                    {% endif %}
+                </div>
+                {% if professional_completed %}
+                    <a href="{% url 'accounts:profile' %}#professional" class="btn-completed">
+                        <i class="fas fa-check"></i>
+                        Completed
+                    </a>
+                {% else %}
+                    <a href="{% url 'accounts:profile' %}#professional" class="btn-primary">
+                        <i class="fas fa-arrow-right"></i>
+                        {% if professional_fields_missing > 0 %}Complete Section{% else %}Get Started{% endif %}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="step-card {% if preferences_completed %}completed{% elif current_step == 'preferences' %}active{% endif %}">
+            <div class="step-header">
+                <div class="step-number">
+                    {% if preferences_completed %}
+                        <i class="fas fa-check"></i>
+                    {% else %}
+                        3
+                    {% endif %}
+                </div>
+                <div class="step-content">
+                    <h3 class="step-title">Job Preferences</h3>
+                    <p class="step-description">Set your salary expectations, work type preferences, and job requirements</p>
+                </div>
+            </div>
+            <div class="step-action">
+                <div class="step-status">
+                    {% if preferences_completed %}
+                        <i class="fas fa-check-circle status-completed"></i>
+                        <span class="status-completed">Completed</span>
+                    {% elif preferences_fields_missing > 0 %}
+                        <i class="fas fa-exclamation-circle status-missing"></i>
+                        <span class="status-missing">{{ preferences_fields_missing }} fields missing</span>
+                    {% else %}
+                        <i class="fas fa-circle status-empty"></i>
+                        <span class="status-empty">Not started</span>
+                    {% endif %}
+                </div>
+                {% if preferences_completed %}
+                    <a href="{% url 'accounts:profile' %}#preferences" class="btn-completed">
+                        <i class="fas fa-check"></i>
+                        Completed
+                    </a>
+                {% else %}
+                    <a href="{% url 'accounts:profile' %}#preferences" class="btn-primary">
+                        <i class="fas fa-arrow-right"></i>
+                        {% if preferences_fields_missing > 0 %}Complete Section{% else %}Get Started{% endif %}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="step-card {% if search_setup_completed %}completed{% elif current_step == 'search' %}active{% endif %}">
+            <div class="step-header">
+                <div class="step-number">
+                    {% if search_setup_completed %}
+                        <i class="fas fa-check"></i>
+                    {% else %}
+                        4
+                    {% endif %}
+                </div>
+                <div class="step-content">
+                    <h3 class="step-title">Job Search Setup</h3>
+                    <p class="step-description">Create your first job search configuration to start automation</p>
+                </div>
+            </div>
+            <div class="step-action">
+                <div class="step-status">
+                    {% if search_setup_completed %}
+                        <i class="fas fa-check-circle status-completed"></i>
+                        <span class="status-completed">{{ search_configs_count }} search configurations created</span>
+                    {% else %}
+                        <i class="fas fa-circle status-empty"></i>
+                        <span class="status-empty">Not started</span>
+                    {% endif %}
+                </div>
+                {% if search_setup_completed %}
+                    <a href="{% url 'jobs:search_config' %}" class="btn-completed">
+                        <i class="fas fa-check"></i>
+                        Completed
+                    </a>
+                {% else %}
+                    <a href="{% url 'jobs:create_config' %}" class="btn-primary">
+                        <i class="fas fa-arrow-right"></i>
+                        Create First Search
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="completion-actions">
+        {% if completion_percentage >= 75 %}
+            <h3 class="actions-title">🎉 You're almost done!</h3>
+            <div class="actions-buttons">
+                <a href="{% url 'dashboard:dashboard' %}" class="btn-primary">
+                    <i class="fas fa-rocket"></i>
+                    Start Job Search
+                </a>
+                <a href="{% url 'accounts:profile' %}" class="btn-secondary">
+                    <i class="fas fa-edit"></i>
+                    Edit Profile
+                </a>
+            </div>
+        {% elif completion_percentage >= 50 %}
+            <h3 class="actions-title">Great progress! Keep going</h3>
+            <div class="actions-buttons">
+                <a href="{% url 'accounts:profile' %}" class="btn-primary">
+                    <i class="fas fa-arrow-right"></i>
+                    Continue Setup
+                </a>
+                <a href="{% url 'dashboard:dashboard' %}" class="btn-secondary">
+                    <i class="fas fa-eye"></i>
+                    View Dashboard
+                </a>
+            </div>
+        {% else %}
+            <h3 class="actions-title">Let's get you set up</h3>
+            <div class="actions-buttons">
+                <a href="{% url 'accounts:profile' %}" class="btn-primary">
+                    <i class="fas fa-play"></i>
+                    Start Profile Setup
+                </a>
+                <a href="{% url 'dashboard:dashboard' %}" class="btn-secondary">
+                    <i class="fas fa-clock"></i>
+                    Do This Later
+                </a>
+            </div>
+        {% endif %}
+
+        <div class="skip-notice">
+            💡 You can always complete your profile later, but a complete profile gets much better results!
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate progress bar on load
+        const progressFill = document.querySelector('.progress-fill');
+        if (progressFill) {
+            const targetWidth = progressFill.style.width;
+            progressFill.style.width = '0%';
+            setTimeout(() => {
+                progressFill.style.width = targetWidth;
+            }, 500);
+        }
+
+        // Add click tracking for analytics
+        const buttons = document.querySelectorAll('.btn-primary, .btn-secondary');
+        buttons.forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.textContent.trim();
+                console.log('Profile completion action:', action);
+
+                // Add visual feedback
+                this.style.transform = 'translateY(0)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 100);
+            });
+        });
+
+        // Auto-scroll to active step
+        const activeStep = document.querySelector('.step-card.active');
+        if (activeStep) {
+            setTimeout(() => {
+                activeStep.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }, 1000);
+        }
+
+        // Progress percentage animation
+        const percentage = {{ completion_percentage }};
+        const percentageEl = document.querySelector('.progress-percentage');
+
+        if (percentageEl && percentage > 0) {
+            let current = 0;
+            const increment = percentage / 30; // Animate over 30 frames
+
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= percentage) {
+                    current = percentage;
+                    clearInterval(timer);
+                }
+                percentageEl.textContent = Math.round(current) + '%';
+            }, 50);
+        }
+    });
+</script>
+{% endblock %}
+
+{#<!-- templates/accounts/profile_completion.html -->#}
+{#{% extends 'base.html' %}#}
+{#{% load crispy_forms_tags %}#}
+{##}
+{#{% block title %}Complete Your Profile - Job Automation{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#    :root {#}
+{#        --linear-bg: #fafbfc;#}
+{#        --linear-surface: #ffffff;#}
+{#        --linear-border: #e1e4e8;#}
+{#        --linear-border-hover: #d1d9e0;#}
+{#        --linear-text-primary: #0d1117;#}
+{#        --linear-text-secondary: #656d76;#}
+{#        --linear-text-tertiary: #8b949e;#}
+{#        --linear-accent: #5e6ad2;#}
+{#        --linear-accent-hover: #4c63d2;#}
+{#        --linear-accent-light: #f0f3ff;#}
+{#        --linear-success: #1a7f37;#}
+{#        --linear-success-light: #dcfce7;#}
+{#        --linear-warning: #b08800;#}
+{#        --linear-warning-light: #fef3c7;#}
+{#        --linear-info: #0969da;#}
+{#        --linear-info-light: #dbeafe;#}
+{#        --linear-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);#}
+{#        --linear-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);#}
+{#        --linear-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);#}
+{#        --linear-radius: 8px;#}
+{#        --linear-radius-lg: 12px;#}
+{#    }#}
+{##}
+{#    body {#}
+{#        background-color: var(--linear-bg);#}
+{#        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;#}
+{#        line-height: 1.5;#}
+{#        -webkit-font-smoothing: antialiased;#}
+{#    }#}
+{##}
+{#    .completion-container {#}
+{#        max-width: 800px;#}
+{#        margin: 0 auto;#}
+{#        padding: 2rem 1rem;#}
+{#    }#}
+{##}
+{#    .completion-header {#}
+{#        text-align: center;#}
+{#        margin-bottom: 2rem;#}
+{#        animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#    }#}
+{##}
+{#    .completion-title {#}
+{#        font-size: 2rem;#}
+{#        font-weight: 700;#}
+{#        color: var(--linear-text-primary);#}
+{#        margin-bottom: 0.75rem;#}
+{#        letter-spacing: -0.025em;#}
+{#    }#}
+{##}
+{#    .completion-subtitle {#}
+{#        font-size: 1.125rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#        font-weight: 400;#}
+{#        line-height: 1.6;#}
+{#    }#}
+{##}
+{#    .progress-section {#}
+{#        background: var(--linear-surface);#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius-lg);#}
+{#        box-shadow: var(--linear-shadow-md);#}
+{#        padding: 2rem;#}
+{#        margin-bottom: 2rem;#}
+{#        animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#    }#}
+{##}
+{#    .progress-header {#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: between;#}
+{#        margin-bottom: 1.5rem;#}
+{#    }#}
+{##}
+{#    .progress-info {#}
+{#        flex: 1;#}
+{#    }#}
+{##}
+{#    .progress-title {#}
+{#        font-size: 1.25rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-text-primary);#}
+{#        margin-bottom: 0.25rem;#}
+{#    }#}
+{##}
+{#    .progress-text {#}
+{#        font-size: 0.875rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#    }#}
+{##}
+{#    .progress-percentage {#}
+{#        background: var(--linear-accent-light);#}
+{#        color: var(--linear-accent);#}
+{#        padding: 0.5rem 1rem;#}
+{#        border-radius: var(--linear-radius);#}
+{#        font-weight: 600;#}
+{#        font-size: 1.125rem;#}
+{#        text-align: center;#}
+{#        min-width: 80px;#}
+{#    }#}
+{##}
+{#    .progress-bar-container {#}
+{#        margin-bottom: 1rem;#}
+{#    }#}
+{##}
+{#    .progress-bar {#}
+{#        height: 8px;#}
+{#        background: var(--linear-border);#}
+{#        border-radius: 4px;#}
+{#        overflow: hidden;#}
+{#        position: relative;#}
+{#    }#}
+{##}
+{#    .progress-fill {#}
+{#        height: 100%;#}
+{#        background: linear-gradient(90deg, var(--linear-accent) 0%, var(--linear-success) 100%);#}
+{#        border-radius: 4px;#}
+{#        transition: width 1s ease;#}
+{#        position: relative;#}
+{#    }#}
+{##}
+{#    .progress-fill::after {#}
+{#        content: '';#}
+{#        position: absolute;#}
+{#        top: 0;#}
+{#        left: 0;#}
+{#        right: 0;#}
+{#        bottom: 0;#}
+{#        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);#}
+{#        animation: shimmer 2s ease-in-out infinite;#}
+{#    }#}
+{##}
+{#    .progress-labels {#}
+{#        display: flex;#}
+{#        justify-content: space-between;#}
+{#        margin-top: 0.5rem;#}
+{#        font-size: 0.8125rem;#}
+{#        color: var(--linear-text-tertiary);#}
+{#    }#}
+{##}
+{#    .benefits-section {#}
+{#        background: var(--linear-info-light);#}
+{#        border: 1px solid rgba(9, 105, 218, 0.1);#}
+{#        border-radius: var(--linear-radius-lg);#}
+{#        padding: 1.5rem;#}
+{#        margin-bottom: 2rem;#}
+{#        animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#    }#}
+{##}
+{#    .benefits-title {#}
+{#        font-size: 1.125rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-info);#}
+{#        margin-bottom: 1rem;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#    }#}
+{##}
+{#    .benefits-grid {#}
+{#        display: grid;#}
+{#        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));#}
+{#        gap: 1rem;#}
+{#    }#}
+{##}
+{#    .benefit-item {#}
+{#        display: flex;#}
+{#        align-items: flex-start;#}
+{#        gap: 0.75rem;#}
+{#        padding: 0.75rem;#}
+{#        background: rgba(255, 255, 255, 0.6);#}
+{#        border-radius: var(--linear-radius);#}
+{#    }#}
+{##}
+{#    .benefit-icon {#}
+{#        width: 32px;#}
+{#        height: 32px;#}
+{#        background: var(--linear-info);#}
+{#        color: white;#}
+{#        border-radius: 50%;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: center;#}
+{#        font-size: 0.875rem;#}
+{#        flex-shrink: 0;#}
+{#    }#}
+{##}
+{#    .benefit-content {#}
+{#        flex: 1;#}
+{#    }#}
+{##}
+{#    .benefit-content h6 {#}
+{#        font-size: 0.875rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-text-primary);#}
+{#        margin-bottom: 0.25rem;#}
+{#    }#}
+{##}
+{#    .benefit-content p {#}
+{#        font-size: 0.8125rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#        margin: 0;#}
+{#        line-height: 1.4;#}
+{#    }#}
+{##}
+{#    .steps-section {#}
+{#        display: grid;#}
+{#        gap: 1rem;#}
+{#        margin-bottom: 2rem;#}
+{#    }#}
+{##}
+{#    .step-card {#}
+{#        background: var(--linear-surface);#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius-lg);#}
+{#        box-shadow: var(--linear-shadow-sm);#}
+{#        overflow: hidden;#}
+{#        transition: all 0.3s ease;#}
+{#        animation: slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#        animation-fill-mode: both;#}
+{#    }#}
+{##}
+{#    .step-card:nth-child(1) { animation-delay: 0.1s; }#}
+{#    .step-card:nth-child(2) { animation-delay: 0.2s; }#}
+{#    .step-card:nth-child(3) { animation-delay: 0.3s; }#}
+{#    .step-card:nth-child(4) { animation-delay: 0.4s; }#}
+{##}
+{#    .step-card:hover {#}
+{#        box-shadow: var(--linear-shadow-md);#}
+{#        transform: translateY(-2px);#}
+{#    }#}
+{##}
+{#    .step-card.completed {#}
+{#        border-color: var(--linear-success);#}
+{#        background: var(--linear-success-light);#}
+{#    }#}
+{##}
+{#    .step-card.active {#}
+{#        border-color: var(--linear-accent);#}
+{#        box-shadow: 0 0 0 3px var(--linear-accent-light);#}
+{#    }#}
+{##}
+{#    .step-header {#}
+{#        padding: 1.5rem;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 1rem;#}
+{#    }#}
+{##}
+{#    .step-number {#}
+{#        width: 40px;#}
+{#        height: 40px;#}
+{#        border-radius: 50%;#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        justify-content: center;#}
+{#        font-weight: 600;#}
+{#        font-size: 1rem;#}
+{#        flex-shrink: 0;#}
+{#        transition: all 0.3s ease;#}
+{#    }#}
+{##}
+{#    .step-card:not(.completed) .step-number {#}
+{#        background: var(--linear-border);#}
+{#        color: var(--linear-text-secondary);#}
+{#    }#}
+{##}
+{#    .step-card.active .step-number {#}
+{#        background: var(--linear-accent);#}
+{#        color: white;#}
+{#    }#}
+{##}
+{#    .step-card.completed .step-number {#}
+{#        background: var(--linear-success);#}
+{#        color: white;#}
+{#    }#}
+{##}
+{#    .step-content {#}
+{#        flex: 1;#}
+{#    }#}
+{##}
+{#    .step-title {#}
+{#        font-size: 1.125rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-text-primary);#}
+{#        margin-bottom: 0.25rem;#}
+{#    }#}
+{##}
+{#    .step-description {#}
+{#        font-size: 0.875rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#        line-height: 1.5;#}
+{#    }#}
+{##}
+{#    .step-action {#}
+{#        padding: 0 1.5rem 1.5rem;#}
+{#    }#}
+{##}
+{#    .step-status {#}
+{#        display: flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#        margin-bottom: 1rem;#}
+{#        font-size: 0.8125rem;#}
+{#    }#}
+{##}
+{#    .status-completed {#}
+{#        color: var(--linear-success);#}
+{#        font-weight: 500;#}
+{#    }#}
+{##}
+{#    .status-missing {#}
+{#        color: var(--linear-warning);#}
+{#        font-weight: 500;#}
+{#    }#}
+{##}
+{#    .status-empty {#}
+{#        color: var(--linear-text-tertiary);#}
+{#        font-weight: 500;#}
+{#    }#}
+{##}
+{#    .btn-primary {#}
+{#        background: linear-gradient(135deg, var(--linear-accent) 0%, #4c63d2 100%);#}
+{#        border: none;#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 0.75rem 1.5rem;#}
+{#        font-size: 0.875rem;#}
+{#        font-weight: 500;#}
+{#        color: white;#}
+{#        cursor: pointer;#}
+{#        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#        display: inline-flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#        text-decoration: none;#}
+{#        width: 100%;#}
+{#        justify-content: center;#}
+{#    }#}
+{##}
+{#    .btn-primary:hover {#}
+{#        background: linear-gradient(135deg, var(--linear-accent-hover) 0%, #3d54d2 100%);#}
+{#        transform: translateY(-1px);#}
+{#        box-shadow: var(--linear-shadow-lg);#}
+{#        color: white;#}
+{#        text-decoration: none;#}
+{#    }#}
+{##}
+{#    .btn-secondary {#}
+{#        background: var(--linear-surface);#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 0.75rem 1.5rem;#}
+{#        font-size: 0.875rem;#}
+{#        font-weight: 500;#}
+{#        color: var(--linear-text-primary);#}
+{#        cursor: pointer;#}
+{#        transition: all 0.2s ease;#}
+{#        display: inline-flex;#}
+{#        align-items: center;#}
+{#        gap: 0.5rem;#}
+{#        text-decoration: none;#}
+{#        width: 100%;#}
+{#        justify-content: center;#}
+{#    }#}
+{##}
+{#    .btn-secondary:hover {#}
+{#        background: var(--linear-surface);#}
+{#        border-color: var(--linear-border-hover);#}
+{#        color: var(--linear-text-primary);#}
+{#        text-decoration: none;#}
+{#    }#}
+{##}
+{#    .btn-completed {#}
+{#        background: var(--linear-success-light);#}
+{#        border: 1px solid var(--linear-success);#}
+{#        color: var(--linear-success);#}
+{#        cursor: default;#}
+{#    }#}
+{##}
+{#    .btn-completed:hover {#}
+{#        background: var(--linear-success-light);#}
+{#        border-color: var(--linear-success);#}
+{#        color: var(--linear-success);#}
+{#        transform: none;#}
+{#    }#}
+{##}
+{#    .completion-actions {#}
+{#        background: var(--linear-surface);#}
+{#        border: 1px solid var(--linear-border);#}
+{#        border-radius: var(--linear-radius-lg);#}
+{#        box-shadow: var(--linear-shadow-md);#}
+{#        padding: 2rem;#}
+{#        text-align: center;#}
+{#        animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);#}
+{#    }#}
+{##}
+{#    .actions-title {#}
+{#        font-size: 1.25rem;#}
+{#        font-weight: 600;#}
+{#        color: var(--linear-text-primary);#}
+{#        margin-bottom: 1rem;#}
+{#    }#}
+{##}
+{#    .actions-buttons {#}
+{#        display: flex;#}
+{#        gap: 1rem;#}
+{#        justify-content: center;#}
+{#        flex-wrap: wrap;#}
+{#    }#}
+{##}
+{#    .actions-buttons .btn-primary,#}
+{#    .actions-buttons .btn-secondary {#}
+{#        width: auto;#}
+{#        min-width: 160px;#}
+{#    }#}
+{##}
+{#    .skip-notice {#}
+{#        background: var(--linear-warning-light);#}
+{#        border: 1px solid rgba(176, 136, 0, 0.2);#}
+{#        border-radius: var(--linear-radius);#}
+{#        padding: 1rem;#}
+{#        margin-top: 1.5rem;#}
+{#        font-size: 0.8125rem;#}
+{#        color: var(--linear-text-secondary);#}
+{#        text-align: center;#}
+{#    }#}
+{##}
+{#    @keyframes slideInUp {#}
+{#        from {#}
+{#            opacity: 0;#}
+{#            transform: translateY(30px);#}
+{#        }#}
+{#        to {#}
+{#            opacity: 1;#}
+{#            transform: translateY(0);#}
+{#        }#}
+{#    }#}
+{##}
+{#    @keyframes shimmer {#}
+{#        0% { transform: translateX(-100%); }#}
+{#        100% { transform: translateX(200%); }#}
+{#    }#}
+{##}
+{#    @media (max-width: 768px) {#}
+{#        .completion-container {#}
+{#            padding: 1rem;#}
+{#        }#}
+{##}
+{#        .completion-title {#}
+{#            font-size: 1.5rem;#}
+{#        }#}
+{##}
+{#        .completion-subtitle {#}
+{#            font-size: 1rem;#}
+{#        }#}
+{##}
+{#        .progress-section {#}
+{#            padding: 1.5rem;#}
+{#        }#}
+{##}
+{#        .progress-header {#}
+{#            flex-direction: column;#}
+{#            align-items: flex-start;#}
+{#            gap: 1rem;#}
+{#        }#}
+{##}
+{#        .step-header {#}
+{#            padding: 1.25rem;#}
+{#        }#}
+{##}
+{#        .benefits-grid {#}
+{#            grid-template-columns: 1fr;#}
+{#        }#}
+{##}
+{#        .actions-buttons {#}
+{#            flex-direction: column;#}
+{#        }#}
+{##}
+{#        .actions-buttons .btn-primary,#}
+{#        .actions-buttons .btn-secondary {#}
+{#            width: 100%;#}
+{#        }#}
+{#    }#}
+{##}
+{#    /* Dark mode support */#}
+{#    @media (prefers-color-scheme: dark) {#}
+{#        :root {#}
+{#            --linear-bg: #0d1117;#}
+{#            --linear-surface: #161b22;#}
+{#            --linear-border: #30363d;#}
+{#            --linear-border-hover: #484f58;#}
+{#            --linear-text-primary: #f0f6fc;#}
+{#            --linear-text-secondary: #8b949e;#}
+{#            --linear-text-tertiary: #656d76;#}
+{#            --linear-accent-light: rgba(94, 106, 210, 0.1);#}
+{#            --linear-success-light: rgba(26, 127, 55, 0.1);#}
+{#            --linear-warning-light: rgba(176, 136, 0, 0.1);#}
+{#            --linear-info-light: rgba(9, 105, 218, 0.1);#}
+{#        }#}
+{#    }#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="completion-container">#}
+{#    <!-- Header -->#}
+{#    <div class="completion-header">#}
+{#        <h1 class="completion-title">Complete Your Profile</h1>#}
+{#        <p class="completion-subtitle">#}
+{#            Help us personalize your job search experience by completing your profile.#}
+{#            A complete profile gets 5x more job matches and better automation results.#}
+{#        </p>#}
+{#    </div>#}
+{##}
+{#    <!-- Progress Section -->#}
+{#    <div class="progress-section">#}
+{#        <div class="progress-header">#}
+{#            <div class="progress-info">#}
+{#                <h2 class="progress-title">Profile Completion Progress</h2>#}
+{#                <p class="progress-text">{{ completed_steps }} of 4 sections completed</p>#}
+{#            </div>#}
+{#            <div class="progress-percentage">{{ completion_percentage }}%</div>#}
+{#        </div>#}
+{##}
+{#        <div class="progress-bar-container">#}
+{#            <div class="progress-bar">#}
+{#                <div class="progress-fill" style="width: {{ completion_percentage }}%"></div>#}
+{#            </div>#}
+{#            <div class="progress-labels">#}
+{#                <span>Getting Started</span>#}
+{#                <span>Profile Complete</span>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Benefits Section -->#}
+{#    <div class="benefits-section">#}
+{#        <h3 class="benefits-title">#}
+{#            <i class="fas fa-star"></i>#}
+{#            Why Complete Your Profile?#}
+{#        </h3>#}
+{#        <div class="benefits-grid">#}
+{#            <div class="benefit-item">#}
+{#                <div class="benefit-icon">#}
+{#                    <i class="fas fa-target"></i>#}
+{#                </div>#}
+{#                <div class="benefit-content">#}
+{#                    <h6>Better Job Matches</h6>#}
+{#                    <p>Get 5x more relevant job recommendations tailored to your skills and preferences</p>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="benefit-item">#}
+{#                <div class="benefit-icon">#}
+{#                    <i class="fas fa-robot"></i>#}
+{#                </div>#}
+{#                <div class="benefit-content">#}
+{#                    <h6>Smarter Automation</h6>#}
+{#                    <p>AI generates personalized resumes and cover letters based on your complete profile</p>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="benefit-item">#}
+{#                <div class="benefit-icon">#}
+{#                    <i class="fas fa-paper-plane"></i>#}
+{#                </div>#}
+{#                <div class="benefit-content">#}
+{#                    <h6>Automated Follow-ups</h6>#}
+{#                    <p>Intelligent follow-up sequences that adapt to your professional background</p>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="benefit-item">#}
+{#                <div class="benefit-icon">#}
+{#                    <i class="fas fa-chart-line"></i>#}
+{#                </div>#}
+{#                <div class="benefit-content">#}
+{#                    <h6>Better Success Rate</h6>#}
+{#                    <p>Complete profiles have 3x higher response rates from employers</p>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Completion Steps -->#}
+{#    <div class="steps-section">#}
+{#        <!-- Step 1: Personal Information -->#}
+{#        <div class="step-card {% if personal_completed %}completed{% elif current_step == 'personal' %}active{% endif %}">#}
+{#            <div class="step-header">#}
+{#                <div class="step-number">#}
+{#                    {% if personal_completed %}#}
+{#                        <i class="fas fa-check"></i>#}
+{#                    {% else %}#}
+{#                        1#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#                <div class="step-content">#}
+{#                    <h3 class="step-title">Personal Information</h3>#}
+{#                    <p class="step-description">Add your basic details, contact information, and professional links</p>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="step-action">#}
+{#                <div class="step-status">#}
+{#                    {% if personal_completed %}#}
+{#                        <i class="fas fa-check-circle status-completed"></i>#}
+{#                        <span class="status-completed">Completed</span>#}
+{#                    {% elif personal_fields_missing %}#}
+{#                        <i class="fas fa-exclamation-circle status-missing"></i>#}
+{#                        <span class="status-missing">{{ personal_fields_missing }} fields missing</span>#}
+{#                    {% else %}#}
+{#                        <i class="fas fa-circle status-empty"></i>#}
+{#                        <span class="status-empty">Not started</span>#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#                {% if personal_completed %}#}
+{#                    <a href="{% url 'accounts:profile' %}#personal" class="btn-completed">#}
+{#                        <i class="fas fa-check"></i>#}
+{#                        Completed#}
+{#                    </a>#}
+{#                {% else %}#}
+{#                    <a href="{% url 'accounts:profile' %}#personal" class="btn-primary">#}
+{#                        <i class="fas fa-arrow-right"></i>#}
+{#                        {% if personal_fields_missing %}Complete Section{% else %}Get Started{% endif %}#}
+{#                    </a>#}
+{#                {% endif %}#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Step 2: Professional Details -->#}
+{#        <div class="step-card {% if professional_completed %}completed{% elif current_step == 'professional' %}active{% endif %}">#}
+{#            <div class="step-header">#}
+{#                <div class="step-number">#}
+{#                    {% if professional_completed %}#}
+{#                        <i class="fas fa-check"></i>#}
+{#                    {% else %}#}
+{#                        2#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#                <div class="step-content">#}
+{#                    <h3 class="step-title">Professional Details</h3>#}
+{#                    <p class="step-description">Share your work experience, skills, education, and upload your resume</p>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="step-action">#}
+{#                <div class="step-status">#}
+{#                    {% if professional_completed %}#}
+{#                        <i class="fas fa-check-circle status-completed"></i>#}
+{#                        <span class="status-completed">Completed</span>#}
+{#                    {% elif professional_fields_missing %}#}
+{#                        <i class="fas fa-exclamation-circle status-missing"></i>#}
+{#                        <span class="status-missing">{{ professional_fields_missing }} fields missing</span>#}
+{#                    {% else %}#}
+{#                        <i class="fas fa-circle status-empty"></i>#}
+{#                        <span class="status-empty">Not started</span>#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#                {% if professional_completed %}#}
+{#                    <a href="{% url 'accounts:profile' %}#professional" class="btn-completed">#}
+{#                        <i class="fas fa-check"></i>#}
+{#                        Completed#}
+{#                    </a>#}
+{#                {% else %}#}
+{#                    <a href="{% url 'accounts:profile' %}#professional" class="btn-primary">#}
+{#                        <i class="fas fa-arrow-right"></i>#}
+{#                        {% if professional_fields_missing %}Complete Section{% else %}Get Started{% endif %}#}
+{#                    </a>#}
+{#                {% endif %}#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Step 3: Job Preferences -->#}
+{#        <div class="step-card {% if preferences_completed %}completed{% elif current_step == 'preferences' %}active{% endif %}">#}
+{#            <div class="step-header">#}
+{#                <div class="step-number">#}
+{#                    {% if preferences_completed %}#}
+{#                        <i class="fas fa-check"></i>#}
+{#                    {% else %}#}
+{#                        3#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#                <div class="step-content">#}
+{#                    <h3 class="step-title">Job Preferences</h3>#}
+{#                    <p class="step-description">Set your salary expectations, work type preferences, and job requirements</p>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="step-action">#}
+{#                <div class="step-status">#}
+{#                    {% if preferences_completed %}#}
+{#                        <i class="fas fa-check-circle status-completed"></i>#}
+{#                        <span class="status-completed">Completed</span>#}
+{#                    {% elif preferences_fields_missing %}#}
+{#                        <i class="fas fa-exclamation-circle status-missing"></i>#}
+{#                        <span class="status-missing">{{ preferences_fields_missing }} fields missing</span>#}
+{#                    {% else %}#}
+{#                        <i class="fas fa-circle status-empty"></i>#}
+{#                        <span class="status-empty">Not started</span>#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#                {% if preferences_completed %}#}
+{#                    <a href="{% url 'accounts:profile' %}#preferences" class="btn-completed">#}
+{#                        <i class="fas fa-check"></i>#}
+{#                        Completed#}
+{#                    </a>#}
+{#                {% else %}#}
+{#                    <a href="{% url 'accounts:profile' %}#preferences" class="btn-primary">#}
+{#                        <i class="fas fa-arrow-right"></i>#}
+{#                        {% if preferences_fields_missing %}Complete Section{% else %}Get Started{% endif %}#}
+{#                    </a>#}
+{#                {% endif %}#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Step 4: Job Search Setup -->#}
+{#        <div class="step-card {% if search_setup_completed %}completed{% elif current_step == 'search' %}active{% endif %}">#}
+{#            <div class="step-header">#}
+{#                <div class="step-number">#}
+{#                    {% if search_setup_completed %}#}
+{#                        <i class="fas fa-check"></i>#}
+{#                    {% else %}#}
+{#                        4#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#                <div class="step-content">#}
+{#                    <h3 class="step-title">Job Search Setup</h3>#}
+{#                    <p class="step-description">Create your first job search configuration to start automation</p>#}
+{#                </div>#}
+{#            </div>#}
+{#            <div class="step-action">#}
+{#                <div class="step-status">#}
+{#                    {% if search_setup_completed %}#}
+{#                        <i class="fas fa-check-circle status-completed"></i>#}
+{#                        <span class="status-completed">{{ search_configs_count }} search configurations created</span>#}
+{#                    {% else %}#}
+{#                        <i class="fas fa-circle status-empty"></i>#}
+{#                        <span class="status-empty">Not started</span>#}
+{#                    {% endif %}#}
+{#                </div>#}
+{#                {% if search_setup_completed %}#}
+{#                    <a href="{% url 'jobs:search_config' %}" class="btn-completed">#}
+{#                        <i class="fas fa-check"></i>#}
+{#                        Completed#}
+{#                    </a>#}
+{#                {% else %}#}
+{#                    <a href="{% url 'jobs:create_config' %}" class="btn-primary">#}
+{#                        <i class="fas fa-arrow-right"></i>#}
+{#                        Create First Search#}
+{#                    </a>#}
+{#                {% endif %}#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Completion Actions -->#}
+{#    <div class="completion-actions">#}
+{#        {% if completion_percentage >= 75 %}#}
+{#            <h3 class="actions-title">🎉 You're almost done!</h3>#}
+{#            <div class="actions-buttons">#}
+{#                <a href="{% url 'dashboard:dashboard' %}" class="btn-primary">#}
+{#                    <i class="fas fa-rocket"></i>#}
+{#                    Start Job Search#}
+{#                </a>#}
+{#                <a href="{% url 'accounts:profile' %}" class="btn-secondary">#}
+{#                    <i class="fas fa-edit"></i>#}
+{#                    Edit Profile#}
+{#                </a>#}
+{#            </div>#}
+{#        {% elif completion_percentage >= 50 %}#}
+{#            <h3 class="actions-title">Great progress! Keep going</h3>#}
+{#            <div class="actions-buttons">#}
+{#                <a href="{% url 'accounts:profile' %}" class="btn-primary">#}
+{#                    <i class="fas fa-arrow-right"></i>#}
+{#                    Continue Setup#}
+{#                </a>#}
+{#                <a href="{% url 'dashboard:dashboard' %}" class="btn-secondary">#}
+{#                    <i class="fas fa-eye"></i>#}
+{#                    View Dashboard#}
+{#                </a>#}
+{#            </div>#}
+{#        {% else %}#}
+{#            <h3 class="actions-title">Let's get you set up</h3>#}
+{#            <div class="actions-buttons">#}
+{#                <a href="{% url 'accounts:profile' %}" class="btn-primary">#}
+{#                    <i class="fas fa-play"></i>#}
+{#                    Start Profile Setup#}
+{#                </a>#}
+{#                <a href="{% url 'dashboard:dashboard' %}" class="btn-secondary">#}
+{#                    <i class="fas fa-clock"></i>#}
+{#                    Do This Later#}
+{#                </a>#}
+{#            </div>#}
+{#        {% endif %}#}
+{##}
+{#        <div class="skip-notice">#}
+{#            💡 You can always complete your profile later, but a complete profile gets much better results!#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script>#}
+{#    document.addEventListener('DOMContentLoaded', function() {#}
+{#        // Animate progress bar on load#}
+{#        const progressFill = document.querySelector('.progress-fill');#}
+{#        if (progressFill) {#}
+{#            const targetWidth = progressFill.style.width;#}
+{#            progressFill.style.width = '0%';#}
+{#            setTimeout(() => {#}
+{#                progressFill.style.width = targetWidth;#}
+{#            }, 500);#}
+{#        }#}
+{##}
+{#        // Add click tracking for analytics#}
+{#        const buttons = document.querySelectorAll('.btn-primary, .btn-secondary');#}
+{#        buttons.forEach(button => {#}
+{#            button.addEventListener('click', function() {#}
+{#                const action = this.textContent.trim();#}
+{#                console.log('Profile completion action:', action);#}
+{##}
+{#                // Add visual feedback#}
+{#                this.style.transform = 'translateY(0)';#}
+{#                setTimeout(() => {#}
+{#                    this.style.transform = '';#}
+{#                }, 100);#}
+{#            });#}
+{#        });#}
+{##}
+{#        // Auto-scroll to active step#}
+{#        const activeStep = document.querySelector('.step-card.active');#}
+{#        if (activeStep) {#}
+{#            setTimeout(() => {#}
+{#                activeStep.scrollIntoView({#}
+{#                    behavior: 'smooth',#}
+{#                    block: 'center'#}
+{#                });#}
+{#            }, 1000);#}
+{#        }#}
+{##}
+{#        // Progress percentage animation#}
+{#        const percentage = {{ completion_percentage }};#}
+{#        const percentageEl = document.querySelector('.progress-percentage');#}
+{##}
+{#        if (percentageEl && percentage > 0) {#}
+{#            let current = 0;#}
+{#            const increment = percentage / 30; // Animate over 30 frames#}
+{##}
+{#            const timer = setInterval(() => {#}
+{#                current += increment;#}
+{#                if (current >= percentage) {#}
+{#                    current = percentage;#}
+{#                    clearInterval(timer);#}
+{#                }#}
+{#                percentageEl.textContent = Math.round(current) + '%';#}
+{#            }, 50);#}
+{#        }#}
+{#    });#}
+{#</script>#}
+{#{% endblock %}#}
+{##}
+{#{% extends 'base.html' %}#}
+{#{% load static %}#}
+{##}
+{#{% block title %}Profile Completion - Job Automation{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container">#}
+{#    <div class="row justify-content-center">#}
+{#        <div class="col-lg-10">#}
+{#            <!-- Header -->#}
+{#            <div class="text-center mb-5">#}
+{#                <h2 class="display-6 fw-bold text-primary">#}
+{#                    <i class="fas fa-user-check"></i> Complete Your Profile#}
+{#                </h2>#}
+{#                <p class="lead text-muted">#}
+{#                    A complete profile helps our AI generate better documents and find more relevant jobs#}
+{#                </p>#}
+{#            </div>#}
+{##}
+{#            <!-- Progress Overview -->#}
+{#            <div class="row mb-5">#}
+{#                <div class="col-md-4">#}
+{#                    <div class="card text-center border-0 shadow-sm">#}
+{#                        <div class="card-body">#}
+{#                            <div class="completion-circle-large mb-3">#}
+{#                                <canvas id="mainCompletionChart" width="150" height="150"></canvas>#}
+{#                                <div class="completion-text-large">#}
+{#                                    <h2 class="fw-bold">{{ completion_percentage }}%</h2>#}
+{#                                    <small class="text-muted">Complete</small>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% if completion_percentage >= 90 %}#}
+{#                                <h5 class="text-success">Excellent!</h5>#}
+{#                                <p class="text-muted">Your profile is nearly perfect</p>#}
+{#                            {% elif completion_percentage >= 70 %}#}
+{#                                <h5 class="text-warning">Good Progress</h5>#}
+{#                                <p class="text-muted">Just a few more details needed</p>#}
+{#                            {% elif completion_percentage >= 50 %}#}
+{#                                <h5 class="text-info">Getting There</h5>#}
+{#                                <p class="text-muted">Halfway to a complete profile</p>#}
+{#                            {% else %}#}
+{#                                <h5 class="text-danger">Just Started</h5>#}
+{#                                <p class="text-muted">Let's complete your profile</p>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <div class="col-md-8">#}
+{#                    <div class="card border-0 shadow-sm">#}
+{#                        <div class="card-body">#}
+{#                            <h5 class="card-title">#}
+{#                                <i class="fas fa-chart-line text-primary"></i> Profile Sections#}
+{#                            </h5>#}
+{#                            #}
+{#                            <!-- Section Progress Bars -->#}
+{#                            <div class="section-progress mb-3">#}
+{#                                <div class="d-flex justify-content-between align-items-center mb-2">#}
+{#                                    <span><i class="fas fa-user"></i> Personal Information</span>#}
+{#                                    <span class="badge bg-{% if profile.phone and profile.location %}success{% else %}warning{% endif %}">#}
+{#                                        {% if profile.phone and profile.location %}Complete{% else %}Incomplete{% endif %}#}
+{#                                    </span>#}
+{#                                </div>#}
+{#                                <div class="progress mb-3">#}
+{#                                    <div class="progress-bar bg-{% if profile.phone and profile.location %}success{% else %}warning{% endif %}" #}
+{#                                         style="width: {% if profile.phone and profile.location %}100{% else %}50{% endif %}%"></div>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="section-progress mb-3">#}
+{#                                <div class="d-flex justify-content-between align-items-center mb-2">#}
+{#                                    <span><i class="fas fa-briefcase"></i> Professional Details</span>#}
+{#                                    <span class="badge bg-{% if profile.years_experience and profile.current_job_title %}success{% else %}warning{% endif %}">#}
+{#                                        {% if profile.years_experience and profile.current_job_title %}Complete{% else %}Incomplete{% endif %}#}
+{#                                    </span>#}
+{#                                </div>#}
+{#                                <div class="progress mb-3">#}
+{#                                    <div class="progress-bar bg-{% if profile.years_experience and profile.current_job_title %}success{% else %}warning{% endif %}" #}
+{#                                         style="width: {% if profile.years_experience and profile.current_job_title %}100{% else %}30{% endif %}%"></div>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="section-progress mb-3">#}
+{#                                <div class="d-flex justify-content-between align-items-center mb-2">#}
+{#                                    <span><i class="fas fa-tools"></i> Skills & Preferences</span>#}
+{#                                    <span class="badge bg-{% if profile.key_skills and profile.preferred_salary_min %}success{% else %}warning{% endif %}">#}
+{#                                        {% if profile.key_skills and profile.preferred_salary_min %}Complete{% else %}Incomplete{% endif %}#}
+{#                                    </span>#}
+{#                                </div>#}
+{#                                <div class="progress mb-3">#}
+{#                                    <div class="progress-bar bg-{% if profile.key_skills and profile.preferred_salary_min %}success{% else %}warning{% endif %}" #}
+{#                                         style="width: {% if profile.key_skills and profile.preferred_salary_min %}100{% else %}40{% endif %}%"></div>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="section-progress mb-3">#}
+{#                                <div class="d-flex justify-content-between align-items-center mb-2">#}
+{#                                    <span><i class="fas fa-file-upload"></i> Resume Upload</span>#}
+{#                                    <span class="badge bg-{% if profile.resume_file %}success{% else %}danger{% endif %}">#}
+{#                                        {% if profile.resume_file %}Complete{% else %}Missing{% endif %}#}
+{#                                    </span>#}
+{#                                </div>#}
+{#                                <div class="progress">#}
+{#                                    <div class="progress-bar bg-{% if profile.resume_file %}success{% else %}danger{% endif %}" #}
+{#                                         style="width: {% if profile.resume_file %}100{% else %}0{% endif %}%"></div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Completion Suggestions -->#}
+{#            {% if suggestions %}#}
+{#            <div class="card border-0 shadow-sm mb-5">#}
+{#                <div class="card-header bg-warning text-dark">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-tasks"></i> Next Steps to Complete Your Profile#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="row">#}
+{#                        {% for suggestion in suggestions %}#}
+{#                        <div class="col-md-6 mb-3">#}
+{#                            <div class="d-flex align-items-start">#}
+{#                                <div class="flex-shrink-0 me-3">#}
+{#                                    <div class="suggestion-icon">#}
+{#                                        <i class="fas fa-exclamation-circle text-warning"></i>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="flex-grow-1">#}
+{#                                    <h6 class="mb-1">{{ suggestion }}</h6>#}
+{#                                    <small class="text-muted">#}
+{#                                        {% if "name" in suggestion %}#}
+{#                                            Add your full name for professional documents#}
+{#                                        {% elif "phone" in suggestion %}#}
+{#                                            Add contact information for employers#}
+{#                                        {% elif "LinkedIn" in suggestion %}#}
+{#                                            Link your professional profile#}
+{#                                        {% elif "resume" in suggestion %}#}
+{#                                            Upload your latest resume for AI optimization#}
+{#                                        {% elif "skills" in suggestion %}#}
+{#                                            Select relevant skills for better job matching#}
+{#                                        {% else %}#}
+{#                                            Complete this section for better results#}
+{#                                        {% endif %}#}
+{#                                    </small>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        {% endfor %}#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#            {% endif %}#}
+{##}
+{#            <!-- Benefits of Complete Profile -->#}
+{#            <div class="row mb-5">#}
+{#                <div class="col-md-6">#}
+{#                    <div class="card border-0 shadow-sm h-100">#}
+{#                        <div class="card-body">#}
+{#                            <h5 class="card-title text-success">#}
+{#                                <i class="fas fa-star"></i> Benefits of a Complete Profile#}
+{#                            </h5>#}
+{#                            <ul class="list-unstyled">#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check-circle text-success me-2"></i>#}
+{#                                    <strong>Better Job Matching:</strong> Find jobs that perfectly match your skills#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check-circle text-success me-2"></i>#}
+{#                                    <strong>AI-Optimized Documents:</strong> Generate personalized resumes and cover letters#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check-circle text-success me-2"></i>#}
+{#                                    <strong>Automated Follow-ups:</strong> Professional email templates with your details#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check-circle text-success me-2"></i>#}
+{#                                    <strong>Analytics & Insights:</strong> Track your job search performance#}
+{#                                </li>#}
+{#                                <li class="mb-2">#}
+{#                                    <i class="fas fa-check-circle text-success me-2"></i>#}
+{#                                    <strong>Time Saving:</strong> Automate 90% of your job application process#}
+{#                                </li>#}
+{#                            </ul>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <div class="col-md-6">#}
+{#                    <div class="card border-0 shadow-sm h-100">#}
+{#                        <div class="card-body">#}
+{#                            <h5 class="card-title text-info">#}
+{#                                <i class="fas fa-rocket"></i> What Happens Next?#}
+{#                            </h5>#}
+{#                            <div class="timeline">#}
+{#                                <div class="timeline-item">#}
+{#                                    <div class="timeline-marker bg-primary"></div>#}
+{#                                    <div class="timeline-content">#}
+{#                                        <h6>Complete Profile</h6>#}
+{#                                        <p class="mb-0 small text-muted">Fill in all sections for optimal results</p>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="timeline-item">#}
+{#                                    <div class="timeline-marker bg-info"></div>#}
+{#                                    <div class="timeline-content">#}
+{#                                        <h6>Create Search Configuration</h6>#}
+{#                                        <p class="mb-0 small text-muted">Set up your job search preferences</p>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="timeline-item">#}
+{#                                    <div class="timeline-marker bg-warning"></div>#}
+{#                                    <div class="timeline-content">#}
+{#                                        <h6>Start Job Search</h6>#}
+{#                                        <p class="mb-0 small text-muted">Find and apply to relevant positions</p>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                                <div class="timeline-item">#}
+{#                                    <div class="timeline-marker bg-success"></div>#}
+{#                                    <div class="timeline-content">#}
+{#                                        <h6>Get Hired!</h6>#}
+{#                                        <p class="mb-0 small text-muted">Land your dream job with our automation</p>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{##}
+{#            <!-- Action Buttons -->#}
+{#            <div class="text-center mb-5">#}
+{#                {% if completion_percentage < 100 %}#}
+{#                    <a href="{% url 'accounts:profile' %}" class="btn btn-primary btn-lg px-5 me-3">#}
+{#                        <i class="fas fa-edit"></i> Complete Profile Now#}
+{#                    </a>#}
+{#                {% else %}#}
+{#                    <a href="{% url 'jobs:search_config' %}" class="btn btn-success btn-lg px-5 me-3">#}
+{#                        <i class="fas fa-search"></i> Start Job Search#}
+{#                    </a>#}
+{#                {% endif %}#}
+{#                #}
+{#                <a href="{% url 'dashboard:dashboard' %}" class="btn btn-outline-secondary btn-lg px-5">#}
+{#                    <i class="fas fa-chart-pie"></i> Go to Dashboard#}
+{#                </a>#}
+{#            </div>#}
+{##}
+{#            <!-- Profile Completion Checklist -->#}
+{#            <div class="card border-0 shadow-sm">#}
+{#                <div class="card-header bg-light">#}
+{#                    <h5 class="mb-0">#}
+{#                        <i class="fas fa-list-check"></i> Profile Completion Checklist#}
+{#                    </h5>#}
+{#                </div>#}
+{#                <div class="card-body">#}
+{#                    <div class="row">#}
+{#                        <div class="col-md-6">#}
+{#                            <h6>Essential Information</h6>#}
+{#                            <div class="checklist-item {% if user.first_name and user.last_name %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if user.first_name and user.last_name %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Full Name#}
+{#                            </div>#}
+{#                            <div class="checklist-item {% if user.email %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if user.email %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Email Address#}
+{#                            </div>#}
+{#                            <div class="checklist-item {% if profile.phone %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if profile.phone %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Phone Number#}
+{#                            </div>#}
+{#                            <div class="checklist-item {% if profile.location %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if profile.location %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Location#}
+{#                            </div>#}
+{#                            <div class="checklist-item {% if profile.linkedin_url %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if profile.linkedin_url %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                LinkedIn Profile#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="col-md-6">#}
+{#                            <h6>Professional Details</h6>#}
+{#                            <div class="checklist-item {% if profile.years_experience %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if profile.years_experience %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Years of Experience#}
+{#                            </div>#}
+{#                            <div class="checklist-item {% if profile.current_job_title %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if profile.current_job_title %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Current Job Title#}
+{#                            </div>#}
+{#                            <div class="checklist-item {% if profile.education %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if profile.education %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Education#}
+{#                            </div>#}
+{#                            <div class="checklist-item {% if profile.key_skills %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if profile.key_skills %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Key Skills#}
+{#                            </div>#}
+{#                            <div class="checklist-item {% if profile.resume_file %}completed{% endif %}">#}
+{#                                <i class="fas fa-{% if profile.resume_file %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>#}
+{#                                Resume Upload#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.completion-circle-large {#}
+{#    position: relative;#}
+{#    display: inline-block;#}
+{#}#}
+{##}
+{#.completion-text-large {#}
+{#    position: absolute;#}
+{#    top: 50%;#}
+{#    left: 50%;#}
+{#    transform: translate(-50%, -50%);#}
+{#    text-align: center;#}
+{#    pointer-events: none;#}
+{#}#}
+{##}
+{#.section-progress {#}
+{#    background-color: #f8f9fa;#}
+{#    border-radius: 8px;#}
+{#    padding: 15px;#}
+{#}#}
+{##}
+{#.progress {#}
+{#    height: 8px;#}
+{#    border-radius: 4px;#}
+{#}#}
+{##}
+{#.suggestion-icon {#}
+{#    width: 30px;#}
+{#    height: 30px;#}
+{#    border-radius: 50%;#}
+{#    background-color: #fff3cd;#}
+{#    display: flex;#}
+{#    align-items: center;#}
+{#    justify-content: center;#}
+{#    border: 2px solid #ffc107;#}
+{#}#}
+{##}
+{#.timeline {#}
+{#    position: relative;#}
+{#    padding-left: 30px;#}
+{#}#}
+{##}
+{#.timeline::before {#}
+{#    content: '';#}
+{#    position: absolute;#}
+{#    left: 15px;#}
+{#    top: 0;#}
+{#    height: 100%;#}
+{#    width: 2px;#}
+{#    background: linear-gradient(to bottom, #007bff, #28a745);#}
+{#}#}
+{##}
+{#.timeline-item {#}
+{#    position: relative;#}
+{#    margin-bottom: 20px;#}
+{#}#}
+{##}
+{#.timeline-marker {#}
+{#    position: absolute;#}
+{#    left: -37px;#}
+{#    top: 5px;#}
+{#    width: 12px;#}
+{#    height: 12px;#}
+{#    border-radius: 50%;#}
+{#    border: 3px solid white;#}
+{#    box-shadow: 0 0 0 2px #dee2e6;#}
+{#}#}
+{##}
+{#.timeline-content h6 {#}
+{#    margin-bottom: 5px;#}
+{#    font-weight: 600;#}
+{#}#}
+{##}
+{#.checklist-item {#}
+{#    padding: 8px 0;#}
+{#    border-bottom: 1px solid #e9ecef;#}
+{#}#}
+{##}
+{#.checklist-item:last-child {#}
+{#    border-bottom: none;#}
+{#}#}
+{##}
+{#.checklist-item.completed {#}
+{#    color: #28a745;#}
+{#    font-weight: 500;#}
+{#}#}
+{##}
+{#.btn-lg {#}
+{#    padding: 12px 30px;#}
+{#    font-size: 1.1rem;#}
+{#}#}
+{##}
+{#.card {#}
+{#    transition: transform 0.2s ease-in-out;#}
+{#}#}
+{##}
+{#.card:hover {#}
+{#    transform: translateY(-2px);#}
+{#}#}
+{##}
+{#@media (max-width: 768px) {#}
+{#    .timeline {#}
+{#        padding-left: 20px;#}
+{#    }#}
+{#    #}
+{#    .timeline-marker {#}
+{#        left: -27px;#}
+{#    }#}
+{#    #}
+{#    .btn-lg {#}
+{#        width: 100%;#}
+{#        margin-bottom: 10px;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>#}
+{#<script>#}
+{#document.addEventListener('DOMContentLoaded', function() {#}
+{#    // Main completion chart#}
+{#    const ctx = document.getElementById('mainCompletionChart').getContext('2d');#}
+{#    const completionPercentage = {{ completion_percentage }};#}
+{#    #}
+{#    new Chart(ctx, {#}
+{#        type: 'doughnut',#}
+{#        data: {#}
+{#            datasets: [{#}
+{#                data: [completionPercentage, 100 - completionPercentage],#}
+{#                backgroundColor: [#}
+{#                    completionPercentage >= 90 ? '#28a745' : #}
+{#                    completionPercentage >= 70 ? '#ffc107' : #}
+{#                    completionPercentage >= 50 ? '#17a2b8' : '#dc3545',#}
+{#                    '#e9ecef'#}
+{#                ],#}
+{#                borderWidth: 0#}
+{#            }]#}
+{#        },#}
+{#        options: {#}
+{#            cutout: '75%',#}
+{#            plugins: {#}
+{#                legend: {#}
+{#                    display: false#}
+{#                },#}
+{#                tooltip: {#}
+{#                    enabled: false#}
+{#                }#}
+{#            },#}
+{#            responsive: false,#}
+{#            maintainAspectRatio: false#}
+{#        }#}
+{#    });#}
+{#});#}
+{##}
+{#// Animate progress bars on scroll#}
+{#function animateProgressBars() {#}
+{#    const progressBars = document.querySelectorAll('.progress-bar');#}
+{#    #}
+{#    const observer = new IntersectionObserver((entries) => {#}
+{#        entries.forEach(entry => {#}
+{#            if (entry.isIntersecting) {#}
+{#                const progressBar = entry.target;#}
+{#                const width = progressBar.style.width;#}
+{#                progressBar.style.width = '0%';#}
+{#                setTimeout(() => {#}
+{#                    progressBar.style.width = width;#}
+{#                    progressBar.style.transition = 'width 1s ease-in-out';#}
+{#                }, 100);#}
+{#            }#}
+{#        });#}
+{#    });#}
+{#    #}
+{#    progressBars.forEach(bar => observer.observe(bar));#}
+{#}#}
+{##}
+{#// Initialize animations#}
+{#animateProgressBars();#}
+{##}
+{#// Celebration animation for high completion#}
+{#{% if completion_percentage >= 90 %}#}
+{#// Add confetti or celebration effect here#}
+{#console.log('🎉 Profile almost complete!');#}
+{#{% endif %}#}
+{#</script>#}
+{#{% endblock %}#}
