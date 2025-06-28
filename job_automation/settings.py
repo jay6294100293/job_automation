@@ -8,6 +8,8 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
+
+for dubug just change the comments for db and debug
 """
 
 import os
@@ -19,7 +21,7 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# env_path = BASE_DIR / '.debug.env'
+# env_path = BASE_DIR / '.env.debug'
 env_path = BASE_DIR / '.env'
 load_dotenv(env_path)
 
@@ -28,12 +30,12 @@ load_dotenv(env_path)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
-# SECRET_KEY = ''
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'ai.jobautomation.me']
+# Production hosts
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -103,16 +105,11 @@ WSGI_APPLICATION = 'job_automation.wsgi.application'
 # }
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'resume_db'),
-        'USER': os.getenv('DB_USER', 'resume_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'resume_password'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-    }
-
+    'default': dj_database_url.config(
+        default=f"postgresql://{os.getenv('DB_USER', 'django_user')}:{os.getenv('DB_PASSWORD', 'password')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'job_automation')}"
+    )
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -310,15 +307,7 @@ CACHES = {
 }
 
 
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-if not os.path.exists(LOGS_DIR):
-    os.makedirs(LOGS_DIR)
 
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-# CSRF Settings
-CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
@@ -329,7 +318,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Session settings
 SESSION_COOKIE_AGE = 86400  # 24 hours
-SESSION_COOKIE_SECURE = False  # Set to True in production
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', False)  # Set to True in production
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 
@@ -395,10 +384,6 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "https://ai.jobautomation.me",
     "https://n8n.jobautomation.me",# Your production domain
-    "http://localhost:3000",        # React development server
-    "http://localhost:8080",        # Vue development server
-    "http://127.0.0.1:3000",        # Alternative localhost
-    "http://127.0.0.1:8080",        # Alternative localhost
     "http://localhost:8000",        # Django development server (for testing)
 ]
 
@@ -457,12 +442,14 @@ EMAIL_HOST_PASSWORD = os.getenv('BREVO_SMTP_KEY')
 DEFAULT_FROM_EMAIL = os.getenv('BREVO_LOGIN')
 
 # Celery settings for background tasks
+# Celery Configuration - NEW
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 
 # n8n Integration - UPDATE EXISTING
@@ -557,5 +544,10 @@ DIRECTORIES_TO_CREATE = [
 
 for directory in DIRECTORIES_TO_CREATE:
     os.makedirs(directory, exist_ok=True)
+
+# Security Settings - UPDATED FOR PRODUCTION
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
 
 MONITORING_API_KEY = config('MONITORING_API_KEY', default='default-monitoring-key')
