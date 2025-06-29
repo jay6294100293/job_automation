@@ -21,8 +21,8 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# env_path = BASE_DIR / '.env.debug'
-env_path = BASE_DIR / '.env'
+env_path = BASE_DIR / '.env.debug'
+# env_path = BASE_DIR / '.env'
 load_dotenv(env_path)
 
 # Quick-start development settings - unsuitable for production
@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'crispy_forms',
     'crispy_bootstrap5',
+    'django_celery_beat',
     'monitoring',
     'accounts',
     'jobs',
@@ -96,7 +97,7 @@ WSGI_APPLICATION = 'job_automation.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
+#
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
