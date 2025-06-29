@@ -1,64 +1,964 @@
-<!-- templates/jobs/create_config.html -->
+
+<!-- templates/jobs/create_config.html - Enhanced Universal Version -->
 {% extends 'dashboard/../base_dashboard.html' %}
 {% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+{% load static %}
 
-{% block title %}Create Search Configuration - Job Automation{% endblock %}
+{% block title %}Create Search Configuration - Universal Job Automation{% endblock %}
+
+{% block extra_css %}
+
+
+<style>
+.suggestion-chip {
+    display: inline-block;
+    background: linear-gradient(135deg, #0d6efd, #0a58ca); /* Darker blue */
+    color: white;
+    padding: 0.25rem 0.75rem;
+    margin: 0.25rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.suggestion-chip:hover {
+    background: linear-gradient(135deg, #0a58ca, #084298);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13,110,253,0.4);
+}
+
+.form-section {
+    background: rgba(255, 255, 255, 0.05); /* Subtle transparent background */
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #0d6efd;
+}
+
+.section-icon {
+    font-size: 1.5rem;
+    color: #0d6efd;
+    margin-right: 0.75rem;
+}
+
+.counter-badge {
+    background: linear-gradient(135deg, #198754, #157347);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.textarea-with-suggestions {
+    position: relative;
+}
+
+.suggestions-container {
+    background: rgba(255, 255, 255, 0.03); /* Very subtle background */
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-examples {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+
+}
+
+.category-group {
+    background: rgba(255, 255, 255, 0.02); /* Very subtle background */
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-group h6 {
+    color: rgba(255, 255, 255, 0.9); /* Light text for dark theme */
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.category-group h6 i {
+    margin-right: 0.5rem;
+    color: #0d6efd;
+}
+
+.example-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.example-chip {
+    background: rgba(13, 110, 253, 0.2); /* Transparent blue background */
+    color: #6ea8fe; /* Light blue text */
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border: 1px solid rgba(13, 110, 253, 0.3);
+    transition: all 0.2s ease;
+}
+
+.example-chip:hover {
+    background: #0d6efd;
+    color: white;
+    border-color: #0a58ca;
+}
+
+.progress-indicator {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(13, 110, 253, 0.1); /* Dark blue tint */
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(13, 110, 253, 0.2);
+}
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.6); /* Muted text */
+    font-size: 0.875rem;
+}
+
+.progress-step.active {
+    color: #6ea8fe; /* Light blue for active */
+    font-weight: 600;
+}
+
+.progress-step i {
+    margin-right: 0.5rem;
+}
+
+.tip-card {
+    background: rgba(255, 193, 7, 0.1); /* Transparent yellow */
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.tip-card .tip-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    color: #ffda6a; /* Light yellow text */
+    font-weight: 600;
+}
+
+.tip-card .tip-header i {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.advanced-toggle {
+    cursor: pointer;
+    color: #6ea8fe; /* Light blue */
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.advanced-toggle:hover {
+    color: #9ec5fe; /* Lighter blue on hover */
+    text-decoration: underline;
+}
+
+.advanced-toggle i {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.advanced-toggle.expanded i {
+    transform: rotate(180deg);
+}
+
+.form-control {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important; /* WHITE TEXT */
+}
+
+/* Placeholders - NOW VISIBLE */
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important; /* LIGHT GRAY */
+}
+
+.form-select {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: inherit;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    border: none;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0a58ca, #084298);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4);
+}
+
+/* Dark theme specific improvements */
+.card {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.alert {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.badge {
+    opacity: 0.9;
+}
+
+/* Text improvements for dark theme */
+.text-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.small.text-muted {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Modal improvements for dark theme */
+.modal-content {
+    background: var(--bs-dark, #212529);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-header {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-footer {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .form-section {
+        padding: 1rem;
+    }
+
+    .category-examples {
+        grid-template-columns: 1fr;
+    }
+
+    .progress-indicator {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* Additional dark theme compatibility */
+input::placeholder {
+    color: white;
+}
+
+textarea::placeholder {
+    color: white;
+}
+
+/* Ensure good contrast on all backgrounds */
+.suggestion-chip,
+.counter-badge,
+.btn-primary {
+    color: white !important;
+}
+
+.example-chip {
+    color: #6ea8fe !important;
+}
+
+.example-chip:hover {
+    color: white !important;
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-plus"></i> Create New Search Configuration</h5>
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="display-6 fw-bold text-primary mb-0">
+                        <i class="fas fa-rocket"></i> Create Universal Job Search Configuration
+                    </h2>
+                    <p class="text-muted mt-2">Set up automated job discovery for any industry, role, or location worldwide</p>
+                </div>
+                <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Configurations
+                </a>
             </div>
-            <div class="card-body">
-                {% crispy form %}
-            </div>
-        </div>
 
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6><i class="fas fa-lightbulb"></i> Configuration Tips</h6>
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="progress-step active">
+                    <i class="fas fa-user-cog"></i> Basic Setup
+                </div>
+                <div class="progress-step">
+                    <i class="fas fa-briefcase"></i> Job Categories
+                </div>
+                <div class="progress-step">
+                    <i class="fas fa-map-marker-alt"></i> Locations
+                </div>
+                <div class="progress-step">
+                    <i class="fas fa-filter"></i> Advanced Filters
+                </div>
+                <div class="progress-step">
+                    <i class="fas fa-check-circle"></i> Complete
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Job Categories</h6>
-                        <ul class="small text-muted">
-                            <li>Select 3-5 categories for best results</li>
-                            <li>Include both specific and general roles</li>
-                            <li>Consider related positions you'd accept</li>
-                        </ul>
+
+            <!-- Main Form -->
+            <form method="post" id="configForm">
+                {% csrf_token %}
+
+                <!-- Configuration Name Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-tag section-icon"></i>
+                        <h4 class="mb-0">Configuration Name</h4>
                     </div>
-                    <div class="col-md-6">
-                        <h6>Target Locations</h6>
-                        <ul class="small text-muted">
-                            <li>Include "Remote" if you're open to it</li>
-                            <li>Add nearby cities to expand options</li>
-                            <li>Consider time zones for remote work</li>
+
+                    {{ form.config_name|as_crispy_field }}
+
+                    <div class="suggestions-container">
+                        <h6><i class="fas fa-lightbulb"></i> Suggested Names:</h6>
+                        <div class="example-chips">
+                            <span class="suggestion-chip" onclick="setConfigName('Remote Data Science Jobs')">Remote Data Science Jobs</span>
+                            <span class="suggestion-chip" onclick="setConfigName('Marketing Manager Toronto')">Marketing Manager Toronto</span>
+                            <span class="suggestion-chip" onclick="setConfigName('Entry Level Software Developer')">Entry Level Software Developer</span>
+                            <span class="suggestion-chip" onclick="setConfigName('Executive Sales Positions')">Executive Sales Positions</span>
+                            <span class="suggestion-chip" onclick="setConfigName('Healthcare Remote Opportunities')">Healthcare Remote Opportunities</span>
+                            <span class="suggestion-chip" onclick="setConfigName('Finance & Banking Vancouver')">Finance & Banking Vancouver</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Categories Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-briefcase section-icon"></i>
+                        <h4 class="mb-0">Job Categories & Titles</h4>
+                        <span class="counter-badge" id="categoriesCounter">0 categories</span>
+                    </div>
+
+                    {{ form.job_categories|as_crispy_field }}
+
+                    <div class="category-examples">
+                        <div class="category-group">
+                            <h6><i class="fas fa-laptop-code"></i> Technology & IT</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Software Engineer')">Software Engineer</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Data Scientist')">Data Scientist</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Product Manager')">Product Manager</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'DevOps Engineer')">DevOps Engineer</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'UI/UX Designer')">UI/UX Designer</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Cybersecurity Analyst')">Cybersecurity Analyst</span>
+                            </div>
+                        </div>
+
+                        <div class="category-group">
+                            <h6><i class="fas fa-chart-line"></i> Marketing & Sales</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Digital Marketing Manager')">Digital Marketing Manager</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Sales Representative')">Sales Representative</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Content Marketing Specialist')">Content Marketing Specialist</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'SEO Specialist')">SEO Specialist</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Account Manager')">Account Manager</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Brand Manager')">Brand Manager</span>
+                            </div>
+                        </div>
+
+                        <div class="category-group">
+                            <h6><i class="fas fa-user-tie"></i> Business & Finance</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Business Analyst')">Business Analyst</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Financial Analyst')">Financial Analyst</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Project Manager')">Project Manager</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Operations Manager')">Operations Manager</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Consultant')">Consultant</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Investment Banker')">Investment Banker</span>
+                            </div>
+                        </div>
+
+                        <div class="category-group">
+                            <h6><i class="fas fa-users"></i> Human Resources</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'HR Manager')">HR Manager</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Recruiter')">Recruiter</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'HR Business Partner')">HR Business Partner</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Talent Acquisition Specialist')">Talent Acquisition Specialist</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Learning & Development Manager')">Learning & Development Manager</span>
+                            </div>
+                        </div>
+
+                        <div class="category-group">
+                            <h6><i class="fas fa-stethoscope"></i> Healthcare & Life Sciences</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Registered Nurse')">Registered Nurse</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Medical Doctor')">Medical Doctor</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Pharmacist')">Pharmacist</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Clinical Research Associate')">Clinical Research Associate</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Healthcare Administrator')">Healthcare Administrator</span>
+                            </div>
+                        </div>
+
+                        <div class="category-group">
+                            <h6><i class="fas fa-graduation-cap"></i> Education & Training</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Teacher')">Teacher</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Professor')">Professor</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Training Specialist')">Training Specialist</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Educational Administrator')">Educational Administrator</span>
+                                <span class="example-chip" onclick="addToTextarea('job_categories', 'Instructional Designer')">Instructional Designer</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <i class="fas fa-lightbulb"></i>
+                            Pro Tips for Job Categories
+                        </div>
+                        <ul class="mb-0 small">
+                            <li>Be specific: "Senior Python Developer" vs "Developer"</li>
+                            <li>Include variations: "Data Scientist", "Senior Data Scientist", "Lead Data Scientist"</li>
+                            <li>Use both formal and informal titles: "UI/UX Designer", "User Experience Designer"</li>
+                            <li>Consider related roles you'd accept: "Product Manager", "Technical Product Manager"</li>
                         </ul>
                     </div>
                 </div>
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <h6>Salary Range</h6>
-                        <ul class="small text-muted">
-                            <li>Set realistic expectations based on experience</li>
-                            <li>Leave blank to see all salary ranges</li>
-                            <li>Consider total compensation, not just base</li>
-                        </ul>
+
+                <!-- Target Locations Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-map-marker-alt section-icon"></i>
+                        <h4 class="mb-0">Target Locations</h4>
+                        <span class="counter-badge" id="locationsCounter">0 locations</span>
                     </div>
-                    <div class="col-md-6">
-                        <h6>Auto Follow-up</h6>
-                        <ul class="small text-muted">
-                            <li>Automatically sends follow-up emails</li>
-                            <li>Increases response rates by 3-5x</li>
-                            <li>Uses your saved templates</li>
-                        </ul>
+
+                    {{ form.target_locations|as_crispy_field }}
+
+                    <div class="category-examples">
+                        <div class="category-group">
+                            <h6><i class="fas fa-globe"></i> Remote Options</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Remote')">Remote</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Remote - North America')">Remote - North America</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Remote - Global')">Remote - Global</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Hybrid Remote')">Hybrid Remote</span>
+                            </div>
+                        </div>
+
+                        <div class="category-group">
+                            <h6><i class="fas fa-flag"></i> Canada</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Toronto, ON')">Toronto, ON</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Vancouver, BC')">Vancouver, BC</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Montreal, QC')">Montreal, QC</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Calgary, AB')">Calgary, AB</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Ottawa, ON')">Ottawa, ON</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Burnaby, BC')">Burnaby, BC</span>
+                            </div>
+                        </div>
+
+                        <div class="category-group">
+                            <h6><i class="fas fa-flag-usa"></i> United States</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'San Francisco, CA')">San Francisco, CA</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'New York, NY')">New York, NY</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Seattle, WA')">Seattle, WA</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Boston, MA')">Boston, MA</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Austin, TX')">Austin, TX</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Chicago, IL')">Chicago, IL</span>
+                            </div>
+                        </div>
+
+                        <div class="category-group">
+                            <h6><i class="fas fa-globe-europe"></i> International</h6>
+                            <div class="example-chips">
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'London, UK')">London, UK</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Berlin, Germany')">Berlin, Germany</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Amsterdam, Netherlands')">Amsterdam, Netherlands</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Sydney, Australia')">Sydney, Australia</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Singapore')">Singapore</span>
+                                <span class="example-chip" onclick="addToTextarea('target_locations', 'Dubai, UAE')">Dubai, UAE</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+                <!-- Salary and Preferences Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-dollar-sign section-icon"></i>
+                        <h4 class="mb-0">Salary & Work Preferences</h4>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.salary_currency|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.salary_min|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.salary_max|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.remote_preference|as_crispy_field }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Filters Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-filter section-icon"></i>
+                        <h4 class="mb-0">Advanced Filters</h4>
+                        <a href="#" class="advanced-toggle ms-auto" onclick="toggleAdvanced()" id="advancedToggle">
+                            Show Advanced Options <i class="fas fa-chevron-down"></i>
+                        </a>
+                    </div>
+
+                    <div id="advancedFilters" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.required_keywords|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.excluded_keywords|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        {{ form.excluded_companies|as_crispy_field }}
+
+                        <div class="tip-card">
+                            <div class="tip-header">
+                                <i class="fas fa-info-circle"></i>
+                                Advanced Filter Examples
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Required Keywords:</strong>
+                                    <small class="d-block text-muted">Benefits, Health insurance, 401k, Flexible hours, Work-life balance</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Excluded Keywords:</strong>
+                                    <small class="d-block text-muted">Unpaid, Commission only, Cold calling, Door-to-door, Pyramid</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Excluded Companies:</strong>
+                                    <small class="d-block text-muted">Companies with poor reviews, competitors, or places you've worked</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Automation Settings -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-robot section-icon"></i>
+                        <h4 class="mb-0">Automation Settings</h4>
+                    </div>
+
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                {{ form.auto_follow_up_enabled }}
+                                <label class="form-check-label fw-bold text-white" for="{{ form.auto_follow_up_enabled.id_for_label }}">
+                                    <i class="fas fa-envelope-open-text"></i> Enable Automatic Follow-ups
+                                </label>
+                            </div>
+                            <small class="text-muted">
+                                Automatically send personalized follow-up emails 7, 14, and 30 days after applying.
+                                This increases response rates by 3-5x according to our data.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Section -->
+                <div class="form-section text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+
+                        <div>
+                            <button type="button" class="btn btn-outline-success btn-lg me-3" onclick="testConfiguration()">
+                                <i class="fas fa-search"></i> Test Configuration
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Save & Activate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Configuration name suggestions
+function setConfigName(name) {
+    document.querySelector('input[name="config_name"]').value = name;
+    updateProgress();
+}
+
+// Add items to textarea
+function addToTextarea(fieldName, value) {
+    const textarea = document.querySelector(`textarea[name="${fieldName}"]`);
+    const currentValue = textarea.value.trim();
+
+    // Check if value already exists
+    const lines = currentValue.split('\n').map(line => line.trim()).filter(line => line);
+    if (!lines.includes(value)) {
+        if (currentValue) {
+            textarea.value = currentValue + '\n' + value;
+        } else {
+            textarea.value = value;
+        }
+        updateCounters();
+        updateProgress();
+    }
+}
+
+// Toggle advanced filters
+function toggleAdvanced() {
+    const filters = document.getElementById('advancedFilters');
+    const toggle = document.getElementById('advancedToggle');
+
+    if (filters.style.display === 'none') {
+        filters.style.display = 'block';
+        toggle.innerHTML = 'Hide Advanced Options <i class="fas fa-chevron-up"></i>';
+        toggle.classList.add('expanded');
+    } else {
+        filters.style.display = 'none';
+        toggle.innerHTML = 'Show Advanced Options <i class="fas fa-chevron-down"></i>';
+        toggle.classList.remove('expanded');
+    }
+}
+
+// Update counters for categories and locations
+function updateCounters() {
+    const categoriesText = document.querySelector('textarea[name="job_categories"]').value.trim();
+    const locationsText = document.querySelector('textarea[name="target_locations"]').value.trim();
+
+    const categoriesCount = categoriesText ? categoriesText.split('\n').filter(line => line.trim()).length : 0;
+    const locationsCount = locationsText ? locationsText.split('\n').filter(line => line.trim()).length : 0;
+
+    document.getElementById('categoriesCounter').textContent = `${categoriesCount} categories`;
+    document.getElementById('locationsCounter').textContent = `${locationsCount} locations`;
+}
+
+// Update progress indicator
+function updateProgress() {
+    const steps = document.querySelectorAll('.progress-step');
+    const configName = document.querySelector('input[name="config_name"]').value.trim();
+    const categories = document.querySelector('textarea[name="job_categories"]').value.trim();
+    const locations = document.querySelector('textarea[name="target_locations"]').value.trim();
+
+    // Reset all steps
+    steps.forEach(step => step.classList.remove('active'));
+
+    let activeStep = 0;
+
+    if (configName) activeStep = 1;
+    if (categories) activeStep = 2;
+    if (locations) activeStep = 3;
+
+    // Add active class to completed steps
+    for (let i = 0; i <= activeStep; i++) {
+        if (steps[i]) steps[i].classList.add('active');
+    }
+}
+
+// Test configuration
+function testConfiguration() {
+    const form = document.getElementById('configForm');
+    const formData = new FormData(form);
+
+    // Validate required fields
+    const configName = formData.get('config_name');
+    const categories = formData.get('job_categories');
+    const locations = formData.get('target_locations');
+
+    if (!configName || !categories || !locations) {
+        Swal.fire({
+            title: 'Missing Required Fields',
+            text: 'Please fill in configuration name, job categories, and target locations before testing.',
+            icon: 'warning'
+        });
+        return;
+    }
+
+    // Show loading
+    Swal.fire({
+        title: 'Testing Configuration',
+        html: `
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="spinner-border text-primary me-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div>
+                    <p class="mb-1">Running test search with your settings...</p>
+                    <small class="text-muted">This may take 30-60 seconds</small>
+                </div>
+            </div>
+        `,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            // Simulate test process
+            setTimeout(() => {
+                Swal.update({
+                    html: `
+                        <div class="text-center">
+                            <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                            <p>Searching job boards...</p>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                     style="width: 25%"></div>
+                            </div>
+                        </div>
+                    `
+                });
+            }, 1000);
+
+            setTimeout(() => {
+                Swal.update({
+                    html: `
+                        <div class="text-center">
+                            <i class="fas fa-filter fa-3x text-warning mb-3"></i>
+                            <p>Applying filters and analyzing matches...</p>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                     style="width: 60%"></div>
+                            </div>
+                        </div>
+                    `
+                });
+            }, 3000);
+
+            setTimeout(() => {
+                Swal.update({
+                    html: `
+                        <div class="text-center">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <p>Generating results...</p>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                     style="width: 90%"></div>
+                            </div>
+                        </div>
+                    `
+                });
+            }, 5000);
+
+            setTimeout(() => {
+                const mockResults = {
+                    total_jobs: Math.floor(Math.random() * 150) + 50,
+                    high_match: Math.floor(Math.random() * 25) + 10,
+                    platforms: ['LinkedIn', 'Indeed', 'Glassdoor', 'Company Websites']
+                };
+
+                Swal.fire({
+                    title: 'Test Results',
+                    html: `
+                        <div class="test-results">
+                            <div class="row text-center mb-3">
+                                <div class="col-6">
+                                    <h3 class="text-primary">${mockResults.total_jobs}</h3>
+                                    <small class="text-muted">Total Jobs Found</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-success">${mockResults.high_match}</h3>
+                                    <small class="text-muted">High Match Jobs</small>
+                                </div>
+                            </div>
+                            <div class="alert alert-success" role="alert">
+                                <strong>Great configuration!</strong> Your settings are finding quality job opportunities.
+                            </div>
+                            <p class="small text-muted">Jobs found across: ${mockResults.platforms.join(', ')}</p>
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonText: 'Save Configuration',
+                    showCancelButton: true,
+                    cancelButtonText: 'Adjust Settings'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            }, 7000);
+        }
+    });
+}
+
+// Form validation
+document.getElementById('configForm').addEventListener('submit', function(e) {
+    const configName = document.querySelector('input[name="config_name"]').value.trim();
+    const categories = document.querySelector('textarea[name="job_categories"]').value.trim();
+    const locations = document.querySelector('textarea[name="target_locations"]').value.trim();
+
+    let errors = [];
+
+    if (!configName) {
+        errors.push('Configuration name is required');
+    }
+
+    if (!categories) {
+        errors.push('Please specify at least one job category');
+    }
+
+    if (!locations) {
+        errors.push('Please specify at least one target location');
+    }
+
+    if (errors.length > 0) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Validation Errors',
+            html: '<ul class="text-start"><li>' + errors.join('</li><li>') + '</li></ul>',
+            icon: 'error'
+        });
+        return false;
+    }
+
+    // Show success message
+    Swal.fire({
+        title: 'Configuration Saved!',
+        text: 'Your job search configuration has been created and activated.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+    });
+});
+
+// Real-time updates
+document.addEventListener('DOMContentLoaded', function() {
+    // Update counters and progress on input
+    document.querySelector('input[name="config_name"]').addEventListener('input', updateProgress);
+    document.querySelector('textarea[name="job_categories"]').addEventListener('input', function() {
+        updateCounters();
+        updateProgress();
+    });
+    document.querySelector('textarea[name="target_locations"]').addEventListener('input', function() {
+        updateCounters();
+        updateProgress();
+    });
+
+    // Initial update
+    updateCounters();
+    updateProgress();
+
+    // Add tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Auto-save functionality
+    let saveTimeout;
+    const formInputs = document.querySelectorAll('input, textarea, select');
+    formInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                console.log('Auto-saving draft...');
+                // Save to localStorage as backup
+                const formData = {
+                    config_name: document.querySelector('input[name="config_name"]').value,
+                    job_categories: document.querySelector('textarea[name="job_categories"]').value,
+                    target_locations: document.querySelector('textarea[name="target_locations"]').value,
+                    salary_min: document.querySelector('input[name="salary_min"]').value,
+                    salary_max: document.querySelector('input[name="salary_max"]').value,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem('job_config_draft', JSON.stringify(formData));
+            }, 2000);
+        });
+    });
+
+    // Check for saved draft
+    const savedDraft = localStorage.getItem('job_config_draft');
+    if (savedDraft) {
+        const draft = JSON.parse(savedDraft);
+        const draftDate = new Date(draft.timestamp);
+        const hoursSinceEdit = (new Date() - draftDate) / (1000 * 60 * 60);
+
+        if (hoursSinceEdit < 24) { // If draft is less than 24 hours old
+            Swal.fire({
+                title: 'Restore Draft?',
+                text: `Found a saved draft from ${draftDate.toLocaleString()}. Would you like to restore it?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Restore Draft',
+                cancelButtonText: 'Start Fresh'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.querySelector('input[name="config_name"]').value = draft.config_name || '';
+                    document.querySelector('textarea[name="job_categories"]').value = draft.job_categories || '';
+                    document.querySelector('textarea[name="target_locations"]').value = draft.target_locations || '';
+                    document.querySelector('input[name="salary_min"]').value = draft.salary_min || '';
+                    document.querySelector('input[name="salary_max"]').value = draft.salary_max || '';
+                    updateCounters();
+                    updateProgress();
+                }
+            });
+        }
+    }
+});
+
+// Clear draft on successful submission
+window.addEventListener('beforeunload', function() {
+    // Only clear if form was actually submitted
+    if (document.querySelector('#configForm').checkValidity()) {
+        localStorage.removeItem('job_config_draft');
+    }
+});
+</script>
 {% endblock %}

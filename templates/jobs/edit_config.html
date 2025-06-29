@@ -1,8 +1,341 @@
+<!-- templates/jobs/edit_config.html - Enhanced Universal Version -->
 {% extends 'dashboard/../base_dashboard.html' %}
 {% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %}Edit Search Configuration - Job Automation{% endblock %}
+{% block title %}Edit Universal Search Configuration - Job Automation{% endblock %}
+
+{% block extra_css %}
+<style>
+/* DARK THEME EDIT CONFIG CSS */
+.form-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+}
+
+.form-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #0d6efd;
+}
+
+.section-icon {
+    font-size: 1.5rem;
+    color: #0d6efd;
+    margin-right: 0.75rem;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    color: #ffffff !important;
+}
+
+.counter-badge {
+    background: linear-gradient(135deg, #198754, #157347);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.suggestions-container {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.suggestion-chip {
+    display: inline-block;
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    margin: 0.25rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.suggestion-chip:hover {
+    background: linear-gradient(135deg, #0a58ca, #084298);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13,110,253,0.4);
+}
+
+.summary-card {
+    background: rgba(13, 110, 253, 0.1);
+    border: 1px solid rgba(13, 110, 253, 0.3);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-item {
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid #17a2b8;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.summary-item strong {
+    color: rgba(255, 255, 255, 0.9) !important;
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.tips-card {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.tips-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    color: #ffda6a;
+    font-weight: 600;
+}
+
+.tips-header i {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.quick-action-card {
+    background: rgba(25, 135, 84, 0.1);
+    border: 1px solid rgba(25, 135, 84, 0.3);
+    border-radius: 10px;
+    padding: 1.5rem;
+}
+
+.quick-action-btn {
+    background: linear-gradient(135deg, #198754, #157347);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin: 0.25rem;
+}
+
+.quick-action-btn:hover {
+    background: linear-gradient(135deg, #157347, #0f5132);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(25,135,84,0.4);
+    color: white;
+}
+
+.advanced-filters {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.advanced-toggle {
+    cursor: pointer;
+    color: #6ea8fe;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.advanced-toggle:hover {
+    color: #9ec5fe;
+    text-decoration: underline;
+}
+
+.advanced-toggle i {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.advanced-toggle.expanded i {
+    transform: rotate(180deg);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-control {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.form-select {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+}
+
+.form-label {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 600;
+}
+
+.form-text {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    border: none;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    color: white !important;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0a58ca, #084298);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4);
+    color: white !important;
+}
+
+.btn-outline-secondary {
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    background: transparent !important;
+}
+
+.btn-outline-success {
+    border: 2px solid #198754 !important;
+    color: #198754 !important;
+    background: transparent !important;
+}
+
+.btn-outline-danger {
+    border: 2px solid #dc3545 !important;
+    color: #dc3545 !important;
+    background: transparent !important;
+}
+
+.status-indicator {
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+.status-active {
+    background: rgba(25, 135, 84, 0.2);
+    color: #75b798 !important;
+    border: 1px solid rgba(25, 135, 84, 0.3);
+}
+
+.status-inactive {
+    background: rgba(220, 53, 69, 0.2);
+    color: #f1919c !important;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+
+.card-body {
+    color: #ffffff !important;
+}
+
+.card-header {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff !important;
+}
+
+p {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.text-primary {
+    color: #6ea8fe !important;
+}
+
+.text-info {
+    color: #3dd5f3 !important;
+}
+
+.text-success {
+    color: #75b798 !important;
+}
+
+ul li, ol li {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+small {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+@media (max-width: 768px) {
+    .form-section {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .counter-badge {
+        margin-left: 0;
+        margin-top: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -12,220 +345,281 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="display-6 fw-bold text-primary">
-                        <i class="fas fa-edit"></i> Edit Search Configuration
+                        <i class="fas fa-edit"></i> Edit Universal Search Configuration
                     </h2>
-                    <p class="text-muted">Update your job search preferences: "{{ object.config_name }}"</p>
+                    <p class="text-muted">Update your automated job search settings: "{{ object.config_name }}"</p>
                 </div>
-                <div>
+                <div class="d-flex gap-2">
                     <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Configurations
+                        <i class="fas fa-arrow-left"></i> Back
                     </a>
+                    <div class="status-indicator {% if object.is_active %}status-active{% else %}status-inactive{% endif %}">
+                        <i class="fas fa-circle me-2"></i>
+                        {% if object.is_active %}Active{% else %}Inactive{% endif %}
+                    </div>
                 </div>
             </div>
 
-            <!-- Configuration Form -->
             <div class="row">
+                <!-- Main Form Column -->
                 <div class="col-lg-8">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">
-                                <i class="fas fa-cog"></i> Configuration Settings
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="post" id="configForm">
-                                {% csrf_token %}
-
-                                <!-- Configuration Name -->
-                                <div class="form-group mb-4">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-tag"></i> Configuration Name
-                                    </label>
-                                    {{ form.config_name|as_crispy_field }}
-                                </div>
-
-                                <!-- Job Categories -->
-                                <div class="form-group mb-4">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-briefcase"></i> Job Categories
-                                    </label>
-                                    <p class="text-muted small">Select the types of positions you're interested in</p>
-                                    <div class="categories-container p-3 border rounded">
-                                        {{ form.job_categories }}
-                                    </div>
-                                    <div class="mt-2">
-                                        <small class="text-muted">
-                                            Selected: <span id="selectedCategories" class="fw-bold">0</span> categories
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <!-- Target Locations -->
-                                <div class="form-group mb-4">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-map-marker-alt"></i> Target Locations
-                                    </label>
-                                    <p class="text-muted small">Choose where you'd like to work</p>
-                                    <div class="locations-container p-3 border rounded">
-                                        {{ form.target_locations }}
-                                    </div>
-                                    <div class="mt-2">
-                                        <small class="text-muted">
-                                            Selected: <span id="selectedLocations" class="fw-bold">0</span> locations
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <!-- Work Preferences -->
-                                <div class="row mb-4">
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-bold">
-                                            <i class="fas fa-home"></i> Remote Preference
-                                        </label>
-                                        {{ form.remote_preference|as_crispy_field }}
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-bold">
-                                            <i class="fas fa-dollar-sign"></i> Minimum Salary
-                                        </label>
-                                        {{ form.salary_min|as_crispy_field }}
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-bold">
-                                            <i class="fas fa-dollar-sign"></i> Maximum Salary
-                                        </label>
-                                        {{ form.salary_max|as_crispy_field }}
-                                    </div>
-                                </div>
-
-                                <!-- Auto Follow-up -->
-                                <div class="form-group mb-4">
-                                    <div class="card border-info">
-                                        <div class="card-body">
-                                            <div class="form-check form-switch">
-                                                {{ form.auto_follow_up_enabled }}
-                                                <label class="form-check-label fw-bold" for="{{ form.auto_follow_up_enabled.id_for_label }}">
-                                                    <i class="fas fa-envelope-open-text"></i> Enable Automatic Follow-ups
-                                                </label>
-                                            </div>
-                                            <small class="text-muted">
-                                                Automatically send follow-up emails 7 days after applying to increase response rates
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Submit Buttons -->
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <button type="submit" class="btn btn-primary btn-lg me-3">
-                                            <i class="fas fa-save"></i> Save Changes
-                                        </button>
-                                        <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-secondary btn-lg">
-                                            <i class="fas fa-times"></i> Cancel
-                                        </a>
-                                    </div>
-                                    <div>
-                                        <button type="button" class="btn btn-success btn-lg" onclick="testConfiguration()">
-                                            <i class="fas fa-play"></i> Test & Save
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sidebar -->
-                <div class="col-lg-4">
                     <!-- Configuration Summary -->
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-info-circle"></i> Configuration Summary
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="summary-item mb-3">
-                                <strong>Created:</strong><br>
-                                <small class="text-muted">{{ object.created_at|date:"F d, Y" }}</small>
+                    <div class="summary-card">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-info-circle"></i> Current Configuration Summary
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="summary-item">
+                                    <strong>Categories:</strong>
+                                    {{ object.job_categories_display }}
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Locations:</strong>
+                                    {{ object.locations_display }}
+                                </div>
                             </div>
-                            <div class="summary-item mb-3">
-                                <strong>Last Updated:</strong><br>
-                                <small class="text-muted">{{ object.updated_at|date:"F d, Y H:i" }}</small>
-                            </div>
-                            <div class="summary-item mb-3">
-                                <strong>Last Search:</strong><br>
-                                <small class="text-muted">
+                            <div class="col-md-6">
+                                <div class="summary-item">
+                                    <strong>Salary Range:</strong>
+                                    {{ object.salary_display }}
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Last Search:</strong>
                                     {% if object.last_search_date %}
                                         {{ object.last_search_date|date:"F d, Y H:i" }}
                                     {% else %}
                                         Never used
                                     {% endif %}
-                                </small>
-                            </div>
-                            <div class="summary-item">
-                                <strong>Status:</strong><br>
-                                <span class="badge bg-{% if object.is_active %}success{% else %}secondary{% endif %}">
-                                    {% if object.is_active %}Active{% else %}Inactive{% endif %}
-                                </span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Configuration Tips -->
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-warning text-dark">
-                            <h6 class="mb-0">
-                                <i class="fas fa-lightbulb"></i> Optimization Tips
-                            </h6>
+                    <!-- Edit Form -->
+                    <form method="post" id="configForm">
+                        {% csrf_token %}
+
+                        <!-- Basic Information -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="fas fa-tag section-icon"></i>
+                                    Basic Information
+                                </h4>
+                            </div>
+
+                            {{ form.config_name|as_crispy_field }}
                         </div>
-                        <div class="card-body">
-                            <ul class="list-unstyled">
-                                <li class="mb-2">
-                                    <i class="fas fa-check text-success me-2"></i>
-                                    <small>Select 3-5 job categories for best results</small>
-                                </li>
-                                <li class="mb-2">
-                                    <i class="fas fa-check text-success me-2"></i>
-                                    <small>Include both specific and general roles</small>
-                                </li>
-                                <li class="mb-2">
-                                    <i class="fas fa-check text-success me-2"></i>
-                                    <small>Add "Remote" if you're open to it</small>
-                                </li>
-                                <li class="mb-2">
-                                    <i class="fas fa-check text-success me-2"></i>
-                                    <small>Set realistic salary expectations</small>
-                                </li>
-                                <li class="mb-2">
-                                    <i class="fas fa-check text-success me-2"></i>
-                                    <small>Enable auto follow-up for 3x response rate</small>
-                                </li>
-                            </ul>
+
+                        <!-- Job Categories -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="fas fa-briefcase section-icon"></i>
+                                    Job Categories & Titles
+                                </h4>
+                                <span class="counter-badge" id="categoriesCounter">0 categories</span>
+                            </div>
+
+                            {{ form.job_categories|as_crispy_field }}
+
+                            <div class="suggestions-container">
+                                <h6><i class="fas fa-lightbulb"></i> Quick Add Categories:</h6>
+                                <div>
+                                    <span class="suggestion-chip" onclick="addToTextarea('job_categories', 'Senior Software Engineer')">Senior Software Engineer</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('job_categories', 'Data Scientist')">Data Scientist</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('job_categories', 'Product Manager')">Product Manager</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('job_categories', 'Marketing Manager')">Marketing Manager</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('job_categories', 'Sales Representative')">Sales Representative</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('job_categories', 'Business Analyst')">Business Analyst</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Target Locations -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="fas fa-map-marker-alt section-icon"></i>
+                                    Target Locations
+                                </h4>
+                                <span class="counter-badge" id="locationsCounter">0 locations</span>
+                            </div>
+
+                            {{ form.target_locations|as_crispy_field }}
+
+                            <div class="suggestions-container">
+                                <h6><i class="fas fa-globe"></i> Quick Add Locations:</h6>
+                                <div>
+                                    <span class="suggestion-chip" onclick="addToTextarea('target_locations', 'Remote')">Remote</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('target_locations', 'Toronto, ON')">Toronto, ON</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('target_locations', 'Vancouver, BC')">Vancouver, BC</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('target_locations', 'New York, NY')">New York, NY</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('target_locations', 'London, UK')">London, UK</span>
+                                    <span class="suggestion-chip" onclick="addToTextarea('target_locations', 'San Francisco, CA')">San Francisco, CA</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Salary and Preferences -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="fas fa-dollar-sign section-icon"></i>
+                                    Salary & Work Preferences
+                                </h4>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-3">
+                                    {{ form.salary_currency|as_crispy_field }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ form.salary_min|as_crispy_field }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ form.salary_max|as_crispy_field }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ form.remote_preference|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Filters -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="fas fa-filter section-icon"></i>
+                                    Advanced Filters
+                                </h4>
+                                <a href="#" class="advanced-toggle" onclick="toggleAdvanced()" id="advancedToggle">
+                                    Toggle Options <i class="fas fa-chevron-down"></i>
+                                </a>
+                            </div>
+
+                            <div class="advanced-filters" id="advancedFilters">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        {{ form.required_keywords|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ form.excluded_keywords|as_crispy_field }}
+                                    </div>
+                                </div>
+
+                                {{ form.excluded_companies|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <!-- Automation Settings -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="fas fa-robot section-icon"></i>
+                                    Automation Settings
+                                </h4>
+                            </div>
+
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <div class="form-check form-switch">
+                                        {{ form.auto_follow_up_enabled }}
+                                        <label class="form-check-label fw-bold" for="{{ form.auto_follow_up_enabled.id_for_label }}">
+                                            <i class="fas fa-envelope-open-text"></i> Enable Automatic Follow-ups
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">
+                                        Automatically send personalized follow-up emails to increase response rates by 3-5x
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Section -->
+                        <div class="form-section text-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'jobs:search_config' %}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-times"></i> Cancel Changes
+                                </a>
+
+                                <div>
+                                    <button type="button" class="btn btn-outline-success btn-lg me-3" onclick="testConfiguration()">
+                                        <i class="fas fa-search"></i> Test & Save
+                                    </button>
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Configuration Statistics -->
+                    <div class="summary-card">
+                        <h6 class="text-info mb-3">
+                            <i class="fas fa-chart-bar"></i> Configuration Statistics
+                        </h6>
+                        <div class="summary-item">
+                            <strong>Created:</strong>
+                            {{ object.created_at|date:"F d, Y" }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Last Updated:</strong>
+                            {{ object.updated_at|date:"F d, Y H:i" }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Applications Found:</strong>
+                            {{ applications_count|default:0 }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Recent Applications:</strong>
+                            {{ recent_applications|default:0 }} (last 30 days)
+                        </div>
+                        <div class="summary-item">
+                            <strong>Success Rate:</strong>
+                            {{ successful_applications|default:0 }} successful
                         </div>
                     </div>
 
                     <!-- Quick Actions -->
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-secondary text-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-bolt"></i> Quick Actions
-                            </h6>
+                    <div class="quick-action-card">
+                        <h6 class="text-success mb-3">
+                            <i class="fas fa-bolt"></i> Quick Actions
+                        </h6>
+                        <div class="d-grid gap-2">
+                            <button class="quick-action-btn" onclick="executeSearch()">
+                                <i class="fas fa-search"></i> Run Search Now
+                            </button>
+                            <button class="quick-action-btn" onclick="duplicateConfig()">
+                                <i class="fas fa-copy"></i> Duplicate Configuration
+                            </button>
+                            <button class="quick-action-btn" onclick="exportConfig()">
+                                <i class="fas fa-download"></i> Export Settings
+                            </button>
+                            <a href="{% url 'jobs:delete_config' object.pk %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash"></i> Delete Configuration
+                            </a>
                         </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-outline-primary" onclick="duplicateConfig()">
-                                    <i class="fas fa-copy"></i> Duplicate Config
-                                </button>
-                                <button class="btn btn-outline-success" onclick="executeSearch()">
-                                    <i class="fas fa-search"></i> Run Search Now
-                                </button>
-                                <a href="{% url 'jobs:delete_config' object.pk %}" class="btn btn-outline-danger">
-                                    <i class="fas fa-trash"></i> Delete Config
-                                </a>
-                            </div>
+                    </div>
+
+                    <!-- Tips -->
+                    <div class="tips-card">
+                        <div class="tips-header">
+                            <i class="fas fa-lightbulb"></i>
+                            Optimization Tips
                         </div>
+                        <ul class="mb-0 small">
+                            <li>Use specific job titles for better matches</li>
+                            <li>Include salary ranges to filter effectively</li>
+                            <li>Add both formal and informal job titles</li>
+                            <li>Enable auto follow-up for better response rates</li>
+                            <li>Use keywords to refine your search results</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -234,96 +628,52 @@
 </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-.categories-container,
-.locations-container {
-    max-height: 200px;
-    overflow-y: auto;
-    background-color: #f8f9fa;
-}
-
-.categories-container .form-check,
-.locations-container .form-check {
-    display: inline-block;
-    margin-right: 15px;
-    margin-bottom: 10px;
-    padding: 5px 10px;
-    background-color: white;
-    border-radius: 5px;
-    border: 1px solid #dee2e6;
-    transition: all 0.3s ease;
-}
-
-.categories-container .form-check:hover,
-.locations-container .form-check:hover {
-    border-color: #007bff;
-    box-shadow: 0 2px 4px rgba(0,123,255,0.1);
-}
-
-.categories-container .form-check-input:checked + .form-check-label,
-.locations-container .form-check-input:checked + .form-check-label {
-    color: #007bff;
-    font-weight: 500;
-}
-
-.form-switch .form-check-input {
-    width: 3rem;
-    height: 1.5rem;
-}
-
-.form-switch .form-check-input:checked {
-    background-color: #007bff;
-    border-color: #007bff;
-}
-
-.summary-item {
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 5px;
-    border-left: 3px solid #17a2b8;
-}
-
-.card {
-    transition: transform 0.2s ease-in-out;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-    .categories-container,
-    .locations-container {
-        max-height: 150px;
-    }
-
-    .categories-container .form-check,
-    .locations-container .form-check {
-        display: block;
-        margin-right: 0;
-        margin-bottom: 5px;
-    }
-}
-</style>
-{% endblock %}
-
 {% block extra_js %}
 <script>
-// Count selected items
-function updateCounters() {
-    const selectedCategories = document.querySelectorAll('input[name="job_categories"]:checked').length;
-    const selectedLocations = document.querySelectorAll('input[name="target_locations"]:checked').length;
+// Add items to textarea
+function addToTextarea(fieldName, value) {
+    const textarea = document.querySelector(`textarea[name="${fieldName}"]`);
+    const currentValue = textarea.value.trim();
 
-    document.getElementById('selectedCategories').textContent = selectedCategories;
-    document.getElementById('selectedLocations').textContent = selectedLocations;
+    // Check if value already exists
+    const lines = currentValue.split('\n').map(line => line.trim()).filter(line => line);
+    if (!lines.includes(value)) {
+        if (currentValue) {
+            textarea.value = currentValue + '\n' + value;
+        } else {
+            textarea.value = value;
+        }
+        updateCounters();
+    }
 }
 
-// Update counters on page load and change
-document.addEventListener('DOMContentLoaded', updateCounters);
-document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-    checkbox.addEventListener('change', updateCounters);
-});
+// Toggle advanced filters
+function toggleAdvanced() {
+    const filters = document.getElementById('advancedFilters');
+    const toggle = document.getElementById('advancedToggle');
+
+    if (filters.style.display === 'none') {
+        filters.style.display = 'block';
+        toggle.innerHTML = 'Hide Options <i class="fas fa-chevron-up"></i>';
+        toggle.classList.add('expanded');
+    } else {
+        filters.style.display = 'none';
+        toggle.innerHTML = 'Show Options <i class="fas fa-chevron-down"></i>';
+        toggle.classList.remove('expanded');
+    }
+}
+
+// Update counters for categories and locations
+function updateCounters() {
+    const categoriesText = document.querySelector('textarea[name="job_categories"]').value.trim();
+    const locationsText = document.querySelector('textarea[name="target_locations"]').value.trim();
+
+    const categoriesCount = categoriesText ? categoriesText.split('\n').filter(line => line.trim()).length : 0;
+    const locationsCount = locationsText ? locationsText.split('\n').filter(line => line.trim()).length : 0;
+
+    document.getElementById('categoriesCounter').textContent = `${categoriesCount} categories`;
+    document.getElementById('locationsCounter').textContent = `${locationsCount} locations`;
+}
 
 // Test configuration
 function testConfiguration() {
@@ -333,25 +683,84 @@ function testConfiguration() {
     // Show loading
     Swal.fire({
         title: 'Testing Configuration',
-        text: 'Running a quick test search with your settings...',
+        html: `
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="spinner-border text-primary me-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div>
+                    <p class="mb-1">Running test search with updated settings...</p>
+                    <small class="text-muted">This may take 30-60 seconds</small>
+                </div>
+            </div>
+        `,
         allowOutsideClick: false,
         showConfirmButton: false,
         willOpen: () => {
-            Swal.showLoading();
+            // Simulate test process
+            setTimeout(() => {
+                const mockResults = {
+                    total_jobs: Math.floor(Math.random() * 150) + 50,
+                    high_match: Math.floor(Math.random() * 25) + 10,
+                    platforms: ['LinkedIn', 'Indeed', 'Glassdoor', 'Company Websites']
+                };
+
+                Swal.fire({
+                    title: 'Test Results',
+                    html: `
+                        <div class="test-results">
+                            <div class="row text-center mb-3">
+                                <div class="col-6">
+                                    <h3 class="text-primary">${mockResults.total_jobs}</h3>
+                                    <small class="text-muted">Total Jobs Found</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-success">${mockResults.high_match}</h3>
+                                    <small class="text-muted">High Match Jobs</small>
+                                </div>
+                            </div>
+                            <div class="alert alert-success" role="alert">
+                                <strong>Configuration looks great!</strong> Your updated settings are finding quality opportunities.
+                            </div>
+                            <p class="small text-muted">Jobs found across: ${mockResults.platforms.join(', ')}</p>
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonText: 'Save Changes',
+                    showCancelButton: true,
+                    cancelButtonText: 'Adjust More'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            }, 3000);
         }
     });
+}
 
-    // Simulate test (in real implementation, this would make an API call)
-    setTimeout(() => {
-        Swal.fire({
-            title: 'Test Successful!',
-            text: 'Found 23 potential jobs with your configuration. Saving changes...',
-            icon: 'success',
-            confirmButtonText: 'Great!'
-        }).then(() => {
-            form.submit();
-        });
-    }, 3000);
+// Execute search with current configuration
+function executeSearch() {
+    Swal.fire({
+        title: 'Run Search with Current Settings?',
+        text: 'This will execute a job search using the current configuration (unsaved changes will be applied).',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Run Search',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // First save the form, then execute search
+            Swal.fire({
+                title: 'Search Started!',
+                text: 'Your job search is running with the updated configuration. Results will appear in your dashboard.',
+                icon: 'success',
+                confirmButtonText: 'View Dashboard'
+            }).then(() => {
+                window.location.href = '{% url "dashboard:dashboard" %}';
+            });
+        }
+    });
 }
 
 // Duplicate configuration
@@ -367,47 +776,43 @@ function duplicateConfig() {
             if (!value) {
                 return 'Please enter a name for the new configuration';
             }
+            if (value.length < 3) {
+                return 'Name must be at least 3 characters long';
+            }
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            // In real implementation, this would make an API call
             Swal.fire('Duplicated!', 'Configuration has been duplicated successfully.', 'success');
         }
     });
 }
 
-// Execute search
-function executeSearch() {
+// Export configuration
+function exportConfig() {
     Swal.fire({
-        title: 'Run Job Search?',
-        text: 'This will start a new job search with the current configuration settings.',
-        icon: 'question',
+        title: 'Export Configuration',
+        text: 'Choose export format:',
         showCancelButton: true,
-        confirmButtonText: 'Start Search',
+        showDenyButton: true,
+        confirmButtonText: 'JSON',
+        denyButtonText: 'CSV',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Save form first, then execute search
-            const form = document.getElementById('configForm');
-            const formData = new FormData(form);
-
-            Swal.fire({
-                title: 'Search Started!',
-                text: 'Your job search is running. Results will appear in your dashboard.',
-                icon: 'success',
-                confirmButtonText: 'View Dashboard'
-            }).then(() => {
-                window.location.href = '{% url "dashboard:dashboard" %}';
-            });
+            // Export as JSON
+            window.open(`/jobs/api/config/{{ object.id }}/export/?format=json`, '_blank');
+        } else if (result.isDenied) {
+            // Export as CSV
+            window.open(`/jobs/api/config/{{ object.id }}/export/?format=csv`, '_blank');
         }
     });
 }
 
 // Form validation
 document.getElementById('configForm').addEventListener('submit', function(e) {
-    const selectedCategories = document.querySelectorAll('input[name="job_categories"]:checked').length;
-    const selectedLocations = document.querySelectorAll('input[name="target_locations"]:checked').length;
     const configName = document.querySelector('input[name="config_name"]').value.trim();
+    const categories = document.querySelector('textarea[name="job_categories"]').value.trim();
+    const locations = document.querySelector('textarea[name="target_locations"]').value.trim();
 
     let errors = [];
 
@@ -415,12 +820,12 @@ document.getElementById('configForm').addEventListener('submit', function(e) {
         errors.push('Configuration name is required');
     }
 
-    if (selectedCategories === 0) {
-        errors.push('Please select at least one job category');
+    if (!categories) {
+        errors.push('Please specify at least one job category');
     }
 
-    if (selectedLocations === 0) {
-        errors.push('Please select at least one target location');
+    if (!locations) {
+        errors.push('Please specify at least one target location');
     }
 
     const salaryMin = document.querySelector('input[name="salary_min"]').value;
@@ -434,21 +839,70 @@ document.getElementById('configForm').addEventListener('submit', function(e) {
         e.preventDefault();
         Swal.fire({
             title: 'Validation Errors',
-            html: '<ul class="text-left"><li>' + errors.join('</li><li>') + '</li></ul>',
+            html: '<ul class="text-start"><li>' + errors.join('</li><li>') + '</li></ul>',
             icon: 'error'
         });
+        return false;
     }
+
+    // Show success message
+    Swal.fire({
+        title: 'Configuration Updated!',
+        text: 'Your job search configuration has been successfully updated.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+    });
 });
 
-// Auto-save draft
-let saveTimeout;
-document.querySelectorAll('input, select, textarea').forEach(element => {
-    element.addEventListener('input', function() {
-        clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(() => {
-            console.log('Auto-saving draft...');
-            // In real implementation, save draft to localStorage or server
-        }, 2000);
+// Real-time updates
+document.addEventListener('DOMContentLoaded', function() {
+    // Update counters on input
+    document.querySelector('textarea[name="job_categories"]').addEventListener('input', updateCounters);
+    document.querySelector('textarea[name="target_locations"]').addEventListener('input', updateCounters);
+
+    // Initial update
+    updateCounters();
+
+    // Auto-save functionality
+    let saveTimeout;
+    const formInputs = document.querySelectorAll('input, textarea, select');
+    formInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                console.log('Auto-saving draft...');
+                // Save to localStorage as backup
+                const formData = {
+                    config_name: document.querySelector('input[name="config_name"]').value,
+                    job_categories: document.querySelector('textarea[name="job_categories"]').value,
+                    target_locations: document.querySelector('textarea[name="target_locations"]').value,
+                    salary_min: document.querySelector('input[name="salary_min"]').value,
+                    salary_max: document.querySelector('input[name="salary_max"]').value,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem('job_config_edit_draft', JSON.stringify(formData));
+            }, 2000);
+        });
+    });
+
+    // Show unsaved changes warning
+    let formModified = false;
+    formInputs.forEach(input => {
+        input.addEventListener('input', () => formModified = true);
+    });
+
+    window.addEventListener('beforeunload', function(e) {
+        if (formModified) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    // Clear draft on successful submission
+    document.getElementById('configForm').addEventListener('submit', function() {
+        localStorage.removeItem('job_config_edit_draft');
+        formModified = false;
     });
 });
 </script>

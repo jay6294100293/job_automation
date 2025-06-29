@@ -10,7 +10,7 @@ from django.http import JsonResponse  # Keep JsonResponse for the API view if yo
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, UpdateView, TemplateView
-
+from django.contrib.auth import views as auth_views
 from .forms import CustomUserCreationForm, UserProfileForm
 from .models import UserProfile  # Ensure UserProfile is imported
 
@@ -48,19 +48,7 @@ class ProfileCompletionView(LoginRequiredMixin, View):
             'missing_fields': missing_fields[:3],  # Show top 3 missing fields
             'total_missing': len(missing_fields)
         })
-class RegisterView(CreateView):
-    form_class = CustomUserCreationForm
-    template_name = 'accounts/register.html'
-    success_url = reverse_lazy('accounts:profile')
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        user = form.save()
-        login(self.request, user)
-        # Create profile for new user
-        UserProfile.objects.create(user=user)
-        messages.success(self.request, 'Account created successfully! Please complete your profile.')
-        return response
 
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
@@ -274,27 +262,15 @@ class ProfileCompletionView(LoginRequiredMixin, TemplateView):
             context['current_step'] = 'all_completed'  # Or null, as all are done
 
         return context
-# class ProfileCompletionView(LoginRequiredMixin, TemplateView):
-#     template_name = 'accounts/profile_completion.html'
-#
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         profile, created = UserProfile.objects.get_or_create(user=self.request.user)
-#         context['profile'] = profile
-#         context['completion_percentage'] = profile.calculate_completion_percentage()
-#
-#         # Completion suggestions
-#         suggestions = []
-#         if not self.request.user.first_name:
-#             suggestions.append('Add your first name')
-#         if not profile.phone:
-#             suggestions.append('Add your phone number')
-#         if not profile.linkedin_url:
-#             suggestions.append('Add your LinkedIn profile')
-#         if not profile.resume_file:
-#             suggestions.append('Upload your resume')
-#         if not profile.key_skills:
-#             suggestions.append('Add your key skills')
-#
-#         context['suggestions'] = suggestions
-#         return context
+
+
+class CustomLogoutView(auth_views.LogoutView):
+    """Custom logout view that handles both GET and POST"""
+    http_method_names = ['get', 'post']
+    next_page = 'accounts:login'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            messages.success(request, f'Goodbye {request.user.username}! You have been logged out successfully.')
+        return super().dispatch(request, *args, **kwargs)
+
