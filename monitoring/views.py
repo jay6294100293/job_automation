@@ -205,31 +205,42 @@ class ServerMetricsAPIView(APIView):
             logger.error(f"Failed to send server metrics to n8n: {str(e)}")
 
 
-# Health check endpoint
+# Health check endpoint - FIXED VERSION
 @csrf_exempt
 def health_check(request):
     """Health check endpoint for monitoring"""
-    try:
-        from django.db import connection
-        import redis
+    from django.utils import timezone
 
+    try:
         # Check database
+        from django.db import connection
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-
-        # Check Redis
-        redis_client = redis.from_url(getattr(settings, 'REDIS_URL', 'redis://localhost:6379/0'))
-        redis_client.ping()
-
-        return JsonResponse({
-            'status': 'healthy',
-            'database': 'ok',
-            'redis': 'ok',
-            'timestamp': '2024-01-01T00:00:00Z'
-        })
+        db_status = "healthy"
     except Exception as e:
-        return JsonResponse({
-            'status': 'unhealthy',
-            'error': str(e),
-            'timestamp': '2024-01-01T00:00:00Z'
-        }, status=500)
+        db_status = f"unhealthy: {str(e)}"
+
+    try:
+        # Check Redis using Django cache (which uses correct Redis settings)
+        from django.core.cache import cache
+        cache.set('health_check_test', 'ok', 10)
+        redis_result = cache.get('health_check_test')
+        if redis_result == 'ok':
+            redis_status = "healthy"
+        else:
+            redis_status = "unhealthy: cache test failed"
+    except Exception as e:
+        redis_status = f"unhealthy: {str(e)}"
+
+    # Overall health
+    overall_status = "healthy" if db_status == "healthy" and redis_status == "healthy" else "unhealthy"
+
+    response_data = {
+        'status': overall_status,
+        'database': db_status,
+        'redis': redis_status,
+        'timestamp': timezone.now().isoformat()
+    }
+
+    status_code = 200 if overall_status == "healthy" else 503
+    return JsonResponse(response_data, status=status_code)

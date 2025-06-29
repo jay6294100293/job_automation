@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 for dubug just change the comments for db and debug
 """
-
+import dj_database_url
 import os
 from pathlib import Path
 import os
@@ -458,10 +458,7 @@ N8N_API_TOKEN = os.getenv('N8N_API_TOKEN')
 N8N_BASIC_AUTH_USER = os.getenv('N8N_BASIC_AUTH_USER', 'admin')
 N8N_BASIC_AUTH_PASSWORD = os.getenv('N8N_BASIC_AUTH_PASSWORD', 'admin123')
 
-# Authentication URLs
-LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/dashboard/'
-LOGOUT_REDIRECT_URL = '/'
+
 
 
 RESUME_AUTOMATION_SETTINGS = {
