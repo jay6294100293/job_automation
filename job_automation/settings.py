@@ -21,8 +21,8 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-env_path = BASE_DIR / '.env.debug'
-# env_path = BASE_DIR / '.env'
+# env_path = BASE_DIR / '.env.debug'
+env_path = BASE_DIR / '.env'
 load_dotenv(env_path)
 
 # Quick-start development settings - unsuitable for production
@@ -98,18 +98,18 @@ WSGI_APPLICATION = 'job_automation.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
 # DATABASES = {
-#     'default': dj_database_url.config(
-#         default=f"postgresql://{os.getenv('DB_USER', 'django_user')}:{os.getenv('DB_PASSWORD', 'password')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'job_automation')}"
-#     )
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
 # }
+
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f"postgresql://{os.getenv('DB_USER', 'django_user')}:{os.getenv('DB_PASSWORD', 'password')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'job_automation')}"
+    )
+}
 
 
 # Password validation
