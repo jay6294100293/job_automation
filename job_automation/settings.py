@@ -21,8 +21,8 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# env_path = BASE_DIR / '.env.debug'
-env_path = BASE_DIR / '.env'
+env_path = BASE_DIR / '.env.debug'
+# env_path = BASE_DIR / '.env'
 load_dotenv(env_path)
 
 # Quick-start development settings - unsuitable for production
@@ -60,10 +60,13 @@ INSTALLED_APPS = [
     'documents',
     'api',
     'rest_framework.authtoken',
+
 ]
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -98,18 +101,18 @@ WSGI_APPLICATION = 'job_automation.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"postgresql://{os.getenv('DB_USER', 'django_user')}:{os.getenv('DB_PASSWORD', 'password')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'job_automation')}"
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
+
+# DATABASES = {
+#     'default': dj_database_url.config(
+#         default=f"postgresql://{os.getenv('DB_USER', 'django_user')}:{os.getenv('DB_PASSWORD', 'password')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'job_automation')}"
+#     )
+# }
 
 
 # Password validation
@@ -152,11 +155,115 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+LEGAL_COMPLIANCE = {
+    'DATA_RETENTION_DAYS': 7,  # Email data retention
+    'CONSENT_VERSION': '1.0',
+    'REQUIRED_CONSENTS': [
+        'terms_accepted',
+        'privacy_accepted',
+        'email_consent',
+        'browser_consent',
+        'calendar_consent',
+        'ai_consent'
+    ]
+}
+
+# Legal RSS feed sources (only official RSS feeds)
+LEGAL_RSS_FEEDS = {
+    'indeed': {
+        'base_url': 'https://rss.indeed.com/rss',
+        'legal_status': 'OFFICIAL_RSS',
+        'terms_url': 'https://indeed.com/legal/terms',
+        'robots_compliant': True
+    },
+    'stackoverflow': {
+        'base_url': 'https://stackoverflow.com/jobs/feed',
+        'legal_status': 'OFFICIAL_RSS',
+        'terms_url': 'https://stackoverflow.com/legal/terms-of-service',
+        'robots_compliant': True
+    },
+    'github_jobs': {
+        'base_url': 'https://jobs.github.com/positions.atom',
+        'legal_status': 'OFFICIAL_RSS',
+        'terms_url': 'https://docs.github.com/en/site-policy/github-terms/github-terms-of-service',
+        'robots_compliant': True
+    },
+    'remoteok': {
+        'base_url': 'https://remoteok.io/remote-jobs.rss',
+        'legal_status': 'OFFICIAL_RSS',
+        'terms_url': 'https://remoteok.io/terms',
+        'robots_compliant': True
+    }
+}
+
+# Google Calendar API settings (free tier)
+GOOGLE_CALENDAR_API = {
+    'CLIENT_ID': os.getenv('GOOGLE_CLIENT_ID', 'your_google_client_id.apps.googleusercontent.com'),
+    'CLIENT_SECRET': os.getenv('GOOGLE_CLIENT_SECRET', 'your_google_client_secret'),
+    'REDIRECT_URI': 'https://ai.jobautomation.me/calendar/callback/',
+    'SCOPES': ['https://www.googleapis.com/auth/calendar.events']
+}
+
+# Email processing settings
+EMAIL_PROCESSING = {
+    'DEDICATED_EMAIL_REQUIRED': True,
+    'MAX_RETENTION_DAYS': 7,
+    'ALLOWED_DOMAINS': ['gmail.com', 'outlook.com', 'yahoo.com'],
+    'AUTO_DELETE_PROCESSED_EMAILS': True
+}
+
+# Browser extension settings
+BROWSER_EXTENSION = {
+    'CONSENT_REQUIRED': True,
+    'API_KEY': os.getenv('BROWSER_EXTENSION_API_KEY', 'ext_legal_secure_key_12345'),
+    'ALLOWED_ORIGINS': [
+        'https://indeed.com',
+        'https://linkedin.com',
+        'https://stackoverflow.com',
+        'https://glassdoor.com',
+        'https://angel.co',
+        'https://dice.com'
+    ]
+}
+
+# Celery Configuration (for background RSS processing)
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'America/Toronto'
+CELERY_ENABLE_UTC = True
+
+# RSS Configuration
+RSS_DISCOVERY_SETTINGS = {
+    'DISCOVERY_INTERVAL_HOURS': 4,
+    'MAX_JOBS_PER_FEED': 50,
+    'MAX_TOTAL_JOBS_PER_USER': 200,
+    'CLEANUP_AFTER_DAYS': 60,
+    'MINIMUM_MATCH_SCORE': 0.3
+}
+
+# Legal RSS feed limits
+RSS_RATE_LIMITS = {
+    'REQUESTS_PER_HOUR': 60,  # Max 60 requests per hour per feed
+    'REQUESTS_PER_DAY': 1000,  # Max 1000 requests per day total
+    'DELAY_BETWEEN_REQUESTS': 10,  # 10 seconds delay between requests
+}
+
+# UPDATE EXISTING INSTALLED_APPS - ADD THESE TO YOUR EXISTING LIST
+INSTALLED_APPS += [
+    'django_celery_results',
+]
+
 
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+
+    ## Formatters ##
+    # Merged all unique formatters from both configurations.
     'formatters': {
         'verbose': {
             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
@@ -174,11 +281,22 @@ LOGGING = {
             'format': 'RESUME {levelname} {asctime} - {message}',
             'style': '{',
         },
-        'ai_services': {  # ADD THIS NEW FORMATTER
+        'ai_services': {
             'format': 'AI {levelname} {asctime} - {message}',
+            'style': '{',
+        },
+        'rss_legal': {
+            'format': 'RSS {levelname} {asctime} - {message}',
+            'style': '{',
+        },
+        'legal_compliance': {
+            'format': 'LEGAL {levelname} {asctime} - {message}',
             'style': '{',
         }
     },
+
+    ## Handlers ##
+    # Merged all unique handlers, using the most recent filenames.
     'handlers': {
         'console': {
             'level': 'INFO',
@@ -197,33 +315,47 @@ LOGGING = {
             'filename': os.path.join(BASE_DIR, 'logs', 'api.log'),
             'formatter': 'api'
         },
-        'resume_file': {
+        'resume_file': {  # Using the updated filename from the second config
             'level': 'INFO',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'resume_automation.log'),
             'formatter': 'resume'
         },
-        'ai_file': {  # ADD THIS NEW HANDLER
+        'ai_services_file': {  # Consolidated name for the AI services handler
             'level': 'INFO',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'ai_services.log'),
             'formatter': 'ai_services'
-        }
+        },
+        'rss_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'rss_discovery.log'),
+            'formatter': 'rss_legal'
+        },
+        'legal_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'legal_compliance.log'),
+            'formatter': 'legal_compliance'
+        },
     },
+
+    ## Root Logger ##
+    # Added the root logger for catch-all logging.
     'root': {
         'handlers': ['console', 'file'],
         'level': 'INFO',
     },
+
+    ## Loggers ##
+    # Combined all loggers, grouping them by their respective handlers.
     'loggers': {
+        # General Django loggers
         'django': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
-            'propagate': False,
-        },
-        'api': {
-            'handlers': ['console', 'api_file'],
-            'level': 'WARNING',
-            'propagate': False,
+            'propagate': True,  # Propagate to root to catch errors in 'file' handler
         },
         'jobs': {
             'handlers': ['console', 'file'],
@@ -240,6 +372,13 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        # API logger
+        'api': {
+            'handlers': ['console', 'api_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        # Resume, skills, and job matching loggers
         'resume_automation': {
             'handlers': ['console', 'resume_file'],
             'level': 'INFO',
@@ -255,23 +394,45 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        # ADD THESE NEW AI SERVICE LOGGERS
+        # AI services, cost tracking, and research loggers
         'documents.ai_services': {
-            'handlers': ['console', 'ai_file'],
+            'handlers': ['console', 'ai_services_file'],
             'level': 'INFO',
             'propagate': False,
         },
         'documents.cost_tracker': {
-            'handlers': ['console', 'ai_file'],
+            'handlers': ['console', 'ai_services_file'],
             'level': 'INFO',
             'propagate': False,
         },
         'documents.research': {
-            'handlers': ['console', 'ai_file'],
+            'handlers': ['console', 'ai_services_file'],
             'level': 'INFO',
             'propagate': False,
-        }
-    }
+        },
+        # RSS feed and compliance loggers
+        'jobs.rss_reader': {
+            'handlers': ['console', 'rss_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'jobs.rss_compliance': {
+            'handlers': ['console', 'rss_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'jobs.tasks': {
+            'handlers': ['console', 'rss_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Legal and middleware loggers
+        'accounts.middleware': {
+            'handlers': ['console', 'legal_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }
 
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
@@ -288,33 +449,46 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
-# ADD THESE NEW CACHE SETTINGS FOR PERFORMANCE
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://localhost:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes default
     },
-    'skills': {  # Dedicated cache for skills data
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://localhost:6379/2'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
-        'TIMEOUT': 3600,  # 1 hour
+    'extension': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'extension-cache',
+        'TIMEOUT': 60,  # 1 minute for extension data
     }
 }
+# ADD THESE NEW CACHE SETTINGS FOR PERFORMANCE
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': os.getenv('REDIS_URL', 'redis://localhost:6379/1'),
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         }
+#     },
+#     'skills': {  # Dedicated cache for skills data
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': os.getenv('REDIS_URL', 'redis://localhost:6379/2'),
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         },
+#         'TIMEOUT': 3600,  # 1 hour
+#     }
+# }
 
 
-
-
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None  # Allow extension popups
+SECURE_REFERRER_POLICY = 'same-origin'
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'https://ai.jobautomation.me',
     'https://jobautomation.me',
+    "https://n8n.jobautomation.me"
 ]
 
 # Session settings
@@ -385,11 +559,32 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "https://ai.jobautomation.me",
     "https://n8n.jobautomation.me",# Your production domain
-    "http://localhost:8000",        # Django development server (for testing)
-]
+    "http://localhost:8000", # Django development server (for testing)
+    "http://localhost:3000",  # For development
+    "http://127.0.0.1:3000",  # For development
 
+]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^chrome-extension://.*",
+    r"^moz-extension://.*",
+    r"^ms-browser-extension://.*",
+    r"^safari-extension://.*",
+]
 # Allow credentials (cookies, authorization headers) to be sent
 CORS_ALLOW_CREDENTIALS = True
+
+EXTENSION_SETTINGS = {
+    'ALLOWED_ORIGINS': [
+        'chrome-extension://*',
+        'moz-extension://*',
+        'ms-browser-extension://*',
+    ],
+    'MAX_JOBS_PER_USER': 10000,
+    'RATE_LIMIT_JOBS': '100/hour',
+    'RATE_LIMIT_AUTH': '20/hour',
+    'ENABLE_ACTIVITY_LOGGING': True,
+    'ENABLE_ERROR_TRACKING': True,
+}
 
 # Allowed headers that can be sent with requests
 CORS_ALLOW_HEADERS = [
@@ -428,7 +623,18 @@ CORS_EXPOSE_HEADERS = [
     'X-Content-Range',
     'X-Total-Count',  # For pagination info
 ]
-
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-extension-id',
+]
 # For API endpoints, we can be more permissive with CSRF
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access to CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'  # Allow cross-site requests with some restrictions
@@ -441,17 +647,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('BREVO_LOGIN')
 EMAIL_HOST_PASSWORD = os.getenv('BREVO_SMTP_KEY')
 DEFAULT_FROM_EMAIL = os.getenv('BREVO_LOGIN')
-
-# Celery settings for background tasks
-# Celery Configuration - NEW
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
 
 # n8n Integration - UPDATE EXISTING
 N8N_WEBHOOK_URL = config('N8N_WEBHOOK_URL', default='https://n8n.jobautomation.me/webhook/')

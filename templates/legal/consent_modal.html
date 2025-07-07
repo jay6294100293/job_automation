@@ -1,0 +1,318 @@
+<!-- templates/legal/consent_modal.html -->
+<!-- Legal Consent Modal - Required for All Users -->
+<div class="modal fade" id="legalConsentModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-shield-alt"></i>
+                    Legal Consent & Terms Agreement
+                </h5>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+
+                <!-- Terms of Service -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="fas fa-file-contract"></i>
+                            Terms of Service
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>1. Service Description</strong></p>
+                                <p>Job Automation System provides AI-powered job search assistance including:</p>
+                                <ul class="list-unstyled">
+                                    <li>✅ Legal RSS feed monitoring from public job boards</li>
+                                    <li>✅ Browser extension for manual job capture with user consent</li>
+                                    <li>✅ Email forwarding analysis with explicit permission</li>
+                                    <li>✅ Document generation using AI services</li>
+                                    <li>✅ Calendar integration for interview scheduling</li>
+                                </ul>
+
+                                <p><strong>2. User Responsibilities</strong></p>
+                                <ul class="list-unstyled">
+                                    <li>• Provide accurate information</li>
+                                    <li>• Use service only for legitimate job searching</li>
+                                    <li>• Respect job board terms and employer policies</li>
+                                    <li>• Not misrepresent qualifications or experience</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>3. Legal Compliance</strong></p>
+                                <ul class="list-unstyled">
+                                    <li>• All data processing follows GDPR/CCPA/PIPEDA regulations</li>
+                                    <li>• RSS feeds use only publicly available data</li>
+                                    <li>• No unauthorized scraping or data harvesting</li>
+                                    <li>• Respect for robots.txt and website terms</li>
+                                </ul>
+
+                                <p><strong>4. Limitation of Liability</strong></p>
+                                <p class="small">While we strive for accuracy, we cannot guarantee job placement or specific outcomes. This system is a tool to assist your job search, not replace your personal efforts.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Policy -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="fas fa-user-shield"></i>
+                            Privacy Policy & Data Protection
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Data Collection & Usage</strong></p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Data Type</th>
+                                        <th>Collection Method</th>
+                                        <th>Usage Purpose</th>
+                                        <th>Retention Period</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Profile Information</td>
+                                        <td>User Input</td>
+                                        <td>Resume/Cover Letter Generation</td>
+                                        <td>Until Account Deletion</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Job Preferences</td>
+                                        <td>User Settings</td>
+                                        <td>Job Matching & Filtering</td>
+                                        <td>Until Modified</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Email Content</td>
+                                        <td>User-Forwarded Emails</td>
+                                        <td>Job Alert Processing Only</td>
+                                        <td>7 Days Maximum</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Browser Activity</td>
+                                        <td>Extension (User-Initiated)</td>
+                                        <td>Job Capture Only</td>
+                                        <td>Not Stored</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Calendar Data</td>
+                                        <td>Google Calendar API</td>
+                                        <td>Interview Scheduling</td>
+                                        <td>Event Duration Only</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <p><strong>Your Rights Under GDPR/CCPA/PIPEDA</strong></p>
+                                <ul class="list-unstyled">
+                                    <li>✅ <strong>Right to Access</strong>: View all your data</li>
+                                    <li>✅ <strong>Right to Rectification</strong>: Correct any errors</li>
+                                    <li>✅ <strong>Right to Erasure</strong>: Delete your account and data</li>
+                                    <li>✅ <strong>Right to Portability</strong>: Export your data</li>
+                                    <li>✅ <strong>Right to Object</strong>: Opt-out of specific processing</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Data Security Measures</strong></p>
+                                <ul class="list-unstyled">
+                                    <li>• End-to-end encryption for sensitive data</li>
+                                    <li>• Regular security audits and updates</li>
+                                    <li>• Limited access to authorized personnel only</li>
+                                    <li>• Secure data centers with 99.9% uptime</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explicit Consent Checkboxes -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-check-circle"></i>
+                            Explicit Consent Required (All Must Be Checked)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3 p-3 border rounded">
+                                    <input class="form-check-input" type="checkbox" id="consentTerms" required>
+                                    <label class="form-check-label fw-bold" for="consentTerms">
+                                        <i class="fas fa-file-contract text-primary"></i>
+                                        I agree to the Terms of Service
+                                    </label>
+                                    <small class="text-muted d-block">I understand how the job automation system works and my responsibilities.</small>
+                                </div>
+
+                                <div class="form-check mb-3 p-3 border rounded">
+                                    <input class="form-check-input" type="checkbox" id="consentPrivacy" required>
+                                    <label class="form-check-label fw-bold" for="consentPrivacy">
+                                        <i class="fas fa-user-shield text-info"></i>
+                                        I consent to the Privacy Policy
+                                    </label>
+                                    <small class="text-muted d-block">I consent to data processing for job search automation purposes.</small>
+                                </div>
+
+                                <div class="form-check mb-3 p-3 border rounded">
+                                    <input class="form-check-input" type="checkbox" id="consentEmail" required>
+                                    <label class="form-check-label fw-bold" for="consentEmail">
+                                        <i class="fas fa-envelope text-warning"></i>
+                                        I consent to email forwarding analysis
+                                    </label>
+                                    <small class="text-muted d-block">For job alert processing only. Emails deleted after 7 days.</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3 p-3 border rounded">
+                                    <input class="form-check-input" type="checkbox" id="consentBrowser" required>
+                                    <label class="form-check-label fw-bold" for="consentBrowser">
+                                        <i class="fas fa-mouse-pointer text-secondary"></i>
+                                        I consent to browser extension
+                                    </label>
+                                    <small class="text-muted d-block">For manual job capture only. No automatic tracking.</small>
+                                </div>
+
+                                <div class="form-check mb-3 p-3 border rounded">
+                                    <input class="form-check-input" type="checkbox" id="consentCalendar" required>
+                                    <label class="form-check-label fw-bold" for="consentCalendar">
+                                        <i class="fas fa-calendar text-success"></i>
+                                        I consent to calendar integration
+                                    </label>
+                                    <small class="text-muted d-block">For interview scheduling via Google Calendar API.</small>
+                                </div>
+
+                                <div class="form-check mb-3 p-3 border rounded">
+                                    <input class="form-check-input" type="checkbox" id="consentAI" required>
+                                    <label class="form-check-label fw-bold" for="consentAI">
+                                        <i class="fas fa-robot text-danger"></i>
+                                        I consent to AI processing
+                                    </label>
+                                    <small class="text-muted d-block">For document generation. Data encrypted, not stored by AI provider.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Important:</strong> You can withdraw consent at any time in your account settings.
+                            Some features may become unavailable if you withdraw specific consents.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-lg" id="acceptLegalTerms" disabled>
+                    <i class="fas fa-check-circle"></i>
+                    I Accept All Terms & Consent to Data Processing
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('#legalConsentModal input[type="checkbox"]');
+    const acceptButton = document.getElementById('acceptLegalTerms');
+
+    // Enable accept button only when all checkboxes are checked
+    function updateAcceptButton() {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        acceptButton.disabled = !allChecked;
+
+        if (allChecked) {
+            acceptButton.classList.remove('btn-secondary');
+            acceptButton.classList.add('btn-success');
+        } else {
+            acceptButton.classList.remove('btn-success');
+            acceptButton.classList.add('btn-secondary');
+        }
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateAcceptButton);
+    });
+
+    acceptButton.addEventListener('click', function() {
+        // Get user's IP and user agent
+        const userAgent = navigator.userAgent;
+
+        // Save consent to backend
+        fetch('/api/save-legal-consent/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                terms_accepted: true,
+                privacy_accepted: true,
+                email_consent: true,
+                browser_consent: true,
+                calendar_consent: true,
+                ai_consent: true,
+                consent_timestamp: new Date().toISOString(),
+                user_agent: userAgent,
+                consent_version: '1.0'
+            })
+        }).then(response => {
+            if (response.ok) {
+                $('#legalConsentModal').modal('hide');
+                showToast('Legal consent saved successfully!', 'success');
+                location.reload();
+            } else {
+                showToast('Error saving consent. Please try again.', 'error');
+            }
+        }).catch(error => {
+            console.error('Error:', error);
+            showToast('Network error. Please check your connection.', 'error');
+        });
+    });
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Helper function to show toast notifications
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+});
+</script>

@@ -51,7 +51,10 @@ class JobApplicationSerializer(serializers.ModelSerializer):
 
     # Related data
     search_config_name = serializers.CharField(source='search_config.config_name', read_only=True)
-
+    # NEW: Enhanced display fields with icons
+    employment_type_display = serializers.CharField(source='get_employment_type_display_with_icon', read_only=True)
+    experience_level_display = serializers.CharField(source='get_experience_level_display_with_icon', read_only=True)
+    remote_type_display = serializers.CharField(source='get_remote_type_display_with_icon', read_only=True)
     class Meta:
         model = JobApplication
         fields = [
@@ -95,8 +98,30 @@ class JobApplicationSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id', 'created_at', 'updated_at', 'days_since_application',
             'is_follow_up_due', 'status_display_color', 'urgency_color',
-            'search_config_name'
+            'search_config_name','employment_type_display',
+            'experience_level_display', 'remote_type_display'
         ]
+
+    def validate_employment_type(self, value):
+        """Validate employment type"""
+        valid_types = [choice[0] for choice in JobApplication._meta.get_field('employment_type').choices]
+        if value and value not in valid_types:
+            raise serializers.ValidationError(f"Invalid employment type. Valid options: {valid_types}")
+        return value
+
+    def validate_experience_level(self, value):
+        """Validate experience level"""
+        valid_levels = [choice[0] for choice in JobApplication._meta.get_field('experience_level').choices]
+        if value and value not in valid_levels:
+            raise serializers.ValidationError(f"Invalid experience level. Valid options: {valid_levels}")
+        return value
+
+    def validate_remote_type(self, value):
+        """Validate remote type"""
+        valid_types = [choice[0] for choice in JobApplication._meta.get_field('remote_type').choices]
+        if value and value not in valid_types:
+            raise serializers.ValidationError(f"Invalid remote type. Valid options: {valid_types}")
+        return value
 
     def validate_application_status(self, value):
         """Validate application status transitions"""
@@ -124,6 +149,15 @@ class JobApplicationSerializer(serializers.ModelSerializer):
         if attrs.get('rejection_received') and not attrs.get('rejection_reason'):
             if not (self.instance and self.instance.rejection_reason):
                 attrs['rejection_reason'] = 'No reason provided'
+
+        if attrs.get('remote_option') and 'remote' in attrs.get('remote_option', '').lower():
+            if not attrs.get('remote_type') or attrs.get('remote_type') == 'onsite':
+                attrs['remote_type'] = 'remote'
+
+            # If employment_type is internship, experience_level should be entry_level or intern
+        if attrs.get('employment_type') == 'internship':
+            if attrs.get('experience_level') and attrs.get('experience_level') not in ['entry_level', 'intern']:
+                attrs['experience_level'] = 'intern'
 
         return attrs
 
@@ -497,3 +531,92 @@ class DocumentStatusAPIView(APIView):
             ).data
 
         return Response(response_data)
+
+
+class JobApplicationCreateSerializer(serializers.ModelSerializer):
+    """Serializer specifically for creating job applications with enhanced validation"""
+
+    class Meta:
+        model = JobApplication
+        fields = [
+            'job_title', 'company_name', 'job_url', 'job_description',
+            'salary_range', 'location', 'remote_option',
+            'employment_type', 'experience_level', 'remote_type',
+            'application_status', 'urgency_level', 'notes',
+            'source_platform', 'extraction_confidence', 'extraction_method',
+            'auto_discovered', 'saved_from_extension'
+        ]
+
+    def create(self, validated_data):
+        # Set user from context
+        validated_data['user'] = self.context['request'].user
+
+        # Auto-detect and set fields if not provided
+        if not validated_data.get('employment_type'):
+            validated_data['employment_type'] = self._detect_employment_type(validated_data)
+
+        if not validated_data.get('experience_level'):
+            validated_data['experience_level'] = self._detect_experience_level(validated_data)
+
+        if not validated_data.get('remote_type'):
+            validated_data['remote_type'] = self._detect_remote_type(validated_data)
+
+        return super().create(validated_data)
+
+    def _detect_employment_type(self, data):
+        """Auto-detect employment type from job title or description"""
+        job_text = f"{data.get('job_title', '')} {data.get('job_description', '')}".lower()
+
+        if any(word in job_text for word in ['intern', 'internship']):
+            return 'internship'
+        elif any(word in job_text for word in ['contract', 'contractor', 'freelance']):
+            return 'contract'
+        elif any(word in job_text for word in ['part time', 'part-time', 'pt ']):
+            return 'part_time'
+        elif any(word in job_text for word in ['temporary', 'temp ', 'seasonal']):
+            return 'temporary'
+        elif any(word in job_text for word in ['volunteer']):
+            return 'volunteer'
+        else:
+            return 'full_time'  # Default assumption
+
+    def _detect_experience_level(self, data):
+        """Auto-detect experience level from job title or description"""
+        job_text = f"{data.get('job_title', '')} {data.get('job_description', '')}".lower()
+
+        if any(word in job_text for word in ['intern', 'internship']):
+            return 'intern'
+        elif any(word in job_text for word in ['entry', 'entry-level', 'graduate', 'junior']):
+            return 'entry_level'
+        elif any(word in job_text for word in ['senior', 'sr.', 'sr ']):
+            return 'senior'
+        elif any(word in job_text for word in ['lead', 'principal', 'staff']):
+            return 'lead'
+        elif any(word in job_text for word in ['director', 'head of', 'vp', 'vice president']):
+            return 'director'
+        elif any(word in job_text for word in ['manager', 'mgr']):
+            return 'manager'
+        elif any(word in job_text for word in ['associate']):
+            return 'associate'
+        else:
+            return 'mid_level'  # Default assumption
+
+    def _detect_remote_type(self, data):
+        """Auto-detect remote type from location and job description"""
+        location = data.get('location', '').lower()
+        remote_option = data.get('remote_option', '').lower()
+        job_text = f"{data.get('job_title', '')} {data.get('job_description', '')}".lower()
+
+        if any(word in f"{location} {remote_option} {job_text}" for word in ['remote', 'work from home', 'wfh']):
+            if any(word in f"{location} {remote_option} {job_text}" for word in ['hybrid', 'flexible']):
+                return 'hybrid'
+            else:
+                return 'remote'
+        elif any(word in f"{location} {remote_option} {job_text}" for word in ['hybrid']):
+            return 'hybrid'
+        elif any(word in f"{location} {remote_option} {job_text}" for word in ['travel', 'traveling']):
+            return 'travel_required'
+        elif any(word in f"{location} {remote_option} {job_text}" for word in ['relocat', 'relocation']):
+            return 'relocate_required'
+        else:
+            return 'onsite'  # Default assumption

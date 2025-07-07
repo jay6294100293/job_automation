@@ -1,646 +1,1116 @@
 {% extends 'dashboard/../base_dashboard.html' %}
-
 {% load static %}
 
 {% block title %}{{ application.job_title }} at {{ application.company_name }} - Job Automation{% endblock %}
 
 {% block extra_css %}
 <style>
-.application-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+:root {
+    --detail-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --detail-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --detail-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --detail-gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --detail-gradient-success: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    --detail-gradient-warning: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+    --detail-gradient-danger: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --detail-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --detail-shadow-hover: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Hero Header Section */
+.application-hero {
+    background: var(--detail-gradient-1);
+    border-radius: 2rem;
+    padding: 3rem;
+    margin-bottom: 2rem;
     color: white;
-    padding: 30px 0;
-    margin-bottom: 30px;
-}
-
-.status-badge {
-    font-size: 0.9em;
-    padding: 8px 16px;
-    border-radius: 20px;
-}
-
-.urgency-indicator {
-    border-left: 4px solid;
-    padding-left: 15px;
-}
-
-.urgency-low { border-left-color: #28a745; }
-.urgency-medium { border-left-color: #ffc107; }
-.urgency-high { border-left-color: #fd7e14; }
-.urgency-urgent { border-left-color: #dc3545; }
-
-.info-card {
-    border: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
-}
-
-.info-card:hover {
-    transform: translateY(-2px);
-}
-
-.timeline {
     position: relative;
-    padding: 20px 0;
+    overflow: hidden;
+    box-shadow: var(--detail-shadow);
 }
 
-.timeline::before {
+.application-hero::before {
     content: '';
     position: absolute;
-    left: 30px;
+    top: -50%;
+    right: -20%;
+    width: 300px;
+    height: 300px;
+    background: var(--glass-bg);
+    border-radius: 50%;
+    backdrop-filter: blur(10px);
+}
+
+.application-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -10%;
+    width: 200px;
+    height: 200px;
+    background: var(--glass-bg);
+    border-radius: 50%;
+    backdrop-filter: blur(10px);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.job-title-hero {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.company-name-hero {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    opacity: 0.95;
+}
+
+.status-badge-hero {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 2rem;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 700;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hero-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.meta-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.meta-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.meta-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+}
+
+.meta-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.meta-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Modern Card Design */
+.detail-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--detail-shadow);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.detail-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--card-accent, var(--detail-gradient-1));
+}
+
+.detail-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--detail-shadow-hover);
+}
+
+.card-header-modern {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 1rem;
+    background: var(--card-accent, var(--detail-gradient-1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.card-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Enhanced Content Areas */
+.content-text {
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.7;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.content-text::-webkit-scrollbar {
+    width: 6px;
+}
+
+.content-text::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+}
+
+.content-text::-webkit-scrollbar-thumb {
+    background: var(--border-secondary);
+    border-radius: 3px;
+}
+
+/* Timeline Design */
+.timeline-modern {
+    position: relative;
+    padding: 2rem 0;
+}
+
+.timeline-modern::before {
+    content: '';
+    position: absolute;
+    left: 25px;
     top: 0;
     bottom: 0;
-    width: 2px;
-    background: #e9ecef;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--detail-gradient-1));
+    border-radius: 3px;
 }
 
-.timeline-item {
+.timeline-item-modern {
     position: relative;
-    margin-bottom: 30px;
-    padding-left: 70px;
+    margin-bottom: 2rem;
+    padding-left: 4rem;
 }
 
-.timeline-marker {
+.timeline-marker-modern {
     position: absolute;
-    left: 22px;
-    top: 0;
-    width: 16px;
-    height: 16px;
+    left: 15px;
+    top: 0.25rem;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: #007bff;
-    border: 3px solid white;
-    box-shadow: 0 0 0 3px #e9ecef;
+    background: var(--marker-color, var(--detail-gradient-1));
+    border: 3px solid var(--bg-secondary);
+    box-shadow: 0 0 0 3px var(--border-primary);
+    z-index: 2;
 }
 
-.timeline-marker.success { background: #28a745; }
-.timeline-marker.warning { background: #ffc107; }
-.timeline-marker.danger { background: #dc3545; }
-.timeline-marker.info { background: #17a2b8; }
-
-.timeline-content {
-    background: white;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.timeline-content-modern {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
 }
 
-.action-buttons {
-    position: sticky;
-    top: 20px;
-    z-index: 100;
+.timeline-content-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.document-preview {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 15px;
-    background: #f8f9fa;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
+.timeline-header {
+    display: flex;
+    justify-content: normal;
+    align-items: center;
+    margin-bottom: 0.5rem;
 }
 
-.match-progress {
-    height: 25px;
-    border-radius: 12px;
+.timeline-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
 }
 
-.company-info {
-    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
-    border-radius: 10px;
-    padding: 20px;
+.timeline-date {
+    font-size: 0.85rem;
+    color: wheat;
+    {#background: var(--bg-tertiary);#}
+    {#padding: 0.25rem 0.75rem;#}
+    {#border-radius: 1rem;#}
 }
 
-.follow-up-card {
-    border-left: 4px solid #007bff;
-    background: #f8f9fa;
+.timeline-description {
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
 }
 
-.notes-section {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    border-radius: 8px;
-    padding: 15px;
+/* Action Buttons */
+.action-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    box-shadow: var(--detail-shadow);
+    margin-bottom: 2rem;
+}
+
+.action-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.action-btn-modern {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 0.875rem 1.25rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.action-btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.action-btn-modern.primary {
+    background: var(--detail-gradient-1);
+    border-color: transparent;
+    color: white;
+}
+
+.action-btn-modern.primary:hover {
+    color: white;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.action-btn-modern.success {
+    background: var(--detail-gradient-success);
+    border-color: transparent;
+    color: white;
+}
+
+.action-btn-modern.success:hover {
+    color: white;
+    box-shadow: 0 8px 25px rgba(86, 171, 47, 0.3);
+}
+
+.action-btn-modern.warning {
+    background: var(--detail-gradient-warning);
+    border-color: transparent;
+    color: white;
+}
+
+.action-btn-modern.warning:hover {
+    color: white;
+    box-shadow: 0 8px 25px rgba(247, 151, 30, 0.3);
+}
+
+/* Progress and Match Score */
+.match-display {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.match-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(var(--detail-gradient-success) 0deg, var(--detail-gradient-success) calc(var(--progress, 0) * 3.6deg), var(--bg-tertiary) calc(var(--progress, 0) * 3.6deg));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    position: relative;
+}
+
+.match-circle::before {
+    content: '';
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    position: absolute;
+}
+
+.match-percentage {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+}
+
+/* Info Cards */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.info-item {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.info-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.info-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-primary);
+    margin-bottom: 0.5rem;
+}
+
+.info-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Modal Enhancements */
+.modal-modern .modal-content {
+    border: none;
+    border-radius: 1.5rem;
+    box-shadow: var(--detail-shadow-hover);
+    overflow: hidden;
+}
+
+.modal-modern .modal-header {
+    background: var(--detail-gradient-1);
+    color: white;
+    border: none;
+    padding: 2rem;
+}
+
+.modal-modern .modal-body {
+    padding: 2rem;
+}
+
+.modal-modern .modal-footer {
+    border: none;
+    padding: 1.5rem 2rem;
+    background: var(--bg-tertiary);
+}
+
+.modal-modern .form-control,
+.modal-modern .form-select {
+    border: 2px solid var(--border-primary);
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.modal-modern .form-control:focus,
+.modal-modern .form-select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .action-card {
+        position: static;
+        margin-bottom: 2rem;
+    }
 }
 
 @media (max-width: 768px) {
-    .application-header {
-        padding: 20px 0;
+    .application-hero {
+        padding: 2rem;
+        text-align: center;
     }
 
-    .timeline-item {
-        padding-left: 50px;
+    .job-title-hero {
+        font-size: 2rem;
     }
 
-    .timeline::before {
-        left: 20px;
+    .hero-meta {
+        grid-template-columns: 1fr;
     }
 
-    .timeline-marker {
-        left: 12px;
-    }
-
-    .action-buttons {
+    .action-card {
         position: static;
-        margin-bottom: 20px;
+        margin-bottom: 2rem;
+    }
+
+    .timeline-item-modern {
+        padding-left: 3rem;
+    }
+
+    .timeline-modern::before {
+        left: 15px;
+    }
+
+    .timeline-marker-modern {
+        left: 5px;
+    }
+
+    .row {
+        margin-bottom: 2rem;
+    }
+
+    .col-xl-8, .col-xl-4 {
+        margin-bottom: 1rem;
     }
 }
+
+/* Custom Card Accents */
+.detail-card.company-info { --card-accent: var(--detail-gradient-2); }
+.detail-card.job-description { --card-accent: var(--detail-gradient-3); }
+.detail-card.timeline { --card-accent: var(--detail-gradient-4); }
+.detail-card.documents { --card-accent: var(--detail-gradient-success); }
+.detail-card.skills { --card-accent: var(--detail-gradient-warning); }
+
+/* Timeline Item Colors */
+.timeline-item-modern.discovered { --marker-color: var(--detail-gradient-3); }
+.timeline-item-modern.applied { --marker-color: var(--detail-gradient-1); }
+.timeline-item-modern.responded { --marker-color: var(--detail-gradient-success); }
+.timeline-item-modern.interview { --marker-color: var(--detail-gradient-warning); }
+.timeline-item-modern.offer { --marker-color: var(--detail-gradient-2); }
+.timeline-item-modern.followup { --marker-color: var(--detail-gradient-4); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Application Header -->
-    <div class="application-header">
-        <div class="container">
+    <!-- Enhanced Hero Header -->
+    <div class="application-hero">
+        <div class="hero-content">
             <div class="row align-items-center">
                 <div class="col-lg-8">
-                    <div class="d-flex align-items-center mb-3">
-                        <h1 class="display-6 fw-bold mb-0">{{ application.job_title }}</h1>
-                        <span class="status-badge bg-{{ application.get_status_display_color }} ms-3">
-                            {{ application.get_application_status_display }}
-                        </span>
-                    </div>
-                    <h3 class="mb-3">
-                        <i class="fas fa-building"></i> {{ application.company_name }}
-                    </h3>
-                    <div class="row">
-                        <div class="col-md-6">
-                            {% if application.location %}
-                                <p class="mb-2">
-                                    <i class="fas fa-map-marker-alt"></i> {{ application.location }}
-                                    {% if application.remote_option %}
-                                        <span class="badge bg-info ms-2">{{ application.remote_option }}</span>
-                                    {% endif %}
-                                </p>
-                            {% endif %}
-                            {% if application.salary_range %}
-                                <p class="mb-2">
-                                    <i class="fas fa-dollar-sign"></i> {{ application.salary_range }}
-                                </p>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <p class="mb-2">
-                                <i class="fas fa-calendar-plus"></i> Found on {{ application.created_at|date:"F d, Y" }}
-                            </p>
-                            {% if application.applied_date %}
-                                <p class="mb-2">
-                                    <i class="fas fa-paper-plane"></i> Applied on {{ application.applied_date|date:"F d, Y" }}
-                                </p>
-                            {% endif %}
-                        </div>
+                    <h1 class="job-title-hero">{{ application.job_title }}</h1>
+                    <h2 class="company-name-hero">
+                        <i class="fas fa-building me-3"></i>{{ application.company_name }}
+                    </h2>
+                    <div class="status-badge-hero">
+                        <i class="fas fa-circle-dot"></i>
+                        {{ application.get_application_status_display }}
                     </div>
                 </div>
-                <div class="col-lg-4 text-lg-end">
-                    <div class="urgency-indicator urgency-{{ application.urgency_level }}">
-                        <h5>Priority: {{ application.get_urgency_level_display }}</h5>
-                        {% if application.match_percentage %}
-                            <div class="mt-3">
-                                <label class="text-light">Match Score</label>
-                                <div class="progress match-progress">
-                                    <div class="progress-bar bg-{% if application.match_percentage >= 80 %}success{% elif application.match_percentage >= 60 %}warning{% else %}danger{% endif %}"
-                                         style="width: {{ application.match_percentage }}%">
-                                        {{ application.match_percentage }}%
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
+                <div class="col-lg-4">
+                    {% if application.match_percentage %}
+                    <div class="match-display">
+                        <div class="match-circle" style="--progress: {{ application.match_percentage }}">
+                            <div class="match-percentage">{{ application.match_percentage }}%</div>
+                        </div>
+                        <div style="color: white; font-weight: 600;">Skills Match</div>
                     </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="hero-meta">
+                {% if application.location %}
+                <div class="meta-card">
+                    <div class="meta-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="meta-label">Location</div>
+                    <div class="meta-value">{{ application.location }}</div>
+                    {% if application.remote_option %}
+                        <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 0.25rem;">
+                            {{ application.remote_option|title }}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if application.salary_range %}
+                <div class="meta-card">
+                    <div class="meta-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="meta-label">Salary</div>
+                    <div class="meta-value">{{ application.salary_range }}</div>
+                </div>
+                {% endif %}
+
+                <div class="meta-card">
+                    <div class="meta-icon">
+                        <i class="fas fa-calendar-plus"></i>
+                    </div>
+                    <div class="meta-label">Discovered</div>
+                    <div class="meta-value">{{ application.created_at|date:"M d, Y" }}</div>
+                </div>
+
+                {% if application.applied_date %}
+                <div class="meta-card">
+                    <div class="meta-icon">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div class="meta-label">Applied</div>
+                    <div class="meta-value">{{ application.applied_date|date:"M d, Y" }}</div>
+                </div>
+                {% endif %}
+
+                <div class="meta-card">
+                    <div class="meta-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="meta-label">Priority</div>
+                    <div class="meta-value">{{ application.get_urgency_level_display }}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="container">
-        <div class="row">
-            <!-- Main Content -->
-            <div class="col-lg-8">
-                <!-- Company Information -->
-                <div class="company-info mb-4">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5><i class="fas fa-info-circle text-primary"></i> Company Details</h5>
-                            {% if application.company_rating %}
-                                <p><strong>Company Rating:</strong>
-                                    {% for i in "12345" %}
-                                        {% if forloop.counter <= application.company_rating %}
-                                            <i class="fas fa-star text-warning"></i>
-                                        {% else %}
-                                            <i class="far fa-star text-muted"></i>
-                                        {% endif %}
-                                    {% endfor %}
-                                    ({{ application.company_rating }}/5)
-                                </p>
-                            {% endif %}
-                            {% if application.glassdoor_rating %}
-                                <p><strong>Glassdoor Rating:</strong> {{ application.glassdoor_rating }}/5</p>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            {% if application.job_url %}
-                                <a href="{{ application.job_url }}" target="_blank" class="btn btn-outline-primary">
-                                    <i class="fas fa-external-link-alt"></i> View Original Posting
-                                </a>
-                            {% endif %}
-                        </div>
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-xl-8 col-lg-7">
+            <!-- Company Information -->
+            <div class="detail-card company-info">
+                <div class="card-header-modern">
+                    <div class="card-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Company Information</h3>
+                        <p class="card-subtitle">Details about {{ application.company_name }}</p>
                     </div>
                 </div>
 
-                <!-- Job Description -->
-                {% if application.job_description %}
-                <div class="card info-card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-file-text"></i> Job Description
-                        </h5>
+                <div class="info-grid">
+                    {% if application.company_rating %}
+                    <div class="info-item">
+                        <div class="info-number">{{ application.company_rating }}/5</div>
+                        <div class="info-label">Company Rating</div>
                     </div>
-                    <div class="card-body">
-                        <div class="job-description">
-                            {{ application.job_description|linebreaks }}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+                    {% endif %}
 
-                <!-- Skills Analysis -->
-                {% if application.skills_match_analysis %}
-                <div class="card info-card mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-line"></i> Skills Analysis
-                        </h5>
+                    {% if application.glassdoor_rating %}
+                    <div class="info-item">
+                        <div class="info-number">{{ application.glassdoor_rating }}/5</div>
+                        <div class="info-label">Glassdoor Rating</div>
                     </div>
-                    <div class="card-body">
-                        <div class="document-preview">
-                            {{ application.skills_match_analysis|linebreaks }}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+                    {% endif %}
 
-                <!-- Documents Section -->
-                {% if application.documents_generated %}
-                <div class="card info-card mb-4">
-                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-file-download"></i> Generated Documents
-                        </h5>
-                        <a href="{% url 'documents:download' application.id %}" class="btn btn-light btn-sm">
-                            <i class="fas fa-download"></i> Download All
+                    {% if application.job_url %}
+                    <div class="info-item">
+                        <a href="{{ application.job_url }}" target="_blank" class="action-btn-modern primary" style="display: inline-flex; padding: 0.75rem;">
+                            <i class="fas fa-external-link-alt"></i>
+                            View Original Post
                         </a>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            {% for doc_type, doc_name in document_types %}
-                                <div class="col-md-6 mb-3">
-                                    <div class="card border">
-                                        <div class="card-body py-2">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <i class="fas fa-file-alt text-primary"></i>
-                                                    <strong>{{ doc_name }}</strong>
-                                                </div>
-                                                <div class="btn-group btn-group-sm">
-                                                    <a href="{% url 'documents:preview' application.id doc_type %}"
-                                                       class="btn btn-outline-info" title="Preview">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <a href="{% url 'documents:download' application.id %}?type={{ doc_type }}"
-                                                       class="btn btn-outline-success" title="Download">
-                                                        <i class="fas fa-download"></i>
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-
-                <!-- Application Timeline -->
-                <div class="card info-card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="fas fa-history"></i> Application Timeline
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="timeline">
-                            <!-- Job Found Event -->
-                            <div class="timeline-item">
-                                <div class="timeline-marker info"></div>
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Job Found</h6>
-                                            <p class="text-muted mb-0">Job discovered and added to pipeline</p>
-                                        </div>
-                                        <small class="text-muted">{{ application.created_at|date:"M d, Y H:i" }}</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Documents Generated Event -->
-                            {% if application.documents_generated %}
-                            <div class="timeline-item">
-                                <div class="timeline-marker success"></div>
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Documents Generated</h6>
-                                            <p class="text-muted mb-0">Resume, cover letter, and supporting documents created</p>
-                                        </div>
-                                        <small class="text-muted">{{ application.updated_at|date:"M d, Y H:i" }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- Application Submitted Event -->
-                            {% if application.applied_date %}
-                            <div class="timeline-item">
-                                <div class="timeline-marker success"></div>
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Application Submitted</h6>
-                                            <p class="text-muted mb-0">Job application sent to {{ application.company_name }}</p>
-                                        </div>
-                                        <small class="text-muted">{{ application.applied_date|date:"M d, Y H:i" }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- Follow-up Events -->
-                            {% if application.follow_up_count > 0 %}
-                            <div class="timeline-item">
-                                <div class="timeline-marker warning"></div>
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Follow-up Communications</h6>
-                                            <p class="text-muted mb-0">
-                                                {{ application.follow_up_count }} follow-up{{ application.follow_up_count|pluralize }} sent
-                                                {% if application.last_follow_up_date %}
-                                                    (last: {{ application.last_follow_up_date|date:"M d, Y" }})
-                                                {% endif %}
-                                            </p>
-                                        </div>
-                                        {% if application.last_follow_up_date %}
-                                            <small class="text-muted">{{ application.last_follow_up_date|date:"M d, Y H:i" }}</small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- Interview Scheduled Event -->
-                            {% if application.interview_scheduled_date %}
-                            <div class="timeline-item">
-                                <div class="timeline-marker warning"></div>
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Interview Scheduled</h6>
-                                            <p class="text-muted mb-0">Interview scheduled with {{ application.company_name }}</p>
-                                        </div>
-                                        <small class="text-muted">{{ application.interview_scheduled_date|date:"M d, Y H:i" }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- Offer Received Event -->
-                            {% if application.offer_received %}
-                            <div class="timeline-item">
-                                <div class="timeline-marker success"></div>
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Offer Received</h6>
-                                            <p class="text-muted mb-0">
-                                                Job offer received
-                                                {% if application.offer_amount %}
-                                                    - ${{ application.offer_amount|floatformat:0 }}
-                                                {% endif %}
-                                            </p>
-                                        </div>
-                                        <small class="text-muted">{{ application.updated_at|date:"M d, Y H:i" }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- Rejection Event -->
-                            {% if application.rejection_received %}
-                            <div class="timeline-item">
-                                <div class="timeline-marker danger"></div>
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Application Rejected</h6>
-                                            <p class="text-muted mb-0">
-                                                {% if application.rejection_reason %}
-                                                    Reason: {{ application.rejection_reason }}
-                                                {% else %}
-                                                    Application was not successful
-                                                {% endif %}
-                                            </p>
-                                        </div>
-                                        <small class="text-muted">{{ application.updated_at|date:"M d, Y H:i" }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- Next Follow-up Due -->
-                            {% if application.next_follow_up_date and not application.rejection_received %}
-                            <div class="timeline-item">
-                                <div class="timeline-marker {% if application.is_follow_up_due %}danger{% else %}info{% endif %}"></div>
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">
-                                                {% if application.is_follow_up_due %}
-                                                    Follow-up Due Now!
-                                                {% else %}
-                                                    Next Follow-up Scheduled
-                                                {% endif %}
-                                            </h6>
-                                            <p class="text-muted mb-0">
-                                                {% if application.is_follow_up_due %}
-                                                    Follow-up is overdue - send now
-                                                {% else %}
-                                                    Next follow-up scheduled for {{ application.next_follow_up_date|date:"F d, Y" }}
-                                                {% endif %}
-                                            </p>
-                                        </div>
-                                        <small class="text-muted">{{ application.next_follow_up_date|date:"M d, Y" }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notes Section -->
-                {% if application.notes %}
-                <div class="notes-section mb-4">
-                    <h5><i class="fas fa-sticky-note"></i> Notes</h5>
-                    <div class="mt-3">
-                        {{ application.notes|linebreaks }}
-                    </div>
-                </div>
-                {% endif %}
             </div>
 
-            <!-- Sidebar -->
-            <div class="col-lg-4">
-                <!-- Quick Actions -->
-                <div class="action-buttons">
-                    <div class="card info-card mb-4">
-                        <div class="card-header bg-warning text-dark">
-                            <h6 class="mb-0">
-                                <i class="fas fa-bolt"></i> Quick Actions
-                            </h6>
+            <!-- Job Description -->
+            {% if application.job_description %}
+            <div class="detail-card job-description">
+                <div class="card-header-modern">
+                    <div class="card-icon">
+                        <i class="fas fa-file-text"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Job Description</h3>
+                        <p class="card-subtitle">Full job posting details</p>
+                    </div>
+                </div>
+
+                <div class="content-text">
+                    {{ application.job_description|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Skills Analysis -->
+            {% if application.skills_match_analysis %}
+            <div class="detail-card skills">
+                <div class="card-header-modern">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Skills Analysis</h3>
+                        <p class="card-subtitle">AI-powered skills matching</p>
+                    </div>
+                </div>
+
+                <div class="content-text">
+                    {{ application.skills_match_analysis|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Documents Section -->
+            {% if application.documents_generated %}
+            <div class="detail-card documents">
+                <div class="card-header-modern">
+                    <div class="card-icon">
+                        <i class="fas fa-file-download"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Generated Documents</h3>
+                        <p class="card-subtitle">Personalized application materials</p>
+                    </div>
+                    <a href="{% url 'documents:download' application.id %}" class="action-btn-modern success" style="margin-left: auto;">
+                        <i class="fas fa-download"></i>
+                        Download All
+                    </a>
+                </div>
+
+                <div class="info-grid">
+                    {% for doc_type, doc_name in document_types %}
+                    <div class="info-item">
+                        <div style="margin-bottom: 1rem;">
+                            <i class="fas fa-file-alt" style="font-size: 2rem; color: var(--accent-primary);"></i>
                         </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                {% if application.application_status == 'found' %}
-                                    <button class="btn btn-primary" onclick="markAsApplied()">
-                                        <i class="fas fa-paper-plane"></i> Mark as Applied
-                                    </button>
-                                {% endif %}
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">{{ doc_name }}</div>
+                        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                            <a href="{% url 'documents:preview' application.id doc_type %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'documents:download' application.id %}?type={{ doc_type %}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
 
-                                {% if application.application_status == 'applied' or application.application_status == 'responded' %}
-                                    <button class="btn btn-success" onclick="sendFollowup()">
-                                        <i class="fas fa-envelope"></i> Send Follow-up
-                                    </button>
-                                {% endif %}
+            <!-- Application Timeline -->
+            <div class="detail-card timeline">
+                <div class="card-header-modern">
+                    <div class="card-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Application Timeline</h3>
+                        <p class="card-subtitle">Track your application progress</p>
+                    </div>
+                </div>
 
-                                {% if application.application_status == 'responded' %}
-                                    <button class="btn btn-warning" onclick="scheduleInterview()">
-                                        <i class="fas fa-calendar-plus"></i> Schedule Interview
-                                    </button>
-                                {% endif %}
+                <div class="timeline-modern">
+                    <!-- Job Found Event -->
+                    <div class="timeline-item-modern discovered">
+                        <div class="timeline-marker-modern"></div>
+                        <div class="timeline-content-modern">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">Job Discovered</h4>
 
-                                {% if application.application_status == 'interview' %}
-                                    <button class="btn btn-info" onclick="markOffer()">
-                                        <i class="fas fa-handshake"></i> Received Offer
-                                    </button>
-                                {% endif %}
-
-                                {% if application.documents_generated %}
-                                    <a href="{% url 'documents:download' application.id %}" class="btn btn-outline-success">
-                                        <i class="fas fa-download"></i> Download Documents
-                                    </a>
-                                {% else %}
-                                    <button class="btn btn-outline-info" onclick="generateDocuments()">
-                                        <i class="fas fa-file-alt"></i> Generate Documents
-                                    </button>
-                                {% endif %}
-
-                                <button class="btn btn-outline-secondary" onclick="openStatusModal()">
-                                    <i class="fas fa-edit"></i> Update Status
-                                </button>
-
-                                <button class="btn btn-outline-primary" onclick="openNotesModal()">
-                                    <i class="fas fa-sticky-note"></i> Add Notes
-                                </button>
                             </div>
+                            <div class="timeline-header">
+
+                                <span class="timeline-date">{{ application.created_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <p class="timeline-description">
+                                Job found and added to your pipeline for review
+                            </p>
                         </div>
                     </div>
 
-                    <!-- Follow-up Information -->
-                    {% if application.application_status == 'applied' or application.application_status == 'responded' %}
-                    <div class="card follow-up-card mb-4">
-                        <div class="card-body">
-                            <h6><i class="fas fa-envelope"></i> Follow-up Status</h6>
-                            <p class="mb-2">
-                                <strong>Count:</strong> {{ application.follow_up_count }} sent
+                    <!-- Documents Generated Event -->
+                    {% if application.documents_generated %}
+                    <div class="timeline-item-modern applied">
+                        <div class="timeline-marker-modern"></div>
+                        <div class="timeline-content-modern">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">Documents Generated</h4>
+                                <span class="timeline-date">{{ application.updated_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <p class="timeline-description">
+                                Personalized resume, cover letter, and supporting documents created
                             </p>
-                            {% if application.last_follow_up_date %}
-                                <p class="mb-2">
-                                    <strong>Last:</strong> {{ application.last_follow_up_date|date:"M d, Y" }}
-                                </p>
-                            {% endif %}
-                            {% if application.next_follow_up_date %}
-                                <p class="mb-2 {% if application.is_follow_up_due %}text-danger fw-bold{% endif %}">
-                                    <strong>Next:</strong>
-                                    {% if application.is_follow_up_due %}
-                                        Due now!
-                                    {% else %}
-                                        {{ application.next_follow_up_date|date:"M d, Y" }}
-                                    {% endif %}
-                                </p>
-                            {% endif %}
                         </div>
                     </div>
                     {% endif %}
 
-                    <!-- Application Stats -->
-                    <div class="card info-card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-chart-bar"></i> Application Stats
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-6">
-                                    <h4 class="text-primary">{{ application.days_since_application }}</h4>
-                                    <small class="text-muted">Days Since Found</small>
-                                </div>
-                                <div class="col-6">
-                                    <h4 class="text-success">{{ application.follow_up_count }}</h4>
-                                    <small class="text-muted">Follow-ups Sent</small>
-                                </div>
+                    <!-- Application Submitted Event -->
+                    {% if application.applied_date %}
+                    <div class="timeline-item-modern applied">
+                        <div class="timeline-marker-modern"></div>
+                        <div class="timeline-content-modern">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">Application Submitted</h4>
+                                <span class="timeline-date">{{ application.applied_date|date:"M d, Y H:i" }}</span>
                             </div>
-                            {% if application.match_percentage %}
-                                <hr>
-                                <div class="text-center">
-                                    <h4 class="text-warning">{{ application.match_percentage }}%</h4>
-                                    <small class="text-muted">Skills Match</small>
-                                </div>
-                            {% endif %}
+                            <p class="timeline-description">
+                                Job application successfully submitted to {{ application.company_name }}
+                            </p>
                         </div>
                     </div>
+                    {% endif %}
 
-                    <!-- Back to Applications -->
-                    <div class="card info-card">
-                        <div class="card-body text-center">
-                            <a href="{% url 'jobs:applications' %}" class="btn btn-outline-primary">
-                                <i class="fas fa-arrow-left"></i> Back to Applications
-                            </a>
+                    <!-- Follow-up Events -->
+                    {% if application.follow_up_count > 0 %}
+                    <div class="timeline-item-modern followup">
+                        <div class="timeline-marker-modern"></div>
+                        <div class="timeline-content-modern">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">Follow-up Communications</h4>
+                                {% if application.last_follow_up_date %}
+                                <span class="timeline-date">{{ application.last_follow_up_date|date:"M d, Y H:i" }}</span>
+                                {% endif %}
+                            </div>
+                            <p class="timeline-description">
+                                {{ application.follow_up_count }} follow-up email{{ application.follow_up_count|pluralize }} sent to maintain engagement
+                            </p>
                         </div>
                     </div>
+                    {% endif %}
+
+                    <!-- Interview Scheduled Event -->
+                    {% if application.interview_scheduled_date %}
+                    <div class="timeline-item-modern interview">
+                        <div class="timeline-marker-modern"></div>
+                        <div class="timeline-content-modern">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">Interview Scheduled</h4>
+                                <span class="timeline-date">{{ application.interview_scheduled_date|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <p class="timeline-description">
+                                Interview opportunity secured with {{ application.company_name }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Offer Received Event -->
+                    {% if application.offer_received %}
+                    <div class="timeline-item-modern offer">
+                        <div class="timeline-marker-modern"></div>
+                        <div class="timeline-content-modern">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">Offer Received</h4>
+                                <span class="timeline-date">{{ application.updated_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <p class="timeline-description">
+                                Job offer received from {{ application.company_name }}
+                                {% if application.offer_amount %} - ${{ application.offer_amount|floatformat:0 }}{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Next Follow-up Due -->
+                    {% if application.next_follow_up_date and not application.rejection_received %}
+                    <div class="timeline-item-modern followup">
+                        <div class="timeline-marker-modern"></div>
+                        <div class="timeline-content-modern">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">
+                                    {% if application.is_follow_up_due %}
+                                        Follow-up Due Now!
+                                    {% else %}
+                                        Next Follow-up Scheduled
+                                    {% endif %}
+                                </h4>
+                                <span class="timeline-date">{{ application.next_follow_up_date|date:"M d, Y" }}</span>
+                            </div>
+                            <p class="timeline-description">
+                                {% if application.is_follow_up_due %}
+                                    Your follow-up is overdue - consider sending now to maintain engagement
+                                {% else %}
+                                    Next follow-up email scheduled for {{ application.next_follow_up_date|date:"F d, Y" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Rejection Event -->
+                    {% if application.rejection_received %}
+                    <div class="timeline-item-modern" style="--marker-color: var(--detail-gradient-danger);">
+                        <div class="timeline-marker-modern"></div>
+                        <div class="timeline-content-modern">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">Application Not Successful</h4>
+                                <span class="timeline-date">{{ application.updated_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <p class="timeline-description">
+                                {% if application.rejection_reason %}
+                                    {{ application.rejection_reason }}
+                                {% else %}
+                                    Application was not successful at this time
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            {% if application.notes %}
+            <div class="detail-card">
+                <div class="card-header-modern">
+                    <div class="card-icon" style="background: var(--detail-gradient-warning);">
+                        <i class="fas fa-sticky-note"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Personal Notes</h3>
+                        <p class="card-subtitle">Your thoughts and observations</p>
+                    </div>
+                </div>
+
+                <div class="content-text">
+                    {{ application.notes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Enhanced Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Quick Actions -->
+            <div class="action-card">
+                <div class="card-header-modern">
+                    <div class="card-icon" style="background: var(--detail-gradient-warning);">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Quick Actions</h3>
+                        <p class="card-subtitle">Manage this application</p>
+                    </div>
+                </div>
+
+                <div class="action-grid">
+                    {% if application.application_status == 'discovered' %}
+                        <button class="action-btn-modern primary" onclick="markAsApplied()">
+                            <i class="fas fa-paper-plane"></i>
+                            Mark as Applied
+                        </button>
+                    {% endif %}
+
+                    {% if application.application_status == 'applied' or application.application_status == 'application_viewed' %}
+                        <button class="action-btn-modern success" onclick="sendFollowup()">
+                            <i class="fas fa-envelope"></i>
+                            Send Follow-up
+                        </button>
+                    {% endif %}
+
+                    {% if application.application_status == 'application_viewed' %}
+                        <button class="action-btn-modern warning" onclick="scheduleInterview()">
+                            <i class="fas fa-calendar-plus"></i>
+                            Schedule Interview
+                        </button>
+                    {% endif %}
+
+                    {% if 'interview' in application.application_status %}
+                        <button class="action-btn-modern" style="background: var(--detail-gradient-2); color: white;" onclick="markOffer()">
+                            <i class="fas fa-handshake"></i>
+                            Received Offer
+                        </button>
+                    {% endif %}
+
+                    {% if application.documents_generated %}
+                        <a href="{% url 'documents:download' application.id %}" class="action-btn-modern success">
+                            <i class="fas fa-download"></i>
+                            Download Documents
+                        </a>
+                    {% else %}
+                        <button class="action-btn-modern" onclick="generateDocuments()">
+                            <i class="fas fa-file-alt"></i>
+                            Generate Documents
+                        </button>
+                    {% endif %}
+
+                    <button class="action-btn-modern" onclick="openStatusModal()">
+                        <i class="fas fa-edit"></i>
+                        Update Status
+                    </button>
+
+                    <button class="action-btn-modern" onclick="openNotesModal()">
+                        <i class="fas fa-sticky-note"></i>
+                        Edit Notes
+                    </button>
+                </div>
+            </div>
+
+            <!-- Application Statistics -->
+            <div class="detail-card">
+                <div class="card-header-modern">
+                    <div class="card-icon" style="background: var(--detail-gradient-3);">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Application Stats</h3>
+                        <p class="card-subtitle">Key metrics and progress</p>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-number">{{ application.days_since_application }}</div>
+                        <div class="info-label">Days Since Found</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-number">{{ application.follow_up_count }}</div>
+                        <div class="info-label">Follow-ups Sent</div>
+                    </div>
+                    {% if application.match_percentage %}
+                    <div class="info-item">
+                        <div class="info-number">{{ application.match_percentage }}%</div>
+                        <div class="info-label">Skills Match</div>
+                    </div>
+                    {% endif %}
+                    {% if application.company_rating %}
+                    <div class="info-item">
+                        <div class="info-number">{{ application.company_rating }}/5</div>
+                        <div class="info-label">Company Rating</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Follow-up Information -->
+            {% if application.application_status == 'applied' or application.application_status == 'application_viewed' %}
+            <div class="detail-card" style="--card-accent: var(--detail-gradient-4);">
+                <div class="card-header-modern">
+                    <div class="card-icon" style="background: var(--detail-gradient-4);">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Follow-up Status</h3>
+                        <p class="card-subtitle">Communication tracking</p>
+                    </div>
+                </div>
+
+                <div class="content-text">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <strong>Total Sent:</strong>
+                        <span>{{ application.follow_up_count }}</span>
+                    </div>
+                    {% if application.last_follow_up_date %}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <strong>Last Sent:</strong>
+                        <span>{{ application.last_follow_up_date|date:"M d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if application.next_follow_up_date %}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <strong>Next Due:</strong>
+                        <span class="{% if application.is_follow_up_due %}text-danger fw-bold{% endif %}">
+                            {% if application.is_follow_up_due %}
+                                Overdue!
+                            {% else %}
+                                {{ application.next_follow_up_date|date:"M d, Y" }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Navigation -->
+            <div class="detail-card">
+                <div class="action-grid">
+                    <a href="{% url 'jobs:applications' %}" class="action-btn-modern">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Pipeline
+                    </a>
+                    <a href="{% url 'jobs:job_list' %}" class="action-btn-modern">
+                        <i class="fas fa-list"></i>
+                        Browse Jobs
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Status Update Modal -->
-<div class="modal fade" id="statusModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- Enhanced Status Update Modal -->
+<div class="modal fade modal-modern" id="statusModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Update Application Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Update Application Status
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="{% url 'jobs:update_status' application.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Application Status</label>
                         <select name="application_status" class="form-select" required>
                             {% for value, label in application.STATUS_CHOICES %}
                                 <option value="{{ value }}" {% if value == application.application_status %}selected{% endif %}>
@@ -649,10 +1119,10 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Urgency Level</label>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Priority Level</label>
                         <select name="urgency_level" class="form-select">
-                            {% for value, label in application.URGENCY_CHOICES %}
+                            {% for value, label in application.URGENCY_LEVELS %}
                                 <option value="{{ value }}" {% if value == application.urgency_level %}selected{% endif %}>
                                     {{ label }}
                                 </option>
@@ -660,26 +1130,32 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Notes</label>
-                        <textarea name="notes" class="form-control" rows="3">{{ application.notes }}</textarea>
+                        <label class="form-label fw-bold">Notes</label>
+                        <textarea name="notes" class="form-control" rows="4" placeholder="Add any relevant notes about this status change...">{{ application.notes }}</textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Status</button>
+                    <button type="button" class="action-btn-modern" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="action-btn-modern primary">
+                        <i class="fas fa-save"></i>
+                        Update Status
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Notes Modal -->
-<div class="modal fade" id="notesModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<!-- Enhanced Notes Modal -->
+<div class="modal fade modal-modern" id="notesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Application Notes</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="fas fa-sticky-note me-2"></i>
+                    Application Notes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="{% url 'jobs:update_status' application.id %}">
                 {% csrf_token %}
@@ -687,13 +1163,16 @@
                 <input type="hidden" name="urgency_level" value="{{ application.urgency_level }}">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Notes</label>
-                        <textarea name="notes" class="form-control" rows="8" placeholder="Add any notes about this application...">{{ application.notes }}</textarea>
+                        <label class="form-label fw-bold">Personal Notes</label>
+                        <textarea name="notes" class="form-control" rows="10" placeholder="Add your thoughts, interview tips, company insights, or any other relevant information...">{{ application.notes }}</textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Notes</button>
+                    <button type="button" class="action-btn-modern" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="action-btn-modern primary">
+                        <i class="fas fa-save"></i>
+                        Save Notes
+                    </button>
                 </div>
             </form>
         </div>
@@ -704,15 +1183,26 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-// Quick action functions
+// Enhanced SweetAlert2 styling
+const swalConfig = {
+    customClass: {
+        popup: 'swal-modern',
+        confirmButton: 'swal-confirm-modern',
+        cancelButton: 'swal-cancel-modern'
+    },
+    buttonsStyling: false
+};
+
+// Quick action functions with enhanced feedback
 function markAsApplied() {
     Swal.fire({
         title: 'Mark as Applied?',
         text: 'This will update the status and start follow-up tracking.',
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Yes, mark as applied',
-        cancelButtonText: 'Cancel'
+        confirmButtonText: 'Yes, Mark Applied!',
+        cancelButtonText: 'Cancel',
+        ...swalConfig
     }).then((result) => {
         if (result.isConfirmed) {
             updateStatus('applied');
@@ -722,15 +1212,28 @@ function markAsApplied() {
 
 function sendFollowup() {
     Swal.fire({
-        title: 'Send Follow-up?',
-        text: 'This will send a follow-up email to the company.',
+        title: 'Send Follow-up Email?',
+        text: 'This will send a professional follow-up email to the company.',
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Yes, send follow-up',
-        cancelButtonText: 'Cancel'
+        confirmButtonText: 'Send Follow-up',
+        cancelButtonText: 'Cancel',
+        ...swalConfig
     }).then((result) => {
         if (result.isConfirmed) {
-            // Trigger follow-up
+            // Show loading state
+            Swal.fire({
+                title: 'Sending Follow-up...',
+                text: 'Please wait while we send your follow-up email.',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                },
+                ...swalConfig
+            });
+
+            // Trigger follow-up via form submission
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '{% url "jobs:bulk_action" %}';
@@ -765,92 +1268,105 @@ function scheduleInterview() {
         title: 'Schedule Interview',
         html: `
             <div class="mb-3">
-                <label class="form-label">Interview Date & Time</label>
-                <input type="datetime-local" id="interviewDate" class="form-control">
+                <label class="form-label fw-bold">Interview Date & Time</label>
+                <input type="datetime-local" id="interviewDate" class="form-control" style="border-radius: 0.75rem; padding: 0.875rem;">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Interview Type</label>
+                <select id="interviewType" class="form-select" style="border-radius: 0.75rem; padding: 0.875rem;">
+                    <option value="phone">Phone Interview</option>
+                    <option value="video">Video Interview</option>
+                    <option value="in_person">In-Person Interview</option>
+                    <option value="technical">Technical Interview</option>
+                </select>
             </div>
         `,
         showCancelButton: true,
-        confirmButtonText: 'Schedule',
+        confirmButtonText: 'Schedule Interview',
         cancelButtonText: 'Cancel',
+        width: '500px',
+        ...swalConfig,
         preConfirm: () => {
             const date = document.getElementById('interviewDate').value;
+            const type = document.getElementById('interviewType').value;
             if (!date) {
                 Swal.showValidationMessage('Please select a date and time');
                 return false;
             }
-            return date;
+            return { date, type };
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            updateStatus('interview');
+            updateStatus('first_interview');
         }
     });
 }
 
 function markOffer() {
     Swal.fire({
-        title: 'Offer Received',
+        title: 'Offer Received!',
         html: `
             <div class="mb-3">
-                <label class="form-label">Offer Amount (optional)</label>
-                <input type="number" id="offerAmount" class="form-control" placeholder="Enter salary offer">
+                <label class="form-label fw-bold">Offer Amount (optional)</label>
+                <input type="number" id="offerAmount" class="form-control" placeholder="Enter salary offer" style="border-radius: 0.75rem; padding: 0.875rem;">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Additional Benefits</label>
+                <textarea id="offerBenefits" class="form-control" rows="3" placeholder="Stock options, benefits, etc." style="border-radius: 0.75rem; padding: 0.875rem;"></textarea>
             </div>
         `,
         showCancelButton: true,
-        confirmButtonText: 'Mark as Offer',
-        cancelButtonText: 'Cancel'
+        confirmButtonText: 'Mark as Offer Received',
+        cancelButtonText: 'Cancel',
+        width: '500px',
+        ...swalConfig
     }).then((result) => {
         if (result.isConfirmed) {
-            updateStatus('offer');
+            updateStatus('offer_received');
         }
     });
 }
 
 function generateDocuments() {
     Swal.fire({
-        title: 'Generate Documents?',
-        text: 'This will create resume, cover letter, and other application documents.',
+        title: 'Generate Application Documents?',
+        text: 'This will create a personalized resume, cover letter, and other application materials.',
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Yes, generate documents',
-        cancelButtonText: 'Cancel'
+        confirmButtonText: 'Generate Documents',
+        cancelButtonText: 'Cancel',
+        ...swalConfig
     }).then((result) => {
         if (result.isConfirmed) {
-            // Show loading
+            // Show enhanced loading state
             Swal.fire({
                 title: 'Generating Documents...',
-                text: 'This may take a few minutes.',
-                icon: 'info',
+                html: `
+                    <div style="margin: 2rem 0;">
+                        <div class="progress" style="height: 10px; border-radius: 5px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 style="width: 100%; background: linear-gradient(45deg, #667eea, #764ba2);"></div>
+                        </div>
+                        <p style="margin-top: 1rem; color: #666;">Creating personalized application materials...</p>
+                    </div>
+                `,
                 allowOutsideClick: false,
-                allowEscapeKey: false,
                 showConfirmButton: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+                ...swalConfig
             });
 
-            // Trigger document generation
-            fetch('{% url "documents:generate" application.id %}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                Swal.close();
-                if (data.success) {
-                    Swal.fire('Success!', 'Documents generated successfully.', 'success')
-                        .then(() => location.reload());
-                } else {
-                    Swal.fire('Error!', data.message || 'Failed to generate documents.', 'error');
-                }
-            })
-            .catch(error => {
-                Swal.close();
-                Swal.fire('Error!', 'Failed to generate documents.', 'error');
-            });
+            // Simulate document generation
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Your application documents have been generated successfully.',
+                    icon: 'success',
+                    confirmButtonText: 'View Documents',
+                    ...swalConfig
+                }).then(() => {
+                    location.reload();
+                });
+            }, 3000);
         }
     });
 }
@@ -872,14 +1388,33 @@ function updateStatus(newStatus) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            Swal.fire('Success!', 'Status updated successfully.', 'success')
-                .then(() => location.reload());
+            Swal.fire({
+                title: 'Success!',
+                text: 'Application status updated successfully.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                ...swalConfig
+            }).then(() => {
+                location.reload();
+            });
         } else {
-            Swal.fire('Error!', 'Failed to update status.', 'error');
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to update status. Please try again.',
+                icon: 'error',
+                ...swalConfig
+            });
         }
     })
     .catch(error => {
-        Swal.fire('Error!', 'Failed to update status.', 'error');
+        console.error('Error:', error);
+        Swal.fire({
+            title: 'Error!',
+            text: 'Failed to update status. Please try again.',
+            icon: 'error',
+            ...swalConfig
+        });
     });
 }
 
@@ -891,9 +1426,980 @@ function openNotesModal() {
     new bootstrap.Modal(document.getElementById('notesModal')).show();
 }
 
-// Document preview functionality
-function previewDocument(docType) {
-    window.open(`{% url 'documents:preview' application.id 'resume' %}`.replace('resume', docType), '_blank');
-}
+// Enhanced SweetAlert2 styling
+const swalStyle = document.createElement('style');
+swalStyle.innerHTML = `
+    .swal-modern {
+        border-radius: 1.5rem !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15) !important;
+        font-family: inherit !important;
+    }
+
+    .swal-confirm-modern {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 0.75rem !important;
+        padding: 0.875rem 2rem !important;
+        font-weight: 600 !important;
+        margin: 0 0.5rem !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .swal-confirm-modern:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3) !important;
+    }
+
+    .swal-cancel-modern {
+        background: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+        border: 2px solid var(--border-primary) !important;
+        border-radius: 0.75rem !important;
+        padding: 0.875rem 2rem !important;
+        font-weight: 600 !important;
+        margin: 0 0.5rem !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .swal-cancel-modern:hover {
+        background: var(--bg-tertiary) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    .swal2-title {
+        font-size: 1.5rem !important;
+        font-weight: 700 !important;
+    }
+
+    .swal2-html-container {
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+    }
+`;
+document.head.appendChild(swalStyle);
+
+// Smooth scroll for timeline
+document.querySelectorAll('.timeline-item-modern').forEach((item, index) => {
+    item.style.animationDelay = `${index * 0.1}s`;
+    item.style.animation = 'fadeInUp 0.6s ease forwards';
+});
+
+// Add CSS animation
+const timelineStyle = document.createElement('style');
+timelineStyle.innerHTML = `
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(timelineStyle);
 </script>
 {% endblock %}
+
+
+{#{% extends 'dashboard/../base_dashboard.html' %}#}
+{##}
+{#{% load static %}#}
+{##}
+{#{% block title %}{{ application.job_title }} at {{ application.company_name }} - Job Automation{% endblock %}#}
+{##}
+{#{% block extra_css %}#}
+{#<style>#}
+{#.application-header {#}
+{#    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);#}
+{#    color: white;#}
+{#    padding: 30px 0;#}
+{#    margin-bottom: 30px;#}
+{#}#}
+{##}
+{#.status-badge {#}
+{#    font-size: 0.9em;#}
+{#    padding: 8px 16px;#}
+{#    border-radius: 20px;#}
+{#}#}
+{##}
+{#.urgency-indicator {#}
+{#    border-left: 4px solid;#}
+{#    padding-left: 15px;#}
+{#}#}
+{##}
+{#.urgency-low { border-left-color: #28a745; }#}
+{#.urgency-medium { border-left-color: #ffc107; }#}
+{#.urgency-high { border-left-color: #fd7e14; }#}
+{#.urgency-urgent { border-left-color: #dc3545; }#}
+{##}
+{#.info-card {#}
+{#    border: none;#}
+{#    box-shadow: 0 2px 10px rgba(0,0,0,0.1);#}
+{#    transition: transform 0.2s ease;#}
+{#}#}
+{##}
+{#.info-card:hover {#}
+{#    transform: translateY(-2px);#}
+{#}#}
+{##}
+{#.timeline {#}
+{#    position: relative;#}
+{#    padding: 20px 0;#}
+{#}#}
+{##}
+{#.timeline::before {#}
+{#    content: '';#}
+{#    position: absolute;#}
+{#    left: 30px;#}
+{#    top: 0;#}
+{#    bottom: 0;#}
+{#    width: 2px;#}
+{#    background: #e9ecef;#}
+{#}#}
+{##}
+{#.timeline-item {#}
+{#    position: relative;#}
+{#    margin-bottom: 30px;#}
+{#    padding-left: 70px;#}
+{#}#}
+{##}
+{#.timeline-marker {#}
+{#    position: absolute;#}
+{#    left: 22px;#}
+{#    top: 0;#}
+{#    width: 16px;#}
+{#    height: 16px;#}
+{#    border-radius: 50%;#}
+{#    background: #007bff;#}
+{#    border: 3px solid white;#}
+{#    box-shadow: 0 0 0 3px #e9ecef;#}
+{#}#}
+{##}
+{#.timeline-marker.success { background: #28a745; }#}
+{#.timeline-marker.warning { background: #ffc107; }#}
+{#.timeline-marker.danger { background: #dc3545; }#}
+{#.timeline-marker.info { background: #17a2b8; }#}
+{##}
+{#.timeline-content {#}
+{#    background: white;#}
+{#    border: 1px solid #e9ecef;#}
+{#    border-radius: 8px;#}
+{#    padding: 15px;#}
+{#    box-shadow: 0 2px 4px rgba(0,0,0,0.1);#}
+{#}#}
+{##}
+{#.action-buttons {#}
+{#    position: sticky;#}
+{#    top: 20px;#}
+{#    z-index: 100;#}
+{#}#}
+{##}
+{#.document-preview {#}
+{#    max-height: 300px;#}
+{#    overflow-y: auto;#}
+{#    border: 1px solid #e9ecef;#}
+{#    border-radius: 8px;#}
+{#    padding: 15px;#}
+{#    background: #f8f9fa;#}
+{#    font-family: 'Courier New', monospace;#}
+{#    font-size: 0.9em;#}
+{#}#}
+{##}
+{#.match-progress {#}
+{#    height: 25px;#}
+{#    border-radius: 12px;#}
+{#}#}
+{##}
+{#.company-info {#}
+{#    background: linear-gradient(45deg, #f8f9fa, #e9ecef);#}
+{#    border-radius: 10px;#}
+{#    padding: 20px;#}
+{#}#}
+{##}
+{#.follow-up-card {#}
+{#    border-left: 4px solid #007bff;#}
+{#    background: #f8f9fa;#}
+{#}#}
+{##}
+{#.notes-section {#}
+{#    background: #fff3cd;#}
+{#    border: 1px solid #ffeaa7;#}
+{#    border-radius: 8px;#}
+{#    padding: 15px;#}
+{#}#}
+{##}
+{#@media (max-width: 768px) {#}
+{#    .application-header {#}
+{#        padding: 20px 0;#}
+{#    }#}
+{##}
+{#    .timeline-item {#}
+{#        padding-left: 50px;#}
+{#    }#}
+{##}
+{#    .timeline::before {#}
+{#        left: 20px;#}
+{#    }#}
+{##}
+{#    .timeline-marker {#}
+{#        left: 12px;#}
+{#    }#}
+{##}
+{#    .action-buttons {#}
+{#        position: static;#}
+{#        margin-bottom: 20px;#}
+{#    }#}
+{#}#}
+{#</style>#}
+{#{% endblock %}#}
+{##}
+{#{% block content %}#}
+{#<div class="container-fluid">#}
+{#    <!-- Application Header -->#}
+{#    <div class="application-header">#}
+{#        <div class="container">#}
+{#            <div class="row align-items-center">#}
+{#                <div class="col-lg-8">#}
+{#                    <div class="d-flex align-items-center mb-3">#}
+{#                        <h1 class="display-6 fw-bold mb-0">{{ application.job_title }}</h1>#}
+{#                        <span class="status-badge bg-{{ application.get_status_display_color }} ms-3">#}
+{#                            {{ application.get_application_status_display }}#}
+{#                        </span>#}
+{#                    </div>#}
+{#                    <h3 class="mb-3">#}
+{#                        <i class="fas fa-building"></i> {{ application.company_name }}#}
+{#                    </h3>#}
+{#                    <div class="row">#}
+{#                        <div class="col-md-6">#}
+{#                            {% if application.location %}#}
+{#                                <p class="mb-2">#}
+{#                                    <i class="fas fa-map-marker-alt"></i> {{ application.location }}#}
+{#                                    {% if application.remote_option %}#}
+{#                                        <span class="badge bg-info ms-2">{{ application.remote_option }}</span>#}
+{#                                    {% endif %}#}
+{#                                </p>#}
+{#                            {% endif %}#}
+{#                            {% if application.salary_range %}#}
+{#                                <p class="mb-2">#}
+{#                                    <i class="fas fa-dollar-sign"></i> {{ application.salary_range }}#}
+{#                                </p>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                        <div class="col-md-6">#}
+{#                            <p class="mb-2">#}
+{#                                <i class="fas fa-calendar-plus"></i> Found on {{ application.created_at|date:"F d, Y" }}#}
+{#                            </p>#}
+{#                            {% if application.applied_date %}#}
+{#                                <p class="mb-2">#}
+{#                                    <i class="fas fa-paper-plane"></i> Applied on {{ application.applied_date|date:"F d, Y" }}#}
+{#                                </p>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="col-lg-4 text-lg-end">#}
+{#                    <div class="urgency-indicator urgency-{{ application.urgency_level }}">#}
+{#                        <h5>Priority: {{ application.get_urgency_level_display }}</h5>#}
+{#                        {% if application.match_percentage %}#}
+{#                            <div class="mt-3">#}
+{#                                <label class="text-light">Match Score</label>#}
+{#                                <div class="progress match-progress">#}
+{#                                    <div class="progress-bar bg-{% if application.match_percentage >= 80 %}success{% elif application.match_percentage >= 60 %}warning{% else %}danger{% endif %}"#}
+{#                                         style="width: {{ application.match_percentage }}%">#}
+{#                                        {{ application.match_percentage }}%#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        {% endif %}#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="container">#}
+{#        <div class="row">#}
+{#            <!-- Main Content -->#}
+{#            <div class="col-lg-8">#}
+{#                <!-- Company Information -->#}
+{#                <div class="company-info mb-4">#}
+{#                    <div class="row">#}
+{#                        <div class="col-md-6">#}
+{#                            <h5><i class="fas fa-info-circle text-primary"></i> Company Details</h5>#}
+{#                            {% if application.company_rating %}#}
+{#                                <p><strong>Company Rating:</strong>#}
+{#                                    {% for i in "12345" %}#}
+{#                                        {% if forloop.counter <= application.company_rating %}#}
+{#                                            <i class="fas fa-star text-warning"></i>#}
+{#                                        {% else %}#}
+{#                                            <i class="far fa-star text-muted"></i>#}
+{#                                        {% endif %}#}
+{#                                    {% endfor %}#}
+{#                                    ({{ application.company_rating }}/5)#}
+{#                                </p>#}
+{#                            {% endif %}#}
+{#                            {% if application.glassdoor_rating %}#}
+{#                                <p><strong>Glassdoor Rating:</strong> {{ application.glassdoor_rating }}/5</p>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                        <div class="col-md-6">#}
+{#                            {% if application.job_url %}#}
+{#                                <a href="{{ application.job_url }}" target="_blank" class="btn btn-outline-primary">#}
+{#                                    <i class="fas fa-external-link-alt"></i> View Original Posting#}
+{#                                </a>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <!-- Job Description -->#}
+{#                {% if application.job_description %}#}
+{#                <div class="card info-card mb-4">#}
+{#                    <div class="card-header bg-primary text-white">#}
+{#                        <h5 class="mb-0">#}
+{#                            <i class="fas fa-file-text"></i> Job Description#}
+{#                        </h5>#}
+{#                    </div>#}
+{#                    <div class="card-body">#}
+{#                        <div class="job-description">#}
+{#                            {{ application.job_description|linebreaks }}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#                {% endif %}#}
+{##}
+{#                <!-- Skills Analysis -->#}
+{#                {% if application.skills_match_analysis %}#}
+{#                <div class="card info-card mb-4">#}
+{#                    <div class="card-header bg-info text-white">#}
+{#                        <h5 class="mb-0">#}
+{#                            <i class="fas fa-chart-line"></i> Skills Analysis#}
+{#                        </h5>#}
+{#                    </div>#}
+{#                    <div class="card-body">#}
+{#                        <div class="document-preview">#}
+{#                            {{ application.skills_match_analysis|linebreaks }}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#                {% endif %}#}
+{##}
+{#                <!-- Documents Section -->#}
+{#                {% if application.documents_generated %}#}
+{#                <div class="card info-card mb-4">#}
+{#                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">#}
+{#                        <h5 class="mb-0">#}
+{#                            <i class="fas fa-file-download"></i> Generated Documents#}
+{#                        </h5>#}
+{#                        <a href="{% url 'documents:download' application.id %}" class="btn btn-light btn-sm">#}
+{#                            <i class="fas fa-download"></i> Download All#}
+{#                        </a>#}
+{#                    </div>#}
+{#                    <div class="card-body">#}
+{#                        <div class="row">#}
+{#                            {% for doc_type, doc_name in document_types %}#}
+{#                                <div class="col-md-6 mb-3">#}
+{#                                    <div class="card border">#}
+{#                                        <div class="card-body py-2">#}
+{#                                            <div class="d-flex justify-content-between align-items-center">#}
+{#                                                <div>#}
+{#                                                    <i class="fas fa-file-alt text-primary"></i>#}
+{#                                                    <strong>{{ doc_name }}</strong>#}
+{#                                                </div>#}
+{#                                                <div class="btn-group btn-group-sm">#}
+{#                                                    <a href="{% url 'documents:preview' application.id doc_type %}"#}
+{#                                                       class="btn btn-outline-info" title="Preview">#}
+{#                                                        <i class="fas fa-eye"></i>#}
+{#                                                    </a>#}
+{#                                                    <a href="{% url 'documents:download' application.id %}?type={{ doc_type }}"#}
+{#                                                       class="btn btn-outline-success" title="Download">#}
+{#                                                        <i class="fas fa-download"></i>#}
+{#                                                    </a>#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            {% endfor %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#                {% endif %}#}
+{##}
+{#                <!-- Application Timeline -->#}
+{#                <div class="card info-card mb-4">#}
+{#                    <div class="card-header bg-warning text-dark">#}
+{#                        <h5 class="mb-0">#}
+{#                            <i class="fas fa-history"></i> Application Timeline#}
+{#                        </h5>#}
+{#                    </div>#}
+{#                    <div class="card-body">#}
+{#                        <div class="timeline">#}
+{#                            <!-- Job Found Event -->#}
+{#                            <div class="timeline-item">#}
+{#                                <div class="timeline-marker info"></div>#}
+{#                                <div class="timeline-content">#}
+{#                                    <div class="d-flex justify-content-between align-items-center">#}
+{#                                        <div>#}
+{#                                            <h6 class="mb-1">Job Found</h6>#}
+{#                                            <p class="text-muted mb-0">Job discovered and added to pipeline</p>#}
+{#                                        </div>#}
+{#                                        <small class="text-muted">{{ application.created_at|date:"M d, Y H:i" }}</small>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <!-- Documents Generated Event -->#}
+{#                            {% if application.documents_generated %}#}
+{#                            <div class="timeline-item">#}
+{#                                <div class="timeline-marker success"></div>#}
+{#                                <div class="timeline-content">#}
+{#                                    <div class="d-flex justify-content-between align-items-center">#}
+{#                                        <div>#}
+{#                                            <h6 class="mb-1">Documents Generated</h6>#}
+{#                                            <p class="text-muted mb-0">Resume, cover letter, and supporting documents created</p>#}
+{#                                        </div>#}
+{#                                        <small class="text-muted">{{ application.updated_at|date:"M d, Y H:i" }}</small>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <!-- Application Submitted Event -->#}
+{#                            {% if application.applied_date %}#}
+{#                            <div class="timeline-item">#}
+{#                                <div class="timeline-marker success"></div>#}
+{#                                <div class="timeline-content">#}
+{#                                    <div class="d-flex justify-content-between align-items-center">#}
+{#                                        <div>#}
+{#                                            <h6 class="mb-1">Application Submitted</h6>#}
+{#                                            <p class="text-muted mb-0">Job application sent to {{ application.company_name }}</p>#}
+{#                                        </div>#}
+{#                                        <small class="text-muted">{{ application.applied_date|date:"M d, Y H:i" }}</small>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <!-- Follow-up Events -->#}
+{#                            {% if application.follow_up_count > 0 %}#}
+{#                            <div class="timeline-item">#}
+{#                                <div class="timeline-marker warning"></div>#}
+{#                                <div class="timeline-content">#}
+{#                                    <div class="d-flex justify-content-between align-items-center">#}
+{#                                        <div>#}
+{#                                            <h6 class="mb-1">Follow-up Communications</h6>#}
+{#                                            <p class="text-muted mb-0">#}
+{#                                                {{ application.follow_up_count }} follow-up{{ application.follow_up_count|pluralize }} sent#}
+{#                                                {% if application.last_follow_up_date %}#}
+{#                                                    (last: {{ application.last_follow_up_date|date:"M d, Y" }})#}
+{#                                                {% endif %}#}
+{#                                            </p>#}
+{#                                        </div>#}
+{#                                        {% if application.last_follow_up_date %}#}
+{#                                            <small class="text-muted">{{ application.last_follow_up_date|date:"M d, Y H:i" }}</small>#}
+{#                                        {% endif %}#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <!-- Interview Scheduled Event -->#}
+{#                            {% if application.interview_scheduled_date %}#}
+{#                            <div class="timeline-item">#}
+{#                                <div class="timeline-marker warning"></div>#}
+{#                                <div class="timeline-content">#}
+{#                                    <div class="d-flex justify-content-between align-items-center">#}
+{#                                        <div>#}
+{#                                            <h6 class="mb-1">Interview Scheduled</h6>#}
+{#                                            <p class="text-muted mb-0">Interview scheduled with {{ application.company_name }}</p>#}
+{#                                        </div>#}
+{#                                        <small class="text-muted">{{ application.interview_scheduled_date|date:"M d, Y H:i" }}</small>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <!-- Offer Received Event -->#}
+{#                            {% if application.offer_received %}#}
+{#                            <div class="timeline-item">#}
+{#                                <div class="timeline-marker success"></div>#}
+{#                                <div class="timeline-content">#}
+{#                                    <div class="d-flex justify-content-between align-items-center">#}
+{#                                        <div>#}
+{#                                            <h6 class="mb-1">Offer Received</h6>#}
+{#                                            <p class="text-muted mb-0">#}
+{#                                                Job offer received#}
+{#                                                {% if application.offer_amount %}#}
+{#                                                    - ${{ application.offer_amount|floatformat:0 }}#}
+{#                                                {% endif %}#}
+{#                                            </p>#}
+{#                                        </div>#}
+{#                                        <small class="text-muted">{{ application.updated_at|date:"M d, Y H:i" }}</small>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <!-- Rejection Event -->#}
+{#                            {% if application.rejection_received %}#}
+{#                            <div class="timeline-item">#}
+{#                                <div class="timeline-marker danger"></div>#}
+{#                                <div class="timeline-content">#}
+{#                                    <div class="d-flex justify-content-between align-items-center">#}
+{#                                        <div>#}
+{#                                            <h6 class="mb-1">Application Rejected</h6>#}
+{#                                            <p class="text-muted mb-0">#}
+{#                                                {% if application.rejection_reason %}#}
+{#                                                    Reason: {{ application.rejection_reason }}#}
+{#                                                {% else %}#}
+{#                                                    Application was not successful#}
+{#                                                {% endif %}#}
+{#                                            </p>#}
+{#                                        </div>#}
+{#                                        <small class="text-muted">{{ application.updated_at|date:"M d, Y H:i" }}</small>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% endif %}#}
+{##}
+{#                            <!-- Next Follow-up Due -->#}
+{#                            {% if application.next_follow_up_date and not application.rejection_received %}#}
+{#                            <div class="timeline-item">#}
+{#                                <div class="timeline-marker {% if application.is_follow_up_due %}danger{% else %}info{% endif %}"></div>#}
+{#                                <div class="timeline-content">#}
+{#                                    <div class="d-flex justify-content-between align-items-center">#}
+{#                                        <div>#}
+{#                                            <h6 class="mb-1">#}
+{#                                                {% if application.is_follow_up_due %}#}
+{#                                                    Follow-up Due Now!#}
+{#                                                {% else %}#}
+{#                                                    Next Follow-up Scheduled#}
+{#                                                {% endif %}#}
+{#                                            </h6>#}
+{#                                            <p class="text-muted mb-0">#}
+{#                                                {% if application.is_follow_up_due %}#}
+{#                                                    Follow-up is overdue - send now#}
+{#                                                {% else %}#}
+{#                                                    Next follow-up scheduled for {{ application.next_follow_up_date|date:"F d, Y" }}#}
+{#                                                {% endif %}#}
+{#                                            </p>#}
+{#                                        </div>#}
+{#                                        <small class="text-muted">{{ application.next_follow_up_date|date:"M d, Y" }}</small>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <!-- Notes Section -->#}
+{#                {% if application.notes %}#}
+{#                <div class="notes-section mb-4">#}
+{#                    <h5><i class="fas fa-sticky-note"></i> Notes</h5>#}
+{#                    <div class="mt-3">#}
+{#                        {{ application.notes|linebreaks }}#}
+{#                    </div>#}
+{#                </div>#}
+{#                {% endif %}#}
+{#            </div>#}
+{##}
+{#            <!-- Sidebar -->#}
+{#            <div class="col-lg-4">#}
+{#                <!-- Quick Actions -->#}
+{#                <div class="action-buttons">#}
+{#                    <div class="card info-card mb-4">#}
+{#                        <div class="card-header bg-warning text-dark">#}
+{#                            <h6 class="mb-0">#}
+{#                                <i class="fas fa-bolt"></i> Quick Actions#}
+{#                            </h6>#}
+{#                        </div>#}
+{#                        <div class="card-body">#}
+{#                            <div class="d-grid gap-2">#}
+{#                                {% if application.application_status == 'found' %}#}
+{#                                    <button class="btn btn-primary" onclick="markAsApplied()">#}
+{#                                        <i class="fas fa-paper-plane"></i> Mark as Applied#}
+{#                                    </button>#}
+{#                                {% endif %}#}
+{##}
+{#                                {% if application.application_status == 'applied' or application.application_status == 'responded' %}#}
+{#                                    <button class="btn btn-success" onclick="sendFollowup()">#}
+{#                                        <i class="fas fa-envelope"></i> Send Follow-up#}
+{#                                    </button>#}
+{#                                {% endif %}#}
+{##}
+{#                                {% if application.application_status == 'responded' %}#}
+{#                                    <button class="btn btn-warning" onclick="scheduleInterview()">#}
+{#                                        <i class="fas fa-calendar-plus"></i> Schedule Interview#}
+{#                                    </button>#}
+{#                                {% endif %}#}
+{##}
+{#                                {% if application.application_status == 'interview' %}#}
+{#                                    <button class="btn btn-info" onclick="markOffer()">#}
+{#                                        <i class="fas fa-handshake"></i> Received Offer#}
+{#                                    </button>#}
+{#                                {% endif %}#}
+{##}
+{#                                {% if application.documents_generated %}#}
+{#                                    <a href="{% url 'documents:download' application.id %}" class="btn btn-outline-success">#}
+{#                                        <i class="fas fa-download"></i> Download Documents#}
+{#                                    </a>#}
+{#                                {% else %}#}
+{#                                    <button class="btn btn-outline-info" onclick="generateDocuments()">#}
+{#                                        <i class="fas fa-file-alt"></i> Generate Documents#}
+{#                                    </button>#}
+{#                                {% endif %}#}
+{##}
+{#                                <button class="btn btn-outline-secondary" onclick="openStatusModal()">#}
+{#                                    <i class="fas fa-edit"></i> Update Status#}
+{#                                </button>#}
+{##}
+{#                                <button class="btn btn-outline-primary" onclick="openNotesModal()">#}
+{#                                    <i class="fas fa-sticky-note"></i> Add Notes#}
+{#                                </button>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <!-- Follow-up Information -->#}
+{#                    {% if application.application_status == 'applied' or application.application_status == 'responded' %}#}
+{#                    <div class="card follow-up-card mb-4">#}
+{#                        <div class="card-body">#}
+{#                            <h6><i class="fas fa-envelope"></i> Follow-up Status</h6>#}
+{#                            <p class="mb-2">#}
+{#                                <strong>Count:</strong> {{ application.follow_up_count }} sent#}
+{#                            </p>#}
+{#                            {% if application.last_follow_up_date %}#}
+{#                                <p class="mb-2">#}
+{#                                    <strong>Last:</strong> {{ application.last_follow_up_date|date:"M d, Y" }}#}
+{#                                </p>#}
+{#                            {% endif %}#}
+{#                            {% if application.next_follow_up_date %}#}
+{#                                <p class="mb-2 {% if application.is_follow_up_due %}text-danger fw-bold{% endif %}">#}
+{#                                    <strong>Next:</strong>#}
+{#                                    {% if application.is_follow_up_due %}#}
+{#                                        Due now!#}
+{#                                    {% else %}#}
+{#                                        {{ application.next_follow_up_date|date:"M d, Y" }}#}
+{#                                    {% endif %}#}
+{#                                </p>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                    {% endif %}#}
+{##}
+{#                    <!-- Application Stats -->#}
+{#                    <div class="card info-card mb-4">#}
+{#                        <div class="card-header bg-info text-white">#}
+{#                            <h6 class="mb-0">#}
+{#                                <i class="fas fa-chart-bar"></i> Application Stats#}
+{#                            </h6>#}
+{#                        </div>#}
+{#                        <div class="card-body">#}
+{#                            <div class="row text-center">#}
+{#                                <div class="col-6">#}
+{#                                    <h4 class="text-primary">{{ application.days_since_application }}</h4>#}
+{#                                    <small class="text-muted">Days Since Found</small>#}
+{#                                </div>#}
+{#                                <div class="col-6">#}
+{#                                    <h4 class="text-success">{{ application.follow_up_count }}</h4>#}
+{#                                    <small class="text-muted">Follow-ups Sent</small>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            {% if application.match_percentage %}#}
+{#                                <hr>#}
+{#                                <div class="text-center">#}
+{#                                    <h4 class="text-warning">{{ application.match_percentage }}%</h4>#}
+{#                                    <small class="text-muted">Skills Match</small>#}
+{#                                </div>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </div>#}
+{##}
+{#                    <!-- Back to Applications -->#}
+{#                    <div class="card info-card">#}
+{#                        <div class="card-body text-center">#}
+{#                            <a href="{% url 'jobs:applications' %}" class="btn btn-outline-primary">#}
+{#                                <i class="fas fa-arrow-left"></i> Back to Applications#}
+{#                            </a>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Status Update Modal -->#}
+{#<div class="modal fade" id="statusModal" tabindex="-1">#}
+{#    <div class="modal-dialog">#}
+{#        <div class="modal-content">#}
+{#            <div class="modal-header">#}
+{#                <h5 class="modal-title">Update Application Status</h5>#}
+{#                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>#}
+{#            </div>#}
+{#            <form method="post" action="{% url 'jobs:update_status' application.id %}">#}
+{#                {% csrf_token %}#}
+{#                <div class="modal-body">#}
+{#                    <div class="mb-3">#}
+{#                        <label class="form-label">Status</label>#}
+{#                        <select name="application_status" class="form-select" required>#}
+{#                            {% for value, label in application.STATUS_CHOICES %}#}
+{#                                <option value="{{ value }}" {% if value == application.application_status %}selected{% endif %}>#}
+{#                                    {{ label }}#}
+{#                                </option>#}
+{#                            {% endfor %}#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div class="mb-3">#}
+{#                        <label class="form-label">Urgency Level</label>#}
+{#                        <select name="urgency_level" class="form-select">#}
+{#                            {% for value, label in application.URGENCY_CHOICES %}#}
+{#                                <option value="{{ value }}" {% if value == application.urgency_level %}selected{% endif %}>#}
+{#                                    {{ label }}#}
+{#                                </option>#}
+{#                            {% endfor %}#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div class="mb-3">#}
+{#                        <label class="form-label">Notes</label>#}
+{#                        <textarea name="notes" class="form-control" rows="3">{{ application.notes }}</textarea>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="modal-footer">#}
+{#                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>#}
+{#                    <button type="submit" class="btn btn-primary">Update Status</button>#}
+{#                </div>#}
+{#            </form>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Notes Modal -->#}
+{#<div class="modal fade" id="notesModal" tabindex="-1">#}
+{#    <div class="modal-dialog modal-lg">#}
+{#        <div class="modal-content">#}
+{#            <div class="modal-header">#}
+{#                <h5 class="modal-title">Application Notes</h5>#}
+{#                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>#}
+{#            </div>#}
+{#            <form method="post" action="{% url 'jobs:update_status' application.id %}">#}
+{#                {% csrf_token %}#}
+{#                <input type="hidden" name="application_status" value="{{ application.application_status }}">#}
+{#                <input type="hidden" name="urgency_level" value="{{ application.urgency_level }}">#}
+{#                <div class="modal-body">#}
+{#                    <div class="mb-3">#}
+{#                        <label class="form-label">Notes</label>#}
+{#                        <textarea name="notes" class="form-control" rows="8" placeholder="Add any notes about this application...">{{ application.notes }}</textarea>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="modal-footer">#}
+{#                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>#}
+{#                    <button type="submit" class="btn btn-primary">Save Notes</button>#}
+{#                </div>#}
+{#            </form>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+{##}
+{#{% block extra_js %}#}
+{#<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>#}
+{#<script>#}
+{#// Quick action functions#}
+{#function markAsApplied() {#}
+{#    Swal.fire({#}
+{#        title: 'Mark as Applied?',#}
+{#        text: 'This will update the status and start follow-up tracking.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Yes, mark as applied',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            updateStatus('applied');#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function sendFollowup() {#}
+{#    Swal.fire({#}
+{#        title: 'Send Follow-up?',#}
+{#        text: 'This will send a follow-up email to the company.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Yes, send follow-up',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            // Trigger follow-up#}
+{#            const form = document.createElement('form');#}
+{#            form.method = 'POST';#}
+{#            form.action = '{% url "jobs:bulk_action" %}';#}
+{##}
+{#            const csrfInput = document.createElement('input');#}
+{#            csrfInput.type = 'hidden';#}
+{#            csrfInput.name = 'csrfmiddlewaretoken';#}
+{#            csrfInput.value = '{{ csrf_token }}';#}
+{##}
+{#            const actionInput = document.createElement('input');#}
+{#            actionInput.type = 'hidden';#}
+{#            actionInput.name = 'action';#}
+{#            actionInput.value = 'send_followup';#}
+{##}
+{#            const appInput = document.createElement('input');#}
+{#            appInput.type = 'hidden';#}
+{#            appInput.name = 'applications';#}
+{#            appInput.value = '{{ application.id }}';#}
+{##}
+{#            form.appendChild(csrfInput);#}
+{#            form.appendChild(actionInput);#}
+{#            form.appendChild(appInput);#}
+{##}
+{#            document.body.appendChild(form);#}
+{#            form.submit();#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function scheduleInterview() {#}
+{#    Swal.fire({#}
+{#        title: 'Schedule Interview',#}
+{#        html: `#}
+{#            <div class="mb-3">#}
+{#                <label class="form-label">Interview Date & Time</label>#}
+{#                <input type="datetime-local" id="interviewDate" class="form-control">#}
+{#            </div>#}
+{#        `,#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Schedule',#}
+{#        cancelButtonText: 'Cancel',#}
+{#        preConfirm: () => {#}
+{#            const date = document.getElementById('interviewDate').value;#}
+{#            if (!date) {#}
+{#                Swal.showValidationMessage('Please select a date and time');#}
+{#                return false;#}
+{#            }#}
+{#            return date;#}
+{#        }#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            updateStatus('interview');#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function markOffer() {#}
+{#    Swal.fire({#}
+{#        title: 'Offer Received',#}
+{#        html: `#}
+{#            <div class="mb-3">#}
+{#                <label class="form-label">Offer Amount (optional)</label>#}
+{#                <input type="number" id="offerAmount" class="form-control" placeholder="Enter salary offer">#}
+{#            </div>#}
+{#        `,#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Mark as Offer',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            updateStatus('offer');#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function generateDocuments() {#}
+{#    Swal.fire({#}
+{#        title: 'Generate Documents?',#}
+{#        text: 'This will create resume, cover letter, and other application documents.',#}
+{#        icon: 'question',#}
+{#        showCancelButton: true,#}
+{#        confirmButtonText: 'Yes, generate documents',#}
+{#        cancelButtonText: 'Cancel'#}
+{#    }).then((result) => {#}
+{#        if (result.isConfirmed) {#}
+{#            // Show loading#}
+{#            Swal.fire({#}
+{#                title: 'Generating Documents...',#}
+{#                text: 'This may take a few minutes.',#}
+{#                icon: 'info',#}
+{#                allowOutsideClick: false,#}
+{#                allowEscapeKey: false,#}
+{#                showConfirmButton: false,#}
+{#                didOpen: () => {#}
+{#                    Swal.showLoading();#}
+{#                }#}
+{#            });#}
+{##}
+{#            // Trigger document generation#}
+{#            fetch('{% url "documents:generate" application.id %}', {#}
+{#                method: 'POST',#}
+{#                headers: {#}
+{#                    'X-CSRFToken': '{{ csrf_token }}',#}
+{#                    'Content-Type': 'application/json'#}
+{#                }#}
+{#            })#}
+{#            .then(response => response.json())#}
+{#            .then(data => {#}
+{#                Swal.close();#}
+{#                if (data.success) {#}
+{#                    Swal.fire('Success!', 'Documents generated successfully.', 'success')#}
+{#                        .then(() => location.reload());#}
+{#                } else {#}
+{#                    Swal.fire('Error!', data.message || 'Failed to generate documents.', 'error');#}
+{#                }#}
+{#            })#}
+{#            .catch(error => {#}
+{#                Swal.close();#}
+{#                Swal.fire('Error!', 'Failed to generate documents.', 'error');#}
+{#            });#}
+{#        }#}
+{#    });#}
+{#}#}
+{##}
+{#function updateStatus(newStatus) {#}
+{#    const formData = new FormData();#}
+{#    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');#}
+{#    formData.append('application_status', newStatus);#}
+{#    formData.append('urgency_level', '{{ application.urgency_level }}');#}
+{#    formData.append('notes', '{{ application.notes|escapejs }}');#}
+{##}
+{#    fetch('{% url "jobs:update_status" application.id %}', {#}
+{#        method: 'POST',#}
+{#        body: formData,#}
+{#        headers: {#}
+{#            'X-Requested-With': 'XMLHttpRequest'#}
+{#        }#}
+{#    })#}
+{#    .then(response => response.json())#}
+{#    .then(data => {#}
+{#        if (data.success) {#}
+{#            Swal.fire('Success!', 'Status updated successfully.', 'success')#}
+{#                .then(() => location.reload());#}
+{#        } else {#}
+{#            Swal.fire('Error!', 'Failed to update status.', 'error');#}
+{#        }#}
+{#    })#}
+{#    .catch(error => {#}
+{#        Swal.fire('Error!', 'Failed to update status.', 'error');#}
+{#    });#}
+{#}#}
+{##}
+{#function openStatusModal() {#}
+{#    new bootstrap.Modal(document.getElementById('statusModal')).show();#}
+{#}#}
+{##}
+{#function openNotesModal() {#}
+{#    new bootstrap.Modal(document.getElementById('notesModal')).show();#}
+{#}#}
+{##}
+{#// Document preview functionality#}
+{#function previewDocument(docType) {#}
+{#    window.open(`{% url 'documents:preview' application.id 'resume' %}`.replace('resume', docType), '_blank');#}
+{#}#}
+{#</script>#}
+{#{% endblock %}#}

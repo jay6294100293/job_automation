@@ -2,7 +2,6 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 
-# DRF Router for viewsets
 router = DefaultRouter()
 router.register(r'applications', views.ApplicationViewSet, basename='application')
 router.register(r'followups', views.FollowUpViewSet, basename='followup')
@@ -51,6 +50,23 @@ urlpatterns = [
 
     # Health check endpoint for monitoring
     path('health/', views.HealthCheckAPIView.as_view(), name='health_check'),
+
+    # Chrome Extension Authentication
+    path('extension/auth/', views.extension_auth, name='extension_auth'),
+    path('extension/auth/validate/', views.extension_auth_validate, name='extension_auth_validate'),
+
+    # Chrome Extension Job Management
+    path('extension/jobs/save/', views.extension_save_job, name='extension_save_job'),
+    path('extension/jobs/stats/', views.extension_job_stats, name='extension_job_stats'),
+
+    # Chrome Extension User Data
+    path('extension/profile/', views.extension_profile, name='extension_profile'),
+    path('extension/settings/', views.extension_settings, name='extension_settings'),
+
+    # Health check
+    path('extension/health/', views.extension_health, name='extension_health'),
+
+
 
 
 ]

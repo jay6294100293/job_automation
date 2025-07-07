@@ -1,0 +1,533 @@
+{
+  "name": "Job Processing Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-processing",
+        "responseMode": "responseNode"
+      },
+      "id": "job-processing-webhook",
+      "name": "Job Processing Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.job_title }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.company_name }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.user_id }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "validate-job-data",
+      "name": "Validate Job Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/users/{{ $json.user_id }}/profile/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "id": "get-user-profile",
+      "name": "Get User Profile & Preferences",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.GROQ_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "model": "llama3-70b-8192",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a job matching AI specialist. Analyze job compatibility with user profile and return ONLY valid JSON: {\"overall_match_score\": 85, \"skill_match_score\": 90, \"experience_match_score\": 80, \"location_match_score\": 95, \"salary_match_score\": 70, \"culture_match_score\": 85, \"growth_potential_score\": 88, \"risk_assessment_score\": 75, \"matched_skills\": [\"Python\", \"Django\"], \"missing_skills\": [\"React\", \"AWS\"], \"experience_gap_years\": 0, \"salary_expectation_met\": true, \"location_preference_met\": true, \"recommendation\": \"highly_recommended\", \"reasoning\": \"Strong technical match with growth opportunities\", \"red_flags\": [], \"green_flags\": [\"Good salary\", \"Remote work\"], \"next_steps\": [\"Apply immediately\", \"Prepare portfolio\"]}"
+            },
+            {
+              "role": "user",
+              "content": "Analyze job compatibility:\\n\\nJOB DETAILS:\\nTitle: {{ $json.job_title }}\\nCompany: {{ $json.company_name }}\\nLocation: {{ $json.location }}\\nSalary: {{ $json.salary_range }}\\nDescription: {{ $json.job_description }}\\nRequired Skills: {{ $json.required_skills }}\\nExperience Level: {{ $json.experience_level }}\\nRemote Option: {{ $json.remote_option }}\\n\\nUSER PROFILE:\\nCurrent Title: {{ $node['Get User Profile & Preferences'].json.current_job_title }}\\nExperience: {{ $node['Get User Profile & Preferences'].json.years_experience }} years\\nSkills: {{ $node['Get User Profile & Preferences'].json.key_skills }}\\nSalary Range: {{ $node['Get User Profile & Preferences'].json.preferred_salary_min }} - {{ $node['Get User Profile & Preferences'].json.preferred_salary_max }}\\nWork Preference: {{ $node['Get User Profile & Preferences'].json.work_type_preference }}\\nLocation: {{ $node['Get User Profile & Preferences'].json.location }}\\nIndustries: {{ $node['Get User Profile & Preferences'].json.industries_of_interest }}"
+            }
+          ],
+          "temperature": 0.2,
+          "max_tokens": 1000
+        }
+      },
+      "id": "ai-job-matching",
+      "name": "AI Job Matching Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI job matching results and calculate final scores\\nconst items = $input.all();\\nconst jobData = items[0].json;\\nconst userProfile = items[1].json;\\nconst aiResponse = items[0].json;\\n\\n// Initialize processing data\\nlet processingData = {\\n  // Original job data\\n  user_id: jobData.user_id,\\n  job_title: jobData.job_title,\\n  company_name: jobData.company_name,\\n  application_id: jobData.application_id || null,\\n  \\n  // Matching scores (0-100)\\n  overall_match_score: 0,\\n  skill_match_score: 0,\\n  experience_match_score: 0,\\n  location_match_score: 0,\\n  salary_match_score: 0,\\n  culture_match_score: 0,\\n  growth_potential_score: 0,\\n  risk_assessment_score: 0,\\n  \\n  // Match details\\n  matched_skills: [],\\n  missing_skills: [],\\n  experience_gap_years: 0,\\n  salary_expectation_met: false,\\n  location_preference_met: false,\\n  \\n  // Recommendations\\n  recommendation: 'review_required', // highly_recommended, recommended, consider, not_recommended\\n  reasoning: '',\\n  red_flags: [],\\n  green_flags: [],\\n  next_steps: [],\\n  \\n  // Processing metadata\\n  processing_success: true,\\n  ai_tokens_used: 0,\\n  processing_timestamp: new Date().toISOString()\\n};\\n\\ntry {\\n  // Parse AI response\\n  if (aiResponse.choices && aiResponse.choices[0]) {\\n    const aiContent = aiResponse.choices[0].message.content;\\n    const cleanContent = aiContent.replace(/```json|```/g, '').trim();\\n    const aiAnalysis = JSON.parse(cleanContent);\\n    \\n    // Extract AI analysis results\\n    processingData.overall_match_score = aiAnalysis.overall_match_score || 0;\\n    processingData.skill_match_score = aiAnalysis.skill_match_score || 0;\\n    processingData.experience_match_score = aiAnalysis.experience_match_score || 0;\\n    processingData.location_match_score = aiAnalysis.location_match_score || 0;\\n    processingData.salary_match_score = aiAnalysis.salary_match_score || 0;\\n    processingData.culture_match_score = aiAnalysis.culture_match_score || 0;\\n    processingData.growth_potential_score = aiAnalysis.growth_potential_score || 0;\\n    processingData.risk_assessment_score = aiAnalysis.risk_assessment_score || 0;\\n    \\n    processingData.matched_skills = aiAnalysis.matched_skills || [];\\n    processingData.missing_skills = aiAnalysis.missing_skills || [];\\n    processingData.experience_gap_years = aiAnalysis.experience_gap_years || 0;\\n    processingData.salary_expectation_met = aiAnalysis.salary_expectation_met || false;\\n    processingData.location_preference_met = aiAnalysis.location_preference_met || false;\\n    \\n    processingData.recommendation = aiAnalysis.recommendation || 'review_required';\\n    processingData.reasoning = aiAnalysis.reasoning || '';\\n    processingData.red_flags = aiAnalysis.red_flags || [];\\n    processingData.green_flags = aiAnalysis.green_flags || [];\\n    processingData.next_steps = aiAnalysis.next_steps || [];\\n    \\n    processingData.ai_tokens_used = aiResponse.usage?.total_tokens || 0;\\n  }\\n  \\n  // Additional processing logic\\n  \\n  // Calculate minimum score threshold for recommendations\\n  const minScoreForRecommendation = 70;\\n  const minScoreForHighRecommendation = 85;\\n  \\n  // Override recommendation based on overall score if AI didn't provide clear guidance\\n  if (processingData.overall_match_score >= minScoreForHighRecommendation) {\\n    processingData.recommendation = 'highly_recommended';\\n  } else if (processingData.overall_match_score >= minScoreForRecommendation) {\\n    processingData.recommendation = 'recommended';\\n  } else if (processingData.overall_match_score >= 50) {\\n    processingData.recommendation = 'consider';\\n  } else {\\n    processingData.recommendation = 'not_recommended';\\n  }\\n  \\n  // Add processing quality indicators\\n  processingData.quality_indicators = {\\n    has_salary_info: Boolean(jobData.salary_range),\\n    has_job_description: Boolean(jobData.job_description),\\n    has_required_skills: Boolean(jobData.required_skills),\\n    has_user_skills: Boolean(userProfile.key_skills && userProfile.key_skills.length > 0),\\n    has_user_preferences: Boolean(userProfile.preferred_salary_min || userProfile.work_type_preference)\\n  };\\n  \\n  // Calculate processing confidence based on available data\\n  const qualityScore = Object.values(processingData.quality_indicators).filter(Boolean).length;\\n  processingData.processing_confidence = (qualityScore / 5) * 100;\\n  \\n  // Determine if job should be auto-applied or requires review\\n  processingData.auto_apply_eligible = (\\n    processingData.overall_match_score >= 90 &&\\n    processingData.red_flags.length === 0 &&\\n    processingData.recommendation === 'highly_recommended'\\n  );\\n  \\n  // Set priority level for user attention\\n  if (processingData.overall_match_score >= 85) {\\n    processingData.priority_level = 'high';\\n  } else if (processingData.overall_match_score >= 70) {\\n    processingData.priority_level = 'medium';\\n  } else {\\n    processingData.priority_level = 'low';\\n  }\\n  \\n  return [{ json: processingData }];\\n  \\n} catch (error) {\\n  console.error('Job processing error:', error);\\n  return [{\\n    json: {\\n      ...processingData,\\n      processing_success: false,\\n      processing_error: error.message,\\n      overall_match_score: 0,\\n      recommendation: 'processing_failed'\\n    }\\n  }];\\n}"
+      },
+      "id": "process-matching-results",
+      "name": "Process Matching Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.overall_match_score }}",
+              "operation": "largerEqual",
+              "value2": 70
+            }
+          ]
+        }
+      },
+      "id": "check-score-threshold",
+      "name": "Check Score Threshold",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/applications/find-duplicates/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user_id": "={{ $json.user_id }}",
+          "job_title": "={{ $json.job_title }}",
+          "company_name": "={{ $json.company_name }}"
+        }
+      },
+      "id": "check-duplicates",
+      "name": "Check for Duplicate Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check duplicate results and decide on job creation\\nconst items = $input.all();\\nconst processingData = items[0].json;\\nconst duplicateResponse = items[0].json;\\n\\nlet shouldCreateJob = true;\\nlet duplicateInfo = null;\\n\\ntry {\\n  // Check if duplicates were found\\n  if (duplicateResponse.duplicates && duplicateResponse.duplicates.length > 0) {\\n    shouldCreateJob = false;\\n    duplicateInfo = {\\n      found_duplicates: true,\\n      duplicate_count: duplicateResponse.duplicates.length,\\n      existing_application_id: duplicateResponse.duplicates[0].id,\\n      duplicate_source: duplicateResponse.duplicates[0].source_platform\\n    };\\n  } else {\\n    duplicateInfo = {\\n      found_duplicates: false,\\n      duplicate_count: 0\\n    };\\n  }\\n} catch (error) {\\n  console.error('Duplicate check error:', error);\\n  // If duplicate check fails, still create the job\\n  shouldCreateJob = true;\\n  duplicateInfo = {\\n    found_duplicates: false,\\n    duplicate_check_error: error.message\\n  };\\n}\\n\\n// Prepare final processing data\\nconst finalData = {\\n  ...processingData,\\n  should_create_job: shouldCreateJob,\\n  duplicate_info: duplicateInfo\\n};\\n\\nreturn [{ json: finalData }];"
+      },
+      "id": "process-duplicate-check",
+      "name": "Process Duplicate Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.should_create_job }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "should-create-job",
+      "name": "Should Create Job?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/applications/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user": "={{ $json.user_id }}",
+          "job_title": "={{ $json.job_title }}",
+          "company_name": "={{ $json.company_name }}",
+          "match_score": "={{ $json.overall_match_score }}",
+          "source_platform": "rss_auto",
+          "auto_discovered": true,
+          "processing_confidence": "={{ $json.processing_confidence }}",
+          "application_status": "discovered",
+          "ai_extraction_notes": "Auto-processed with {{ $json.overall_match_score }}% match score. {{ $json.recommendation }}: {{ $json.reasoning }}"
+        }
+      },
+      "id": "create-job-application",
+      "name": "Create Job Application",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2220, 100]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/applications/{{ $json.duplicate_info.existing_application_id }}/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "match_score": "={{ $json.overall_match_score }}",
+          "processing_confidence": "={{ $json.processing_confidence }}",
+          "ai_extraction_notes": "Updated with new analysis: {{ $json.overall_match_score }}% match score. {{ $json.recommendation }}: {{ $json.reasoning }}"
+        }
+      },
+      "id": "update-existing-job",
+      "name": "Update Existing Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/webhooks/job-processing/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user_id": "={{ $json.user_id }}",
+          "job_title": "={{ $json.job_title }}",
+          "company_name": "={{ $json.company_name }}",
+          "overall_match_score": "={{ $json.overall_match_score }}",
+          "recommendation": "={{ $json.recommendation }}",
+          "reasoning": "={{ $json.reasoning }}",
+          "matched_skills": "={{ $json.matched_skills }}",
+          "missing_skills": "={{ $json.missing_skills }}",
+          "red_flags": "={{ $json.red_flags }}",
+          "green_flags": "={{ $json.green_flags }}",
+          "next_steps": "={{ $json.next_steps }}",
+          "priority_level": "={{ $json.priority_level }}",
+          "auto_apply_eligible": "={{ $json.auto_apply_eligible }}",
+          "duplicate_found": "={{ $json.duplicate_info.found_duplicates }}",
+          "processing_confidence": "={{ $json.processing_confidence }}",
+          "ai_tokens_used": "={{ $json.ai_tokens_used }}"
+        }
+      },
+      "id": "log-processing-results",
+      "name": "Log Processing Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2440, 200]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/webhooks/job-processing/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user_id": "={{ $json.user_id }}",
+          "job_title": "={{ $json.job_title }}",
+          "company_name": "={{ $json.company_name }}",
+          "overall_match_score": "={{ $json.overall_match_score }}",
+          "recommendation": "low_score_filtered",
+          "reasoning": "Job filtered out due to low match score ({{ $json.overall_match_score }}%)",
+          "processing_confidence": "={{ $json.processing_confidence }}",
+          "filtered_out": true
+        }
+      },
+      "id": "log-filtered-job",
+      "name": "Log Filtered Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\\n  \\\"success\\\": true,\\n  \\\"job_processed\\\": true,\\n  \\\"job_title\\\": $json.job_title,\\n  \\\"company_name\\\": $json.company_name,\\n  \\\"overall_match_score\\\": $json.overall_match_score,\\n  \\\"recommendation\\\": $json.recommendation,\\n  \\\"priority_level\\\": $json.priority_level,\\n  \\\"duplicate_found\\\": $json.duplicate_info?.found_duplicates || false,\\n  \\\"job_created\\\": $json.should_create_job,\\n  \\\"message\\\": \\\"Job successfully processed and analyzed\\\"\\n} }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2660, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\\n  \\\"success\\\": false,\\n  \\\"job_processed\\\": true,\\n  \\\"job_title\\\": $json.job_title,\\n  \\\"company_name\\\": $json.company_name,\\n  \\\"overall_match_score\\\": $json.overall_match_score,\\n  \\\"recommendation\\\": \\\"filtered_out\\\",\\n  \\\"reason\\\": \\\"Job score below threshold\\\",\\n  \\\"message\\\": \\\"Job filtered out due to low match score\\\"\\n} }}"
+      },
+      "id": "filtered-response",
+      "name": "Filtered Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1780, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\\n  \\\"success\\\": false,\\n  \\\"error\\\": \\\"Invalid job data\\\",\\n  \\\"message\\\": \\\"Missing required fields: job_title, company_name, or user_id\\\"\\n} }}"
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 500]
+    }
+  ],
+  "connections": {
+    "Job Processing Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Job Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Job Data": {
+      "main": [
+        [
+          {
+            "node": "Get User Profile & Preferences",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Profile & Preferences": {
+      "main": [
+        [
+          {
+            "node": "AI Job Matching Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Job Matching Analysis": {
+      "main": [
+        [
+          {
+            "node": "Process Matching Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Matching Results": {
+      "main": [
+        [
+          {
+            "node": "Check Score Threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Score Threshold": {
+      "main": [
+        [
+          {
+            "node": "Check for Duplicate Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Filtered Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Duplicate Jobs": {
+      "main": [
+        [
+          {
+            "node": "Process Duplicate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Duplicate Check": {
+      "main": [
+        [
+          {
+            "node": "Should Create Job?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Create Job?": {
+      "main": [
+        [
+          {
+            "node": "Create Job Application",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Existing Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Job Application": {
+      "main": [
+        [
+          {
+            "node": "Log Processing Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Existing Job": {
+      "main": [
+        [
+          {
+            "node": "Log Processing Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Processing Results": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Filtered Job": {
+      "main": [
+        [
+          {
+            "node": "Filtered Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

@@ -1,38 +1,943 @@
 # api/views.py - COMPLETE FILE with Error Handling
 # REPLACE your entire api/views.py file with this version
 
+# api/views.py - ADD these API endpoints to your existing file
+
 import json
 import logging
-from datetime import timedelta
+from datetime import datetime
+
+import requests
+from django.contrib.auth.models import User
+from django.db import connection
+from django.db.models import Avg, Q
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
-from django.db import connection
-
-from rest_framework import viewsets, status
+from django.utils.decorators import method_decorator
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authtoken.models import Token
 
-from jobs.models import JobApplication, JobSearchConfig
-from followups.models import FollowUpHistory, FollowUpTemplate
 from accounts.models import UserProfile
-from documents.models import GeneratedDocument
+from jobs.models import JobSearchConfig
 from .exceptions import CustomAPIException, JobApplicationNotFound, FollowUpError, DocumentGenerationError
 from .serializers import (
     JobApplicationSerializer, FollowUpHistorySerializer,
     UserProfileSerializer, JobSearchConfigSerializer, FollowUpTemplateSerializer
 )
-
-
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+from django.views.decorators.csrf import csrf_exempt
+import logging
 logger = logging.getLogger(__name__)
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def score_job_with_ai(request, job_id):
+    """Score job using AI with comprehensive analysis"""
+    try:
+        job = JobApplication.objects.get(id=job_id, user=request.user)
+
+        # Get user profile for scoring context
+        try:
+            profile = request.user.userprofile
+
+            # Handle different skill field names and formats
+            user_skills = []
+            for skill_field in ['primary_skills', 'skills', 'technical_skills']:
+                skills = getattr(profile, skill_field, '') or getattr(profile, skill_field, [])
+                if skills:
+                    if isinstance(skills, str):
+                        user_skills.extend([s.strip() for s in skills.split(',') if s.strip()])
+                    elif isinstance(skills, list):
+                        user_skills.extend(skills)
+                    break
+
+            user_context = {
+                'skills': user_skills[:10],  # Limit to top 10 skills
+                'experience_years': getattr(profile, 'experience_years', 0) or 0,
+                'current_position': (
+                        getattr(profile, 'current_job_title', '') or
+                        getattr(profile, 'current_position', '') or ''
+                ),
+                'target_salary_min': getattr(profile, 'target_salary_min', 0) or 0,
+                'target_salary_max': getattr(profile, 'target_salary_max', 0) or 0,
+                'preferred_locations': getattr(profile, 'preferred_locations', []) or [],
+                'education_level': getattr(profile, 'education_level', '') or '',
+            }
+        except:
+            # Fallback if no profile exists
+            user_context = {
+                'skills': [],
+                'experience_years': 0,
+                'current_position': '',
+                'target_salary_min': 0,
+                'target_salary_max': 0,
+                'preferred_locations': [],
+                'education_level': '',
+            }
+
+        # Create comprehensive AI scoring prompt
+        prompt = create_job_scoring_prompt(job, user_context)
+
+        # Call AI API
+        ai_response = call_groq_api(prompt)
+
+        if ai_response and isinstance(ai_response, dict):
+            # Update job with AI scores
+            job.overall_match_score = ai_response.get('overall_score', 0)
+            job.skill_match_score = ai_response.get('skill_match', 0)
+            job.experience_match_score = ai_response.get('experience_match', 0)
+            job.location_match_score = ai_response.get('location_match', 0)
+            job.salary_match_score = ai_response.get('salary_match', 0)
+            job.culture_match_score = ai_response.get('culture_match', 0)
+
+            job.matched_skills = ai_response.get('matched_skills', [])
+            job.missing_skills = ai_response.get('missing_skills', [])
+            job.green_flags = ai_response.get('strengths', [])
+            job.red_flags = ai_response.get('concerns', [])
+
+            job.ai_reasoning = ai_response.get('reasoning', '')
+            job.confidence_score = ai_response.get('confidence', 0.8)
+
+            # Calculate overall score and recommendation
+            job.calculate_overall_score()
+            job.save()
+
+            logger.info(f"Job {job_id} scored successfully: {job.overall_match_score}%")
+
+            return Response({
+                'success': True,
+                'job_id': job.id,
+                'scores': {
+                    'overall': round(job.overall_match_score, 1),
+                    'skill_match': round(job.skill_match_score, 1),
+                    'experience_match': round(job.experience_match_score, 1),
+                    'location_match': round(job.location_match_score, 1),
+                    'salary_match': round(job.salary_match_score, 1),
+                    'culture_match': round(job.culture_match_score, 1),
+                    'recommendation': job.recommendation_level
+                },
+                'analysis': {
+                    'matched_skills': job.matched_skills,
+                    'missing_skills': job.missing_skills,
+                    'strengths': job.green_flags,
+                    'concerns': job.red_flags,
+                    'reasoning': job.ai_reasoning,
+                    'confidence': job.confidence_score
+                },
+                'message': f'Job scored: {job.overall_match_score:.0f}% match'
+            })
+        else:
+            return Response({
+                'success': False,
+                'error': 'AI scoring service is temporarily unavailable. Please try again.'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    except JobApplication.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Job not found or access denied'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Job scoring error for job {job_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'An error occurred while scoring the job'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def approve_job_for_documents(request, job_id):
+    """Approve job for document generation"""
+    try:
+        job = JobApplication.objects.get(id=job_id, user=request.user)
+
+        # Update approval status
+        job.approval_status = 'approved'
+        job.approved_at = timezone.now()
+        job.approved_by = request.user
+        job.save()
+
+        logger.info(f"Job {job_id} approved by user {request.user.username}")
+
+        # TODO: Trigger document generation workflow here
+        # This could send a signal or call an N8N webhook
+
+        return Response({
+            'success': True,
+            'message': f'✅ Job approved: {job.job_title} at {job.company_name}',
+            'job': {
+                'id': job.id,
+                'title': job.job_title,
+                'company': job.company_name,
+                'score': job.overall_match_score,
+                'approved_at': job.approved_at.isoformat()
+            }
+        })
+
+    except JobApplication.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Job not found or access denied'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Job approval error for job {job_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to approve job'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def bulk_approve_jobs(request):
+    """Approve multiple jobs for document generation"""
+    try:
+        job_ids = request.data.get('job_ids', [])
+
+        if not job_ids:
+            return Response({
+                'success': False,
+                'error': 'No job IDs provided'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update jobs
+        updated_jobs = JobApplication.objects.filter(
+            id__in=job_ids,
+            user=request.user
+        ).update(
+            approval_status='approved',
+            approved_at=timezone.now(),
+            approved_by=request.user
+        )
+
+        logger.info(f"Bulk approved {updated_jobs} jobs by user {request.user.username}")
+
+        return Response({
+            'success': True,
+            'message': f'✅ {updated_jobs} jobs approved successfully',
+            'approved_count': updated_jobs,
+            'job_ids': job_ids
+        })
+
+    except Exception as e:
+        logger.error(f"Bulk approval error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to approve jobs'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def bulk_score_jobs(request):
+    """Score multiple jobs with AI"""
+    try:
+        job_ids = request.data.get('job_ids', [])
+
+        if not job_ids:
+            return Response({
+                'success': False,
+                'error': 'No job IDs provided'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get unscored jobs only
+        jobs_to_score = JobApplication.objects.filter(
+            id__in=job_ids,
+            user=request.user,
+            overall_match_score=0  # Only score unscored jobs
+        )
+
+        scored_count = 0
+        failed_count = 0
+        results = []
+
+        for job in jobs_to_score:
+            try:
+                # Create a mock request for single job scoring
+                mock_request = type('MockRequest', (), {
+                    'user': request.user,
+                    'data': {}
+                })()
+
+                response = score_job_with_ai(mock_request, job.id)
+
+                if response.data.get('success'):
+                    scored_count += 1
+                    results.append({
+                        'job_id': job.id,
+                        'title': job.job_title,
+                        'score': response.data['scores']['overall'],
+                        'success': True
+                    })
+                else:
+                    failed_count += 1
+                    results.append({
+                        'job_id': job.id,
+                        'title': job.job_title,
+                        'success': False,
+                        'error': response.data.get('error', 'Unknown error')
+                    })
+
+            except Exception as e:
+                failed_count += 1
+                results.append({
+                    'job_id': job.id,
+                    'title': getattr(job, 'job_title', 'Unknown'),
+                    'success': False,
+                    'error': str(e)
+                })
+
+        return Response({
+            'success': True,
+            'message': f'Scoring complete: {scored_count} successful, {failed_count} failed',
+            'scored_count': scored_count,
+            'failed_count': failed_count,
+            'results': results
+        })
+
+    except Exception as e:
+        logger.error(f"Bulk scoring error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to score jobs'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_approval_stats(request):
+    """Get real-time approval dashboard statistics"""
+    try:
+        user = request.user
+
+        # Get base queryset
+        all_jobs = JobApplication.objects.filter(user=user)
+
+        try:
+            pending_jobs = all_jobs.filter(approval_status='pending')
+        except:
+            pending_jobs = all_jobs
+
+        try:
+            approved_today = all_jobs.filter(
+                approval_status='approved',
+                approved_at__date=datetime.now().date()
+            ).count()
+        except:
+            approved_today = 0
+
+        try:
+            avg_score = all_jobs.filter(
+                overall_match_score__gt=0
+            ).aggregate(Avg('overall_match_score'))['overall_match_score__avg'] or 0
+        except:
+            avg_score = 0
+
+        try:
+            high_scoring = pending_jobs.filter(overall_match_score__gte=85).count()
+        except:
+            high_scoring = 0
+
+        try:
+            needs_scoring = pending_jobs.filter(
+                Q(overall_match_score=0) | Q(overall_match_score__isnull=True)
+            ).count()
+        except:
+            needs_scoring = pending_jobs.count()
+
+        stats = {
+            'pending_review': pending_jobs.count(),
+            'high_scoring': high_scoring,
+            'needs_scoring': needs_scoring,
+            'approved_today': approved_today,
+            'total_jobs': all_jobs.count(),
+            'avg_score': round(avg_score, 1)
+        }
+
+        return Response({
+            'success': True,
+            'stats': stats,
+            'timestamp': timezone.now().isoformat()
+        })
+
+    except Exception as e:
+        logger.error(f"Stats retrieval error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to retrieve statistics'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_pending_jobs(request):
+    """Get paginated list of pending jobs with filtering"""
+    try:
+        user = request.user
+
+        # Get filter parameters
+        score_filter = request.query_params.get('score', 'all')
+        status_filter = request.query_params.get('status', 'pending')
+        limit = min(int(request.query_params.get('limit', 20)), 100)  # Max 100
+        offset = int(request.query_params.get('offset', 0))
+
+        # Base queryset
+        jobs = JobApplication.objects.filter(user=user)
+
+        # Apply filters
+        try:
+            if status_filter == 'pending':
+                jobs = jobs.filter(approval_status='pending')
+            elif status_filter == 'scored':
+                jobs = jobs.filter(overall_match_score__gt=0)
+            elif status_filter == 'approved':
+                jobs = jobs.filter(approval_status='approved')
+
+            if score_filter == 'high':
+                jobs = jobs.filter(overall_match_score__gte=85)
+            elif score_filter == 'good':
+                jobs = jobs.filter(overall_match_score__gte=70, overall_match_score__lt=85)
+            elif score_filter == 'fair':
+                jobs = jobs.filter(overall_match_score__gte=50, overall_match_score__lt=70)
+            elif score_filter == 'low':
+                jobs = jobs.filter(overall_match_score__lt=50, overall_match_score__gt=0)
+        except:
+            pass  # Use unfiltered queryset if fields don't exist
+
+        # Order and paginate
+        jobs = jobs.order_by('-overall_match_score', '-created_at')[offset:offset + limit]
+
+        # Serialize jobs
+        jobs_data = []
+        for job in jobs:
+            jobs_data.append({
+                'id': job.id,
+                'job_title': job.job_title,
+                'company_name': job.company_name,
+                'location': getattr(job, 'location', ''),
+                'salary_range': getattr(job, 'salary_range', ''),
+                'overall_match_score': getattr(job, 'overall_match_score', 0),
+                'skill_match_score': getattr(job, 'skill_match_score', 0),
+                'experience_match_score': getattr(job, 'experience_match_score', 0),
+                'recommendation_level': getattr(job, 'recommendation_level', 'consider'),
+                'approval_status': getattr(job, 'approval_status', 'pending'),
+                'green_flags': getattr(job, 'green_flags', []),
+                'red_flags': getattr(job, 'red_flags', []),
+                'created_at': job.created_at.isoformat(),
+                'job_url': getattr(job, 'job_url', ''),
+            })
+
+        return Response({
+            'success': True,
+            'jobs': jobs_data,
+            'count': len(jobs_data),
+            'filters': {
+                'score': score_filter,
+                'status': status_filter,
+                'limit': limit,
+                'offset': offset
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Get pending jobs error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Failed to retrieve jobs'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def create_job_scoring_prompt(job, user_context):
+    """Create comprehensive AI prompt for job scoring"""
+
+    # Format user skills
+    skills_text = ', '.join(user_context['skills']) if user_context['skills'] else 'Not specified'
+
+    # Format salary expectations
+    salary_expectation = ''
+    if user_context['target_salary_min'] or user_context['target_salary_max']:
+        salary_expectation = f"${user_context['target_salary_min']:,} - ${user_context['target_salary_max']:,}"
+
+    # Create the prompt
+    prompt = f"""
+Analyze this job posting and score it for the user profile. Return a JSON response only.
+
+JOB POSTING:
+Title: {job.job_title}
+Company: {job.company_name}
+Location: {getattr(job, 'location', 'Not specified')}
+Salary: {getattr(job, 'salary_range', 'Not specified')}
+Employment Type: {getattr(job, 'employment_type', 'Not specified')}
+Experience Level: {getattr(job, 'experience_level', 'Not specified')}
+Remote Options: {getattr(job, 'remote_type', 'Not specified')}
+Description: {job.job_description[:1000]}...
+
+USER PROFILE:
+Current Position: {user_context['current_position']}
+Experience: {user_context['experience_years']} years
+Skills: {skills_text}
+Salary Expectation: {salary_expectation}
+Education: {user_context['education_level']}
+Preferred Locations: {', '.join(user_context['preferred_locations']) if user_context['preferred_locations'] else 'Flexible'}
+
+SCORING INSTRUCTIONS:
+Score each dimension from 0-100:
+1. skill_match: How well user's skills align with job requirements
+2. experience_match: How user's experience level fits the role
+3. location_match: How job location matches user preferences  
+4. salary_match: How job salary aligns with user expectations
+5. culture_match: How company culture fits user background
+6. overall_score: Weighted average of all dimensions
+
+Also provide:
+- matched_skills: Array of user skills that align with job
+- missing_skills: Array of job requirements user lacks
+- strengths: Array of positive aspects about this match
+- concerns: Array of potential issues or challenges
+- reasoning: Brief explanation of the scoring
+- confidence: Your confidence in this analysis (0-1)
+
+Return valid JSON only:
+{{
+    "overall_score": 78,
+    "skill_match": 85,
+    "experience_match": 75,
+    "location_match": 90,
+    "salary_match": 70,
+    "culture_match": 80,
+    "matched_skills": ["Python", "Django", "React"],
+    "missing_skills": ["AWS", "Kubernetes"],
+    "strengths": ["Strong technical match", "Remote friendly", "Growth opportunity"],
+    "concerns": ["Salary below expectation", "Requires 2+ years more experience"],
+    "reasoning": "Strong technical alignment with some experience gaps",
+    "confidence": 0.85
+}}
+"""
+
+    return prompt
+
+
+def call_groq_api(prompt):
+    """Call Groq API for AI analysis"""
+    try:
+        api_key = os.getenv('GROQ_API_KEY')
+        if not api_key:
+            logger.error("GROQ_API_KEY not found in environment variables")
+            return None
+
+        response = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'llama3-8b-8192',
+                'messages': [
+                    {
+                        'role': 'system',
+                        'content': 'You are an expert job analysis AI. Always respond with valid JSON only. Be thorough but concise in your analysis.'
+                    },
+                    {
+                        'role': 'user',
+                        'content': prompt
+                    }
+                ],
+                'temperature': 0.1,
+                'max_tokens': 800,
+                'top_p': 1,
+                'frequency_penalty': 0,
+                'presence_penalty': 0
+            },
+            timeout=30
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            content = result['choices'][0]['message']['content']
+
+            # Clean and parse JSON response
+            try:
+                # Remove any markdown formatting
+                if content.startswith('```json'):
+                    content = content.replace('```json', '').replace('```', '')
+                elif content.startswith('```'):
+                    content = content.replace('```', '')
+
+                content = content.strip()
+                return json.loads(content)
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse Groq JSON response: {content[:200]}...")
+                return None
+        else:
+            logger.error(f"Groq API error: {response.status_code} - {response.text[:200]}")
+            return None
+
+    except requests.exceptions.Timeout:
+        logger.error("Groq API timeout")
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Groq API request error: {str(e)}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error calling Groq API: {str(e)}")
+        return None
+@api_view(['POST'])
+@authentication_classes([])  # No authentication required
+@permission_classes([AllowAny])  # Allow any user
+@csrf_exempt
+def extension_auth(request):
+    """Chrome Extension Authentication - No auth required"""
+    try:
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        if not username or not password:
+            return Response({
+                'success': False,
+                'error': 'Username and password required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(username=username, password=password)
+        if user and user.is_active:
+            token, created = Token.objects.get_or_create(user=user)
+
+            # Log extension login
+            logger.info(f"Chrome extension login: {user.username}")
+
+            return Response({
+                'success': True,
+                'token': token.key,
+                'user_id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'message': 'Authentication successful'
+            })
+
+        return Response({
+            'success': False,
+            'error': 'Invalid credentials'
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+    except Exception as e:
+        logger.error(f"Extension auth error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': f'Authentication failed: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def extension_auth_validate(request):
+    """Validate Chrome Extension Token with enhanced debugging"""
+    try:
+        # Debug information
+        print(f"🔍 DEBUG - User: {request.user}")
+        print(f"🔍 DEBUG - Is authenticated: {request.user.is_authenticated}")
+        print(f"🔍 DEBUG - Auth header: {request.META.get('HTTP_AUTHORIZATION', 'Missing')}")
+        print(f"🔍 DEBUG - Token object: {getattr(request, 'auth', 'No auth object')}")
+
+        # Ensure user is authenticated
+        if not request.user.is_authenticated:
+            return Response({
+                'success': False,
+                'error': 'User not authenticated',
+                'debug': 'Authentication failed'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Get token information
+        token_key = None
+        if hasattr(request, 'auth') and request.auth:
+            token_key = request.auth.key
+
+        return Response({
+            'success': True,
+            'valid': True,
+            'user_id': request.user.id,
+            'username': request.user.username,
+            'email': request.user.email,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'token_key': token_key,
+            'is_active': request.user.is_active,
+            'message': 'Token is valid'
+        })
+
+    except Exception as e:
+        print(f"❌ Token validation error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': f'Token validation failed: {str(e)}',
+            'debug': {
+                'exception_type': type(e).__name__,
+                'exception_message': str(e),
+                'user_authenticated': getattr(request.user, 'is_authenticated', False)
+            }
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+def extension_save_job(request):
+    """Save Job from Chrome Extension"""
+    try:
+        job_data = request.data
+
+        # Validate required fields
+        required_fields = ['job_title', 'company_name']
+        missing_fields = [field for field in required_fields if not job_data.get(field)]
+
+        if missing_fields:
+            return Response({
+                'success': False,
+                'error': f'Missing required fields: {", ".join(missing_fields)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check for duplicate jobs (same title + company + user)
+        from jobs.models import JobApplication
+        existing_job = JobApplication.objects.filter(
+            user=request.user,
+            job_title=job_data.get('job_title', ''),
+            company_name=job_data.get('company_name', '')
+        ).first()
+
+        if existing_job:
+            return Response({
+                'success': False,
+                'error': 'Job already exists in your applications',
+                'existing_job_id': existing_job.id
+            }, status=status.HTTP_409_CONFLICT)
+
+        # Create job application
+        job = JobApplication.objects.create(
+            user=request.user,
+            job_title=job_data.get('job_title', ''),
+            company_name=job_data.get('company_name', ''),
+            location=job_data.get('location', ''),
+            job_description=job_data.get('job_description', ''),
+            salary_range=job_data.get('salary_range', ''),
+            employment_type=job_data.get('employment_type', ''),
+            experience_level=job_data.get('experience_level', ''),
+            remote_type=job_data.get('remote_type', ''),
+            job_url=job_data.get('job_url', ''),
+            source_platform=job_data.get('source_platform', 'chrome_extension'),
+            application_status='discovered',
+            auto_discovered=job_data.get('auto_discovered', False),
+            saved_from_extension=True,
+            extraction_confidence=job_data.get('extraction_confidence', 0.7),
+            # Extension-specific fields
+            page_title=job_data.get('page_title', ''),
+            extraction_method=job_data.get('extraction_method', 'chrome_extension')
+        )
+
+        logger.info(f"Job saved via extension: {job.job_title} at {job.company_name} by {request.user.username}")
+
+        return Response({
+            'success': True,
+            'job': {
+                'id': job.id,
+                'job_title': job.job_title,
+                'company_name': job.company_name,
+                'location': job.location,
+                'created_at': job.created_at.isoformat(),
+                'source_platform': job.source_platform
+            },
+            'message': 'Job saved successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Extension job save error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': f'Failed to save job: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def extension_job_stats(request):
+    """Get Job Statistics for Chrome Extension"""
+    try:
+        from jobs.models import JobApplication
+        from datetime import datetime, timedelta
+
+        user_jobs = JobApplication.objects.filter(user=request.user)
+
+        # Calculate comprehensive statistics
+        total_jobs = user_jobs.count()
+        extension_jobs = user_jobs.filter(saved_from_extension=True).count()
+
+        this_week = user_jobs.filter(
+            created_at__gte=datetime.now() - timedelta(days=7)
+        ).count()
+
+        # Status breakdown
+        applied_jobs = user_jobs.exclude(application_status='discovered').count()
+        interview_jobs = user_jobs.filter(application_status='interview').count()
+        offer_jobs = user_jobs.filter(application_status='offer').count()
+        hired_jobs = user_jobs.filter(application_status='hired').count()
+
+        # Success metrics
+        successful_jobs = user_jobs.filter(
+            application_status__in=['interview', 'offer', 'hired']
+        ).count()
+
+        success_rate = round((successful_jobs / applied_jobs * 100) if applied_jobs > 0 else 0)
+
+        return Response({
+            'success': True,
+            'stats': {
+                'total_jobs': total_jobs,
+                'extension_jobs': extension_jobs,
+                'saved': total_jobs,  # Legacy compatibility
+                'this_week': this_week,
+                'applied': applied_jobs,
+                'interviews': interview_jobs,
+                'offers': offer_jobs,
+                'hired': hired_jobs,
+                'success_rate': success_rate,
+                'status_breakdown': {
+                    'discovered': user_jobs.filter(application_status='discovered').count(),
+                    'applied': user_jobs.filter(application_status='applied').count(),
+                    'interview': interview_jobs,
+                    'offer': offer_jobs,
+                    'hired': hired_jobs,
+                    'rejected': user_jobs.filter(application_status='rejected').count(),
+                }
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Extension stats error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Could not retrieve job statistics'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def extension_profile(request):
+    """Get User Profile for Chrome Extension"""
+    try:
+        user = request.user
+
+        # Try to get user profile, create basic response if doesn't exist
+        try:
+            from accounts.models import UserProfile
+            profile = UserProfile.objects.get(user=user)
+            profile_data = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'current_position': getattr(profile, 'current_position', ''),
+                'experience_years': getattr(profile, 'experience_years', 0),
+                'skills': getattr(profile, 'skills', []),
+                'target_positions': getattr(profile, 'target_positions', []),
+                'preferred_locations': getattr(profile, 'preferred_locations', [])
+            }
+        except:
+            profile_data = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'current_position': '',
+                'experience_years': 0,
+                'skills': [],
+                'target_positions': [],
+                'preferred_locations': []
+            }
+
+        return Response({
+            'success': True,
+            'user': profile_data
+        })
+
+    except Exception as e:
+        logger.error(f"Extension profile error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Could not retrieve user profile'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET', 'POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+def extension_settings(request):
+    """Get/Update Chrome Extension Settings"""
+    try:
+        if request.method == 'GET':
+            return Response({
+                'success': True,
+                'settings': {
+                    'notifications': True,
+                    'autoSave': False,
+                    'extractionLevel': 'standard',
+                    'theme': 'auto',
+                    'showFloatingButton': True,
+                    'autoDetectJobPages': True,
+                    'saveDuplicateJobs': False,
+                    'enableKeyboardShortcuts': True,
+                    'defaultJobStatus': 'discovered',
+                    'extractionTimeout': 10000
+                }
+            })
+
+        elif request.method == 'POST':
+            settings_data = request.data
+            logger.info(f"Extension settings updated for user {request.user.username}: {settings_data}")
+
+            return Response({
+                'success': True,
+                'message': 'Settings updated successfully'
+            })
+
+    except Exception as e:
+        logger.error(f"Extension settings error: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Could not handle settings request'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([])  # No authentication required
+@permission_classes([AllowAny])  # Allow any user
+def extension_health(request):
+    """Health check endpoint for Chrome Extension"""
+    from datetime import datetime
+    return Response({
+        'success': True,
+        'status': 'healthy',
+        'version': '1.0.0',
+        'timestamp': datetime.now().isoformat()
+    })
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
@@ -1669,7 +2574,7 @@ class FollowUpAPIView(APIView):
                 'job_title': application.job_title,
                 'hiring_manager': 'Hiring Manager',  # Could be enhanced
                 'days_since_application': (
-                            date.today() - application.applied_date).days if application.applied_date else 0,
+                        date.today() - application.applied_date).days if application.applied_date else 0,
                 'custom_message': custom_message
             }
 
@@ -1787,7 +2692,7 @@ class BulkFollowUpAPIView(APIView):
                         'job_title': application.job_title,
                         'hiring_manager': 'Hiring Manager',
                         'days_since_application': (
-                                    date.today() - application.applied_date).days if application.applied_date else 0
+                                date.today() - application.applied_date).days if application.applied_date else 0
                     }
 
                     # Process template
@@ -2032,7 +2937,7 @@ class FollowUpHistoryAPIView(APIView):
 
 
 # ADD THESE IMPORTS TO api/views.py
-from dashboard.models import DashboardWidget, UserNotification, DashboardSettings, DashboardActivity
+from dashboard.models import UserNotification, DashboardActivity
 
 
 # ADD THESE API VIEW CLASSES TO api/views.py

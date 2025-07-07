@@ -1,9 +1,11 @@
+import os
 import json
 import os
 import zipfile
 from datetime import date
-from datetime import datetime, timedelta
+from datetime import datetime
 from datetime import time
+from datetime import timedelta
 from io import BytesIO
 
 import openai
@@ -13,28 +15,595 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count
+from django.core.paginator import Paginator
+from django.db.models import Avg, Count, Q
 from django.http import HttpResponse
-# ADD THESE IMPORTS TO dashboard/views.py
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+# ADD THESE IMPORTS TO dashboard/views.py
+from django.shortcuts import get_object_or_404, redirect
+# Add these imports at the top if not already present
+from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView, View
 
 from accounts.models import UserProfile
 from api.exceptions import logger
-
 from documents.models import GeneratedDocument
-from documents.tasks import generate_company_research as generate_company_research_task
-
 from followups.models import FollowUpHistory
 from job_automation import settings
-from jobs.models import JobApplication, JobSearchConfig
+from jobs.models import EmailProcessingLog, EmailSettings
+from jobs.models import JobApplication
+from jobs.models import JobSearchConfig
 from .forms import QuickSearchForm
 from .models import UserNotification, DashboardSettings, DashboardActivity
 
 
+
+@login_required
+def job_approval_dashboard(request):
+    """Job approval dashboard view"""
+    # Get jobs that need review (pending approval)
+    pending_jobs = JobApplication.objects.filter(
+        user=request.user,
+        approval_status='pending'
+    ).order_by('-overall_match_score', '-created_at')[:50]
+
+    # Get recently approved jobs (last 30 days)
+    from django.utils import timezone
+    from datetime import timedelta
+
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    approved_jobs = JobApplication.objects.filter(
+        user=request.user,
+        approval_status='approved',
+        approved_at__gte=thirty_days_ago
+    ).order_by('-approved_at')[:20]
+
+    # Get high-scoring jobs (85%+)
+    high_scoring_jobs = JobApplication.objects.filter(
+        user=request.user,
+        overall_match_score__gte=85
+    ).order_by('-overall_match_score')[:20]
+
+    # Get all jobs for applications integration
+    all_jobs = JobApplication.objects.filter(user=request.user).order_by('-created_at')
+
+    context = {
+        'pending_jobs': pending_jobs,
+        'approved_jobs': approved_jobs,
+        'high_scoring_jobs': high_scoring_jobs,
+        'all_jobs': all_jobs,
+        'pending_count': pending_jobs.count(),
+        'approved_count': approved_jobs.count(),
+        'high_scoring_count': high_scoring_jobs.count(),
+        'total_jobs': all_jobs.count(),
+    }
+
+    return render(request, 'dashboard/job_approval.html', context)
+class EmailSettingsView(LoginRequiredMixin, TemplateView):
+    """Email automation settings and management"""
+    template_name = 'dashboard/email_settings.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_profile = self.request.user.userprofile
+
+        # Get or create email settings
+        email_settings, created = EmailSettings.objects.get_or_create(
+            user=self.request.user
+        )
+
+        # Generate unique forwarding email
+        if not user_profile.forwarding_email:
+            user_profile.forwarding_email = user_profile.generate_unique_forwarding_email()
+            user_profile.save()
+
+        context.update({
+            'user_profile': user_profile,
+            'email_settings': email_settings,
+            'forwarding_email': user_profile.forwarding_email,
+            'email_stats': self.get_email_stats(),
+            'recent_processed_emails': self.get_recent_emails(),
+            'processing_chart_data': self.get_processing_chart_data(),
+            'setup_completion': self.get_setup_completion_status(),
+        })
+        return context
+
+    def get_email_stats(self):
+        """Get email processing statistics"""
+        user = self.request.user
+        logs = EmailProcessingLog.objects.filter(user=user)
+
+        # Recent activity (last 24 hours)
+        recent_logs = logs.filter(
+            created_at__gte=timezone.now() - timedelta(hours=24)
+        )
+
+        return {
+            'total_processed': logs.count(),
+            'jobs_found': logs.filter(
+                processing_result='success',
+                email_type='job_alert'
+            ).count(),
+            'interviews_detected': logs.filter(
+                processing_result='success',
+                email_type='interview_invite'
+            ).count(),
+            'success_rate': self.calculate_success_rate(logs),
+            'this_week': logs.filter(
+                created_at__gte=timezone.now() - timedelta(days=7)
+            ).count(),
+            'failed_processing': logs.filter(
+                processing_result='failed'
+            ).count(),
+            'avg_confidence': logs.aggregate(
+                avg_confidence=Avg('confidence_score')
+            )['avg_confidence'] or 0,
+            'recent_activity': recent_logs.count(),
+            'jobs_today': recent_logs.filter(
+                email_type='job_alert',
+                processing_result='success'
+            ).count(),
+            'interviews_today': recent_logs.filter(
+                email_type='interview_invite',
+                processing_result='success'
+            ).count(),
+        }
+
+    def calculate_success_rate(self, logs):
+        """Calculate email processing success rate"""
+        total = logs.count()
+        if total == 0:
+            return 100.0
+        successful = logs.filter(processing_result='success').count()
+        return round((successful / total) * 100, 1)
+
+    def get_recent_emails(self):
+        """Get recent processed emails"""
+        return EmailProcessingLog.objects.filter(
+            user=self.request.user
+        ).order_by('-created_at')[:10]
+
+    def get_processing_chart_data(self):
+        """Get data for email processing chart"""
+        logs = EmailProcessingLog.objects.filter(
+            user=self.request.user,
+            created_at__gte=timezone.now() - timedelta(days=30)
+        )
+
+        # Group by day
+        daily_stats = {}
+        for i in range(30):
+            day = timezone.now().date() - timedelta(days=i)
+            daily_stats[day.strftime('%Y-%m-%d')] = {
+                'jobs': 0, 'interviews': 0, 'total': 0
+            }
+
+        for log in logs:
+            day = log.created_at.date().strftime('%Y-%m-%d')
+            if day in daily_stats:
+                daily_stats[day]['total'] += 1
+                if log.email_type == 'job_alert' and log.processing_result == 'success':
+                    daily_stats[day]['jobs'] += 1
+                elif log.email_type == 'interview_invite' and log.processing_result == 'success':
+                    daily_stats[day]['interviews'] += 1
+
+        return daily_stats
+
+    def get_setup_completion_status(self):
+        """Get email setup completion status"""
+        user_profile = self.request.user.userprofile
+        email_settings = EmailSettings.objects.filter(user=self.request.user).first()
+
+        steps = {
+            'email_forwarding': bool(user_profile.forwarding_email),
+            'processing_enabled': user_profile.email_processing_enabled,
+            'settings_configured': bool(email_settings),
+            'first_email_processed': EmailProcessingLog.objects.filter(
+                user=self.request.user
+            ).exists(),
+        }
+
+        completion_percentage = sum(steps.values()) / len(steps) * 100
+
+        return {
+            'steps': steps,
+            'completion_percentage': completion_percentage,
+            'is_complete': completion_percentage == 100
+        }
+
+    def post(self, request, *args, **kwargs):
+        """Handle email settings updates"""
+        try:
+            email_settings, created = EmailSettings.objects.get_or_create(
+                user=request.user
+            )
+
+            # Update settings from form
+            email_settings.auto_process_job_alerts = request.POST.get('auto_process_job_alerts') == 'on'
+            email_settings.auto_process_interviews = request.POST.get('auto_process_interviews') == 'on'
+            email_settings.auto_create_calendar_events = request.POST.get('auto_create_calendar_events') == 'on'
+            email_settings.auto_research_companies = request.POST.get('auto_research_companies') == 'on'
+
+            # Quality settings
+            email_settings.minimum_confidence_score = float(request.POST.get('minimum_confidence_score', 70.0))
+            email_settings.keep_email_logs_days = int(request.POST.get('keep_email_logs_days', 90))
+
+            # Notification settings
+            email_settings.notify_new_jobs = request.POST.get('notify_new_jobs') == 'on'
+            email_settings.notify_interviews = request.POST.get('notify_interviews') == 'on'
+            email_settings.notify_processing_errors = request.POST.get('notify_processing_errors') == 'on'
+
+            # Blacklisted senders
+            blacklisted_text = request.POST.get('blacklisted_senders', '')
+            if blacklisted_text:
+                email_settings.blacklisted_senders = [
+                    sender.strip() for sender in blacklisted_text.split('\n')
+                    if sender.strip()
+                ]
+            else:
+                email_settings.blacklisted_senders = []
+
+            email_settings.save()
+
+            # Update user profile email settings
+            user_profile = request.user.userprofile
+            user_profile.email_processing_enabled = request.POST.get('email_processing_enabled') == 'on'
+            user_profile.interview_detection_enabled = request.POST.get('interview_detection_enabled') == 'on'
+
+            # Record consent if enabling for first time
+            if user_profile.email_processing_enabled and not user_profile.email_consent_date:
+                user_profile.email_consent_date = timezone.now()
+
+            user_profile.save()
+
+            messages.success(request, '✅ Email settings updated successfully!')
+
+        except Exception as e:
+            messages.error(request, f'❌ Error updating settings: {str(e)}')
+
+        return self.get(request, *args, **kwargs)
+
+
+class EmailLogView(LoginRequiredMixin, TemplateView):
+    """View email processing logs"""
+    template_name = 'dashboard/email_log.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get filter parameters
+        email_type = self.request.GET.get('type', 'all')
+        result = self.request.GET.get('result', 'all')
+        days = int(self.request.GET.get('days', 30))
+        search = self.request.GET.get('search', '')
+
+        # Build query
+        logs = EmailProcessingLog.objects.filter(user=self.request.user)
+
+        if email_type != 'all':
+            logs = logs.filter(email_type=email_type)
+
+        if result != 'all':
+            logs = logs.filter(processing_result=result)
+
+        if days > 0:
+            logs = logs.filter(
+                created_at__gte=timezone.now() - timedelta(days=days)
+            )
+
+        if search:
+            logs = logs.filter(
+                Q(email_subject__icontains=search) |
+                Q(email_sender__icontains=search) |
+                Q(email_body_preview__icontains=search)
+            )
+
+        # Pagination
+        paginator = Paginator(logs.order_by('-created_at'), 25)
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context.update({
+            'page_obj': page_obj,
+            'logs': page_obj.object_list,
+            'filter_type': email_type,
+            'filter_result': result,
+            'filter_days': days,
+            'search_query': search,
+            'email_types': EmailProcessingLog.EMAIL_TYPES,
+            'processing_results': EmailProcessingLog.PROCESSING_RESULTS,
+            'stats': self.get_log_stats(logs),
+            'total_count': logs.count(),
+        })
+        return context
+
+    def get_log_stats(self, logs):
+        """Get statistics for filtered logs"""
+        total = logs.count()
+        if total == 0:
+            return {
+                'total': 0,
+                'success': 0,
+                'failed': 0,
+                'manual_review': 0,
+                'success_rate': 0,
+                'avg_confidence': 0,
+                'avg_processing_time': 0,
+            }
+
+        stats = logs.aggregate(
+            success=Count('id', filter=Q(processing_result='success')),
+            failed=Count('id', filter=Q(processing_result='failed')),
+            manual_review=Count('id', filter=Q(processing_result='manual_review')),
+            avg_confidence=Avg('confidence_score'),
+            avg_processing_time=Avg('processing_time')
+        )
+
+        stats['total'] = total
+        stats['success_rate'] = round((stats['success'] / total) * 100, 1) if total > 0 else 0
+        stats['avg_confidence'] = round(stats['avg_confidence'] or 0, 1)
+        stats['avg_processing_time'] = round(stats['avg_processing_time'] or 0, 3)
+
+        return stats
+
+
+# API Views for AJAX requests
+class EmailStatsAPIView(LoginRequiredMixin, View):
+    """API endpoint for real-time email stats"""
+
+    def get(self, request):
+        user = request.user
+        logs = EmailProcessingLog.objects.filter(user=user)
+
+        # Get recent activity (last 24 hours)
+        recent_logs = logs.filter(
+            created_at__gte=timezone.now() - timedelta(hours=24)
+        )
+
+        stats = {
+            'total_processed': logs.count(),
+            'recent_activity': recent_logs.count(),
+            'jobs_found_today': recent_logs.filter(
+                email_type='job_alert',
+                processing_result='success'
+            ).count(),
+            'interviews_today': recent_logs.filter(
+                email_type='interview_invite',
+                processing_result='success'
+            ).count(),
+            'success_rate': self.calculate_success_rate(recent_logs),
+            'last_processed': logs.first().created_at.isoformat() if logs.exists() else None,
+            'failed_today': recent_logs.filter(
+                processing_result='failed'
+            ).count(),
+            'avg_confidence': logs.aggregate(
+                avg_confidence=Avg('confidence_score')
+            )['avg_confidence'] or 0,
+        }
+
+        return JsonResponse(stats)
+
+    def calculate_success_rate(self, logs):
+        """Calculate success rate"""
+        total = logs.count()
+        if total == 0:
+            return 100.0
+        successful = logs.filter(processing_result='success').count()
+        return round((successful / total) * 100, 1)
+
+
+class RecentEmailsAPIView(LoginRequiredMixin, View):
+    """API endpoint for recent emails"""
+
+    def get(self, request):
+        emails = EmailProcessingLog.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[:10]
+
+        email_data = []
+        for email in emails:
+            email_data.append({
+                'id': email.id,
+                'email_subject': email.email_subject,
+                'email_sender': email.email_sender,
+                'email_type': email.email_type,
+                'processing_result': email.processing_result,
+                'confidence_score': email.confidence_score,
+                'created_application': bool(email.created_application),
+                'time_ago': self.get_time_ago(email.created_at),
+                'created_at': email.created_at.isoformat(),
+            })
+
+        return JsonResponse({'emails': email_data})
+
+    def get_time_ago(self, dt):
+        """Calculate time ago string"""
+        now = timezone.now()
+        diff = now - dt
+
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        else:
+            return "Just now"
+
+
+class EmailProcessingActionView(LoginRequiredMixin, View):
+    """Handle email processing actions (reprocess, delete, etc.)"""
+
+    def post(self, request):
+        action = request.POST.get('action')
+        email_id = request.POST.get('email_id')
+
+        try:
+            email_log = EmailProcessingLog.objects.get(
+                id=email_id,
+                user=request.user
+            )
+
+            if action == 'reprocess':
+                # Mark for reprocessing
+                email_log.mark_for_reprocessing()
+                # TODO: Trigger reprocessing via N8N webhook
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Email queued for reprocessing'
+                })
+
+            elif action == 'delete':
+                email_log.delete()
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Email log deleted'
+                })
+
+            elif action == 'mark_reviewed':
+                email_log.processing_result = 'success'
+                email_log.save()
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Email marked as reviewed'
+                })
+
+            elif action == 'ignore':
+                email_log.processing_result = 'ignored'
+                email_log.save()
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Email marked as ignored'
+                })
+
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid action'
+                })
+
+        except EmailProcessingLog.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Email not found'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
+
+class TestEmailProcessingView(LoginRequiredMixin, View):
+    """Test email processing functionality"""
+
+    def post(self, request):
+        try:
+            # Create a test email processing log
+            test_log = EmailProcessingLog.objects.create(
+                user=request.user,
+                email_subject='Test Job Alert - Software Engineer',
+                email_sender='test@example.com',
+                email_received_date=timezone.now(),
+                email_body_preview='This is a test email for job processing...',
+                email_type='job_alert',
+                processing_result='success',
+                confidence_score=95.0,
+                processing_time=0.5,
+                ai_tokens_used=150,
+                extracted_data={
+                    'job_title': 'Software Engineer',
+                    'company': 'Test Company',
+                    'location': 'Remote',
+                    'salary': '$80,000 - $120,000'
+                }
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Test email processing successful',
+                'log_id': test_log.id
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
+
+class BulkEmailActionView(LoginRequiredMixin, View):
+    """Handle bulk actions on email logs"""
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            action = data.get('action')
+            email_ids = data.get('email_ids', [])
+
+            if not email_ids:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No emails selected'
+                })
+
+            # Verify user owns these emails
+            emails = EmailProcessingLog.objects.filter(
+                id__in=email_ids,
+                user=request.user
+            )
+
+            if emails.count() != len(email_ids):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Some emails not found or not owned by user'
+                })
+
+            if action == 'delete':
+                count = emails.count()
+                emails.delete()
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Deleted {count} emails'
+                })
+
+            elif action == 'mark_reviewed':
+                count = emails.update(processing_result='success')
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Marked {count} emails as reviewed'
+                })
+
+            elif action == 'reprocess':
+                count = 0
+                for email in emails:
+                    email.mark_for_reprocessing()
+                    count += 1
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Queued {count} emails for reprocessing'
+                })
+
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid action'
+                })
+
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid JSON data'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
 
 class SkillsAnalysisView(LoginRequiredMixin, TemplateView):
     """Skills analysis and development recommendations"""

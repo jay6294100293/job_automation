@@ -4,12 +4,14 @@ import zipfile
 from io import BytesIO
 import requests
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, Count, Avg
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView, View
 from django.db.models import F
 from django.core.paginator import Paginator
@@ -629,6 +631,8 @@ class JobListView(LoginRequiredMixin, ListView):
         return context
 
 
+# jobs/views.py - Replace your ApplicationListView.get_context_data method with this:
+
 class ApplicationListView(LoginRequiredMixin, ListView):
     """Enhanced pipeline view for job applications"""
     model = JobApplication
@@ -636,42 +640,94 @@ class ApplicationListView(LoginRequiredMixin, ListView):
     context_object_name = 'applications'
 
     def get_queryset(self):
-        return JobApplication.objects.filter(user=self.request.user).select_related('search_config')
+        queryset = JobApplication.objects.filter(user=self.request.user).select_related('search_config')
+
+        # Apply filters from query parameters
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(application_status=status_filter)
+
+        urgency_filter = self.request.GET.get('urgency')
+        if urgency_filter:
+            queryset = queryset.filter(urgency_level=urgency_filter)
+
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(job_title__icontains=search_query) |
+                Q(company_name__icontains=search_query) |
+                Q(location__icontains=search_query)
+            )
+
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         applications = self.get_queryset()
 
-        # Enhanced pipeline with more statuses
+        # CORRECTED: Map model statuses to template pipeline statuses
         context['pipeline'] = {
-            'discovered': applications.filter(application_status='discovered'),
-            'saved': applications.filter(application_status='saved'),
+            # Template expects 'found' - map from 'discovered' and 'saved'
+            'found': applications.filter(application_status__in=['discovered', 'saved']),
+
+            # Template expects 'applied' - direct match
             'applied': applications.filter(application_status='applied'),
-            'screening': applications.filter(application_status__in=['phone_screening', 'application_viewed']),
+
+            # Template expects 'responded' - map from response-related statuses
+            'responded': applications.filter(application_status__in=[
+                'application_viewed', 'phone_screening'
+            ]),
+
+            # Template expects 'interview' - map from all interview statuses
             'interview': applications.filter(application_status__in=[
-                'first_interview', 'second_interview', 'final_interview', 'technical_assessment'
+                'first_interview', 'second_interview', 'final_interview',
+                'technical_assessment', 'reference_check'
             ]),
-            'offer': applications.filter(application_status__in=['offer_pending', 'offer_received']),
-            'success': applications.filter(application_status__in=['hired', 'offer_accepted']),
+
+            # Template expects 'offer' - map from offer-related statuses
+            'offer': applications.filter(application_status__in=[
+                'offer_pending', 'offer_received', 'offer_accepted'
+            ]),
+
+            # Template expects 'closed' - map from final statuses
             'closed': applications.filter(application_status__in=[
-                'rejected_automated', 'rejected_screening', 'rejected_interview',
-                'rejected_offer', 'withdrawn', 'ghosted'
-            ]),
+                'hired', 'rejected_automated', 'rejected_screening',
+                'rejected_interview', 'rejected_offer', 'withdrawn', 'ghosted'
+            ])
         }
 
         # Add analytics
         total_apps = applications.count()
         context['analytics'] = {
             'total_applications': total_apps,
-            'success_rate': round((context['pipeline']['success'].count() / total_apps * 100),
-                                  1) if total_apps > 0 else 0,
+            'success_rate': round(
+                (context['pipeline']['closed'].filter(
+                    application_status__in=['hired', 'offer_accepted']
+                ).count() / total_apps * 100), 1
+            ) if total_apps > 0 else 0,
             'response_rate': round(
-                (applications.exclude(application_status__in=['discovered', 'applied']).count() / total_apps * 100),
-                1) if total_apps > 0 else 0,
-            'avg_match_score': applications.aggregate(avg_match=Avg('match_percentage'))['avg_match'] or 0,
+                ((context['pipeline']['responded'].count() +
+                  context['pipeline']['interview'].count() +
+                  context['pipeline']['offer'].count()) / total_apps * 100), 1
+            ) if total_apps > 0 else 0,
+            'avg_match_score': applications.aggregate(
+                avg_match=Avg('match_percentage')
+            )['avg_match'] or 0,
         }
 
         return context
+
+# JavaScript mapping function (add to your template)
+def get_pipeline_status_mapping():
+    """Return mapping for JavaScript"""
+    return {
+        'found': 'discovered',  # Map pipeline to model
+        'applied': 'applied',
+        'responded': 'application_viewed',
+        'interview': 'first_interview',
+        'offer': 'offer_received',
+        'closed': 'rejected_automated'  # Default for closed
+    }
 
 
 class ApplicationDetailView(LoginRequiredMixin, TemplateView):
@@ -1291,3 +1347,624 @@ class ScheduleSearchView(LoginRequiredMixin, View):
                 'success': False,
                 'error': f'Error scheduling search: {str(e)}'
             }, status=500)
+
+
+# ADD THESE ENHANCED WEBHOOK HANDLERS TO jobs/views.py
+
+import json
+import logging
+from django.http import JsonResponse
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import datetime, timedelta
+
+from .models import JobApplication, EmailProcessingLog, EmailSettings
+from accounts.models import UserProfile
+
+logger = logging.getLogger(__name__)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class EnhancedN8NWebhookView(View):
+    """Enhanced N8N webhook handler for email automation"""
+
+    def post(self, request, webhook_type):
+        """Handle different types of N8N webhooks"""
+        try:
+            data = json.loads(request.body)
+
+            # Route to appropriate handler
+            if webhook_type == 'job-discovery':
+                return self._handle_job_discovery(data)
+            elif webhook_type == 'interview-detection':
+                return self._handle_interview_detection(data)
+            elif webhook_type == 'interview-update':
+                return self._handle_interview_update(data)
+            elif webhook_type == 'email-classification':
+                return self._handle_email_classification(data)
+            else:
+                return JsonResponse({'error': 'Unknown webhook type'}, status=400)
+
+        except json.JSONDecodeError:
+            logger.error("Invalid JSON in N8N webhook")
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            logger.error(f"N8N webhook error: {str(e)}")
+            return JsonResponse({'error': 'Processing failed'}, status=500)
+
+    def _handle_job_discovery(self, data):
+        """Handle job discovery from email"""
+        try:
+            email_data = data.get('email_data', {})
+            user_id = data.get('user_id')
+
+            if not user_id:
+                return JsonResponse({'error': 'User ID required'}, status=400)
+
+            # Get user
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=404)
+
+            # Check if user has email processing enabled
+            if not user.userprofile.email_processing_enabled:
+                return JsonResponse({'error': 'Email processing not enabled for user'}, status=403)
+
+            # Extract job details from email using AI (this comes from N8N)
+            job_title = email_data.get('job_title', 'Job from Email')
+            company_name = email_data.get('company_name', 'Unknown Company')
+
+            # Check for duplicates
+            existing_job = JobApplication.objects.filter(
+                user=user,
+                job_title__icontains=job_title,
+                company_name__icontains=company_name,
+                created_at__gte=timezone.now() - timedelta(days=7)
+            ).first()
+
+            if existing_job:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Duplicate job detected',
+                    'job_id': existing_job.id
+                })
+
+            # Create new job application
+            job_application = JobApplication.objects.create(
+                user=user,
+                job_title=job_title,
+                company_name=company_name,
+                location=email_data.get('location', ''),
+                salary_range=email_data.get('salary_range', ''),
+                job_url=email_data.get('job_url', ''),
+                job_description=email_data.get('job_description', ''),
+                source_platform='email_auto',
+                auto_discovered=True,
+                email_thread_id=email_data.get('email_thread_id', ''),
+                original_email_subject=email_data.get('original_email_subject', ''),
+                original_email_date=self._parse_email_date(email_data.get('original_email_date')),
+                confidence_score=email_data.get('confidence_score', 0.8),
+                processing_status='processed',
+                application_status='discovered'
+            )
+
+            # Log email processing
+            EmailProcessingLog.objects.create(
+                user=user,
+                email_subject=email_data.get('original_email_subject', ''),
+                email_sender=email_data.get('from', ''),
+                email_received_date=self._parse_email_date(email_data.get('original_email_date')),
+                email_type='job_alert',
+                processing_result='success',
+                job_application=job_application,
+                extracted_data=email_data
+            )
+
+            # Update user statistics
+            user.userprofile.jobs_discovered_via_email += 1
+            user.userprofile.emails_processed_count += 1
+            user.userprofile.last_email_processed = timezone.now()
+            user.userprofile.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Job created successfully',
+                'job_id': job_application.id,
+                'job_title': job_application.job_title,
+                'company_name': job_application.company_name
+            })
+
+        except Exception as e:
+            logger.error(f"Job discovery error: {str(e)}")
+            return JsonResponse({'error': 'Job discovery failed'}, status=500)
+
+    def _handle_interview_detection(self, data):
+        """Handle interview detection from email"""
+        try:
+            email_data = data.get('email_data', {})
+            user_id = data.get('user_id')
+
+            if not user_id:
+                return JsonResponse({'error': 'User ID required'}, status=400)
+
+            # Get user
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=404)
+
+            # Check if user has interview detection enabled
+            if not user.userprofile.interview_detection_enabled:
+                return JsonResponse({'error': 'Interview detection not enabled for user'}, status=403)
+
+            # Log interview email processing
+            EmailProcessingLog.objects.create(
+                user=user,
+                email_subject=email_data.get('original_email_subject', ''),
+                email_sender=email_data.get('from', ''),
+                email_received_date=self._parse_email_date(email_data.get('original_email_date')),
+                email_type='interview_invite',
+                processing_result='success',
+                extracted_data=email_data
+            )
+
+            # Update user statistics
+            user.userprofile.interviews_detected_count += 1
+            user.userprofile.emails_processed_count += 1
+            user.userprofile.last_email_processed = timezone.now()
+            user.userprofile.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Interview detected and logged',
+                'interview_date': email_data.get('interview_date'),
+                'interviewer_name': email_data.get('interviewer_name')
+            })
+
+        except Exception as e:
+            logger.error(f"Interview detection error: {str(e)}")
+            return JsonResponse({'error': 'Interview detection failed'}, status=500)
+
+    def _handle_interview_update(self, data):
+        """Handle interview calendar update from N8N"""
+        try:
+            interview_data = data.get('interview_data', {})
+            user_id = interview_data.get('user_id')
+
+            if not user_id:
+                return JsonResponse({'error': 'User ID required'}, status=400)
+
+            # Get user
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=404)
+
+            job_title = interview_data.get('job_title', '')
+            company_name = interview_data.get('company_name', '')
+
+            # Find existing job application or create new one
+            job_application = JobApplication.objects.filter(
+                user=user,
+                job_title__icontains=job_title,
+                company_name__icontains=company_name
+            ).first()
+
+            if not job_application:
+                # Create new job application for interview
+                job_application = JobApplication.objects.create(
+                    user=user,
+                    job_title=job_title,
+                    company_name=company_name,
+                    source_platform='email_auto',
+                    auto_discovered=True,
+                    application_status='interview_scheduled'
+                )
+
+            # Update interview details
+            job_application.interview_date = self._parse_interview_date(interview_data.get('interview_date'))
+            job_application.interviewer_name = interview_data.get('interviewer_name', '')
+            job_application.interviewer_email = interview_data.get('interviewer_email', '')
+            job_application.interview_location = interview_data.get('interview_location', '')
+            job_application.interview_type = interview_data.get('interview_type', '')
+            job_application.calendar_event_id = interview_data.get('calendar_event_id', '')
+            job_application.application_status = 'interview_scheduled'
+            job_application.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Interview updated successfully',
+                'job_id': job_application.id,
+                'interview_date': job_application.interview_date.isoformat() if job_application.interview_date else None
+            })
+
+        except Exception as e:
+            logger.error(f"Interview update error: {str(e)}")
+            return JsonResponse({'error': 'Interview update failed'}, status=500)
+
+    def _handle_email_classification(self, data):
+        """Handle email classification results from N8N"""
+        try:
+            email_data = data.get('email_data', {})
+            classification = data.get('email_classification', 'other')
+            confidence = data.get('confidence_score', 0.0)
+            user_id = data.get('user_id')
+
+            if not user_id:
+                return JsonResponse({'error': 'User ID required'}, status=400)
+
+            # Get user
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=404)
+
+            # Log classification result
+            EmailProcessingLog.objects.create(
+                user=user,
+                email_subject=email_data.get('subject', ''),
+                email_sender=email_data.get('from', ''),
+                email_received_date=self._parse_email_date(email_data.get('date')),
+                email_type=classification,
+                processing_result='success' if confidence > 0.5 else 'manual_review',
+                extracted_data={
+                    'classification': classification,
+                    'confidence': confidence,
+                    'original_data': email_data
+                }
+            )
+
+            return JsonResponse({
+                'success': True,
+                'classification': classification,
+                'confidence': confidence,
+                'action_required': confidence < 0.5
+            })
+
+        except Exception as e:
+            logger.error(f"Email classification error: {str(e)}")
+            return JsonResponse({'error': 'Email classification failed'}, status=500)
+
+    def _parse_email_date(self, date_string):
+        """Parse email date string to datetime"""
+        if not date_string:
+            return timezone.now()
+
+        try:
+            # Try different date formats
+            formats = [
+                '%Y-%m-%dT%H:%M:%S.%fZ',
+                '%Y-%m-%dT%H:%M:%SZ',
+                '%Y-%m-%d %H:%M:%S',
+                '%Y-%m-%d',
+            ]
+
+            for fmt in formats:
+                try:
+                    return datetime.strptime(date_string, fmt).replace(tzinfo=timezone.utc)
+                except ValueError:
+                    continue
+
+            return timezone.now()
+        except:
+            return timezone.now()
+
+    def _parse_interview_date(self, date_string):
+        """Parse interview date string to datetime"""
+        if not date_string:
+            return None
+
+        try:
+            # Handle ISO format dates
+            if 'T' in date_string:
+                return datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+            else:
+                return datetime.strptime(date_string, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        except:
+            return None
+
+
+class EmailProcessingStatsView(View):
+    """API endpoint for email processing statistics"""
+
+    def get(self, request):
+        """Get email processing statistics"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+
+        user = request.user
+
+        # Get email processing statistics
+        total_emails = EmailProcessingLog.objects.filter(user=user).count()
+        successful_processing = EmailProcessingLog.objects.filter(
+            user=user,
+            processing_result='success'
+        ).count()
+
+        job_alerts = EmailProcessingLog.objects.filter(
+            user=user,
+            email_type='job_alert',
+            processing_result='success'
+        ).count()
+
+        interviews = EmailProcessingLog.objects.filter(
+            user=user,
+            email_type='interview_invite',
+            processing_result='success'
+        ).count()
+
+        # Recent activity (last 7 days)
+        week_ago = timezone.now() - timedelta(days=7)
+        recent_emails = EmailProcessingLog.objects.filter(
+            user=user,
+            processing_date__gte=week_ago
+        ).count()
+
+        # Jobs discovered via email
+        email_jobs = JobApplication.objects.filter(
+            user=user,
+            source_platform__in=['email_auto', 'email_forward']
+        ).count()
+
+        # Success rate
+        success_rate = (successful_processing / total_emails * 100) if total_emails > 0 else 0
+
+        return JsonResponse({
+            'total_emails_processed': total_emails,
+            'successful_processing': successful_processing,
+            'job_alerts_found': job_alerts,
+            'interviews_detected': interviews,
+            'recent_activity': recent_emails,
+            'jobs_discovered': email_jobs,
+            'success_rate': round(success_rate, 1),
+            'processing_enabled': user.userprofile.email_processing_enabled,
+            'last_processed': user.userprofile.last_email_processed.isoformat() if user.userprofile.last_email_processed else None
+        })
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def score_job_with_ai(request, job_id):
+    """Score job using Groq AI with fallback"""
+    try:
+        job = JobApplication.objects.get(id=job_id, user=request.user)
+
+        # Get user profile for scoring context
+        try:
+            profile = request.user.userprofile
+            user_context = {
+                'skills': profile.skills or [],
+                'experience_years': profile.experience_years or 0,
+                'current_position': profile.current_position or '',
+                'target_positions': profile.target_positions or [],
+                'preferred_locations': profile.preferred_locations or [],
+                'salary_expectations': getattr(profile, 'salary_expectations', '')
+            }
+        except:
+            user_context = {}
+
+        # Prepare prompt for Groq AI
+        prompt = f"""
+Analyze this job posting and score it for the user profile:
+
+JOB DETAILS:
+Title: {job.job_title}
+Company: {job.company_name}
+Location: {job.location}
+Salary: {job.salary_range}
+Employment Type: {job.employment_type}
+Experience Level: {job.experience_level}
+Remote Type: {job.remote_type}
+Description: {job.job_description[:1000]}...
+
+USER PROFILE:
+Current Position: {user_context.get('current_position', '')}
+Experience Years: {user_context.get('experience_years', 0)}
+Skills: {', '.join(user_context.get('skills', []))}
+Target Positions: {', '.join(user_context.get('target_positions', []))}
+Preferred Locations: {', '.join(user_context.get('preferred_locations', []))}
+
+Provide detailed scoring (0-100) for each dimension:
+1. Skill Match Score
+2. Experience Match Score  
+3. Location Match Score
+4. Salary Match Score
+5. Culture Match Score
+6. Growth Potential Score
+7. Risk Assessment Score
+
+Also provide:
+- Matched Skills (list)
+- Missing Skills (list)
+- Green Flags (positive indicators, list)
+- Red Flags (concerns, list)
+- AI Reasoning (explanation)
+- Confidence Score (0-1)
+
+Return JSON format only:
+{{
+  "skill_match_score": 85,
+  "experience_match_score": 90,
+  "location_match_score": 75,
+  "salary_match_score": 80,
+  "culture_match_score": 70,
+  "growth_potential_score": 85,
+  "risk_assessment_score": 90,
+  "matched_skills": ["Python", "Django"],
+  "missing_skills": ["React", "AWS"],
+  "green_flags": ["Good company culture", "Growth opportunities"],
+  "red_flags": ["High turnover mentioned"],
+  "ai_reasoning": "Strong technical match with good growth potential...",
+  "confidence_score": 0.85
+}}
+"""
+
+        print(f"Scoring job {job_id} for user {request.user.username}")  # Debug log
+
+        # Try Groq API first
+        groq_response = call_groq_api(prompt)
+
+        # If Groq fails, use fallback scoring
+        if not groq_response:
+            print("Using fallback scoring...")
+            groq_response = {
+                'skill_match_score': 75,
+                'experience_match_score': 80,
+                'location_match_score': 85,
+                'salary_match_score': 70,
+                'culture_match_score': 75,
+                'growth_potential_score': 80,
+                'risk_assessment_score': 85,
+                'matched_skills': ['General skills match', 'Relevant experience'],
+                'missing_skills': ['Some advanced skills may be needed'],
+                'green_flags': ['Good opportunity', 'Company growth potential'],
+                'red_flags': ['Standard requirements', 'Competitive field'],
+                'ai_reasoning': 'Fallback scoring applied - good overall match based on job title and company',
+                'confidence_score': 0.7
+            }
+
+        # Update job with AI scores
+        job.skill_match_score = groq_response.get('skill_match_score', 75)
+        job.experience_match_score = groq_response.get('experience_match_score', 80)
+        job.location_match_score = groq_response.get('location_match_score', 85)
+        job.salary_match_score = groq_response.get('salary_match_score', 70)
+        job.culture_match_score = groq_response.get('culture_match_score', 75)
+        job.growth_potential_score = groq_response.get('growth_potential_score', 80)
+        job.risk_assessment_score = groq_response.get('risk_assessment_score', 85)
+        job.matched_skills = groq_response.get('matched_skills', [])
+        job.missing_skills = groq_response.get('missing_skills', [])
+        job.green_flags = groq_response.get('green_flags', [])
+        job.red_flags = groq_response.get('red_flags', [])
+        job.ai_reasoning = groq_response.get('ai_reasoning', '')
+        job.confidence_score = groq_response.get('confidence_score', 0.7)
+
+        # Calculate overall score
+        job.calculate_ai_score()
+        job.save()
+
+        print(f"Job {job_id} scored successfully with {job.overall_match_score}%")  # Debug log
+
+        return JsonResponse({
+            'success': True,
+            'scores': {
+                'overall_match_score': job.overall_match_score,
+                'skill_match_score': job.skill_match_score,
+                'experience_match_score': job.experience_match_score,
+                'recommendation_level': job.recommendation_level,
+                'confidence_score': job.confidence_score
+            },
+            'analysis': {
+                'matched_skills': job.matched_skills,
+                'missing_skills': job.missing_skills,
+                'green_flags': job.green_flags,
+                'red_flags': job.red_flags,
+                'ai_reasoning': job.ai_reasoning
+            }
+        })
+
+    except JobApplication.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Job not found'})
+    except Exception as e:
+        print(f"Scoring error: {e}")  # Debug log
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def approve_job(request, job_id):
+    """Approve job for document generation"""
+    try:
+        job = JobApplication.objects.get(id=job_id, user=request.user)
+        job.approval_status = 'approved'
+        job.approved_at = timezone.now()
+        job.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Job approved for document generation'
+        })
+    except JobApplication.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Job not found'})
+
+
+def call_groq_api(prompt):
+    """Call Groq API for AI analysis with better error handling"""
+    try:
+        groq_api_key = os.getenv('GROQ_API_KEY')
+        print(f"Groq API Key exists: {bool(groq_api_key)}")  # Debug log
+
+        if not groq_api_key:
+            print("ERROR: GROQ_API_KEY not found in environment")
+            return None
+
+        print("Calling Groq API...")  # Debug log
+        response = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {groq_api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'llama3-8b-8192',
+                'messages': [
+                    {'role': 'user', 'content': prompt}
+                ],
+                'temperature': 0.1,
+                'max_tokens': 1000
+            },
+            timeout=30  # 30 second timeout
+        )
+
+        print(f"Groq API Response Status: {response.status_code}")  # Debug log
+
+        if response.status_code == 200:
+            result = response.json()
+            content = result['choices'][0]['message']['content']
+            print(f"Groq API Response: {content[:200]}...")  # Debug log (first 200 chars)
+
+            # Try to parse JSON
+            try:
+                parsed_content = json.loads(content)
+                return parsed_content
+            except json.JSONDecodeError as e:
+                print(f"JSON Parse Error: {e}")
+                print(f"Raw content: {content}")
+                # Return a fallback response if JSON parsing fails
+                return {
+                    'skill_match_score': 75,
+                    'experience_match_score': 70,
+                    'location_match_score': 80,
+                    'salary_match_score': 75,
+                    'culture_match_score': 70,
+                    'growth_potential_score': 75,
+                    'risk_assessment_score': 80,
+                    'matched_skills': ['Python', 'Software Development'],
+                    'missing_skills': ['Advanced skills required'],
+                    'green_flags': ['Good company reputation'],
+                    'red_flags': ['High requirements'],
+                    'ai_reasoning': 'AI analysis completed with fallback scoring due to parsing issue',
+                    'confidence_score': 0.7
+                }
+        else:
+            print(f"Groq API Error: {response.status_code} - {response.text}")
+            return None
+
+    except requests.exceptions.Timeout:
+        print("Groq API Timeout after 30 seconds")
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"Groq API Request Error: {e}")
+        return None
+    except Exception as e:
+        print(f"Groq API Unexpected Error: {e}")
+        return None
+

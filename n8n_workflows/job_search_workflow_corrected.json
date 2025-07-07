@@ -1,0 +1,229 @@
+{
+  "name": "Job Search Automation Workflow (Corrected)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-search",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-job-search",
+      "name": "Job Search Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "job-search-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming job search request\nconst requestData = items[0].json.body;\nconst userId = requestData.user_id;\nconst configId = requestData.config_id; // Expecting config_id from Django trigger\nconst searchCategories = requestData.categories || [];\nconst jobCount = requestData.job_count || 15;\n\n// Smart distribution of jobs across categories\nconst jobsPerCategory = Math.ceil(jobCount / searchCategories.length);\n\n// Prepare search parameters\nconst searchParams = {\n  user_id: userId,\n  config_id: configId,\n  categories: searchCategories,\n  jobs_per_category: jobsPerCategory\n};\n\nreturn [{ json: searchParams }];"
+      },
+      "id": "parse-search-request",
+      "name": "Parse Search Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://ca.indeed.com/rss?q={{ $json.categories.join(' OR ') }}&limit={{ $json.jobs_per_category }}"
+      },
+      "name": "Search Indeed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://stackoverflow.com/jobs/feed?q={{ $json.categories.join(' OR ') }}&l=&d=20&u=Miles"
+      },
+      "name": "Search Stack Overflow",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine and process job results from all sources\nconst allJobs = [];\n$items('Search Indeed').forEach(item => {\n  item.json.source_platform = 'Indeed';\n  allJobs.push(item.json);\n});\n$items('Search Stack Overflow').forEach(item => {\n  item.json.source_platform = 'Stack Overflow';\n  allJobs.push(item.json);\n});\n\n// Deduplicate jobs by title and company\nconst seen = new Set();\nconst uniqueJobs = allJobs.filter(item => {\n    const key = `${item.title}_${item.company}`.toLowerCase();\n    if (seen.has(key)) {\n        return false;\n    }\n    seen.add(key);\n    return true;\n});\n\n// Format jobs for AI Scoring\nconst formattedJobs = uniqueJobs.map(job => {\n  return {\n    json: {\n      job_title: job.title,\n      company_name: job.company || 'Unknown',\n      job_url: job.link,\n      job_description: job.contentSnippet || job.description,\n      location: job.location || '',\n      source_platform: job.source_platform\n    }\n  };\n});\n\nreturn formattedJobs;"
+      },
+      "id": "process-job-results",
+      "name": "Process Job Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "mixtral-8x7b-32768",
+        "messages": {
+          "chatInput": "Rate the relevance of this job on a scale of 0 to 100 based on the title and description. Job Title: {{ $json.job_title }}. Description: {{ $json.job_description }}. Respond with only the numeric score."
+        }
+      },
+      "name": "AI Job Scoring",
+      "type": "n8n-nodes-base.groq",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "YOUR_GROQ_API_CREDENTIAL_ID",
+          "name": "Groq API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all scored jobs into a single list for Django\nconst jobs = $items().map(item => {\n  const jobData = item.json; // Data from 'Process Job Results'\n  const scoreData = $items('AI Job Scoring')[$runIndex].json; // Corresponding score\n  \n  return {\n    job_title: jobData.job_title,\n    company_name: jobData.company_name,\n    job_url: jobData.job_url,\n    job_description: jobData.job_description,\n    salary_range: '', // Add if available\n    location: jobData.location,\n    remote_option: jobData.job_description.toLowerCase().includes('remote') ? 'Remote' : 'On-site',\n    source_platform: jobData.source_platform,\n    match_score: parseFloat(scoreData.choices[0].message.content) || 0\n  };\n});\n\nconst webhookData = {\n  user_id: $items('Parse Search Request')[0].json.user_id,\n  config_id: $items('Parse Search Request')[0].json.config_id,\n  jobs: jobs\n};\n\nreturn [ { json: webhookData } ];"
+      },
+      "name": "Format for Django",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://ai.jobautomation.me/api/n8n/webhook/job-search/",
+        "method": "POST",
+        "sendBody": true,
+        "body": "={{JSON.stringify($json)}}",
+        "options": {}
+      },
+      "name": "Send to Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{JSON.stringify($items('Send to Django')[0].json)}}"
+      },
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "webhook-job-search": {
+      "main": [
+        [
+          {
+            "node": "Parse Search Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Search Request": {
+      "main": [
+        [
+          {
+            "node": "Search Indeed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search Stack Overflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Indeed": {
+      "main": [
+        [
+          {
+            "node": "Process Job Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Stack Overflow": {
+      "main": [
+        [
+          {
+            "node": "Process Job Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Process Job Results": {
+      "main": [
+        [
+          {
+            "node": "AI Job Scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Job Scoring": {
+      "main": [
+        [
+          {
+            "node": "Format for Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for Django": {
+      "main": [
+        [
+          {
+            "node": "Send to Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Django": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

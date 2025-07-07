@@ -1,0 +1,1378 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% csrf_token %}
+
+{% block title %}Job Approval Dashboard{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="mb-6">
+    <div class="flex items-center justify-between mb-2">
+        <div>
+            <h1 class="text-2xl font-bold text-primary mb-1">
+                <i class="fas fa-clipboard-check mr-2"></i>Job Approval Center
+            </h1>
+            <p class="text-secondary">Review and approve jobs for document generation</p>
+        </div>
+        <a href="{% url 'dashboard:dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="card">
+        <div class="card-body text-center">
+            <div class="stat-icon stat-warning mb-3">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-primary mb-1">{{ pending_count }}</h3>
+            <p class="text-secondary">Pending Review</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body text-center">
+            <div class="stat-icon stat-success mb-3">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-primary mb-1">{{ approved_count }}</h3>
+            <p class="text-secondary">Approved</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body text-center">
+            <div class="stat-icon stat-info mb-3">
+                <i class="fas fa-star"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-primary mb-1">{{ high_scoring_count }}</h3>
+            <p class="text-secondary">High Scoring (85%+)</p>
+        </div>
+    </div>
+</div>
+
+<!-- Jobs List -->
+<!-- Jobs List with Tabs -->
+<div class="job-tabs-container">
+    <!-- Tab Navigation -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="pending">
+            <i class="fas fa-clock"></i>
+            <span>Pending Review ({{ pending_count }})</span>
+        </button>
+        <button class="tab-btn" data-tab="approved">
+            <i class="fas fa-check-circle"></i>
+            <span>Recently Approved ({{ approved_count }})</span>
+        </button>
+        <button class="tab-btn" data-tab="high-scoring">
+            <i class="fas fa-star"></i>
+            <span>High Scoring ({{ high_scoring_count }})</span>
+        </button>
+        <button class="tab-btn" data-tab="all">
+            <i class="fas fa-list"></i>
+            <span>All Jobs ({{ total_jobs }})</span>
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Pending Jobs Tab -->
+        <div class="tab-pane active" id="pending-tab">
+            <div class="job-container">
+                {% if pending_jobs %}
+                    {% for job in pending_jobs %}
+                    <div class="job-card" data-job-id="{{ job.id }}">
+                        <!-- Your existing job card content here -->
+                        <!-- Job Header -->
+                        <div class="job-header">
+                            <div class="job-info-section">
+                                <!-- Score Badge -->
+                                <div class="score-badge-container">
+                                    {% if job.overall_match_score > 0 %}
+                                    <div class="score-badge score-{% if job.overall_match_score >= 85 %}excellent{% elif job.overall_match_score >= 70 %}good{% elif job.overall_match_score >= 50 %}average{% else %}poor{% endif %}">
+                                        <span class="score-number">{{ job.overall_match_score|floatformat:0 }}%</span>
+                                        <span class="score-label">Match</span>
+                                    </div>
+                                    {% else %}
+                                    <div class="score-badge score-unscored">
+                                        <span class="score-number">--</span>
+                                        <span class="score-label">Not Scored</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Job Details -->
+                                <div class="job-details">
+                                    <div class="job-title-section">
+                                        <h3 class="job-title">{{ job.job_title }}</h3>
+                                        <h4 class="company-name">{{ job.company_name }}</h4>
+                                    </div>
+
+                                    <div class="job-meta-grid">
+                                        <div class="meta-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>{{ job.location|default:"Remote" }}</span>
+                                        </div>
+                                        {% if job.salary_range %}
+                                        <div class="meta-item">
+                                            <i class="fas fa-dollar-sign"></i>
+                                            <span>{{ job.salary_range }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="meta-item">
+                                            <i class="fas fa-building"></i>
+                                            <span>{{ job.source_platform|title }}</span>
+                                        </div>
+                                        <div class="meta-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ job.created_at|date:"M j, Y" }}</span>
+                                        </div>
+                                        {% if job.saved_from_extension %}
+                                        <div class="meta-item extension-tag">
+                                            <i class="fas fa-puzzle-piece"></i>
+                                            <span>Chrome Extension</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="action-buttons">
+                                {% if job.overall_match_score <= 0 %}
+                                <button class="btn-action btn-score score-job" data-job-id="{{ job.id }}">
+                                    <i class="fas fa-robot"></i>
+                                    <span>Score Job</span>
+                                </button>
+                                {% endif %}
+                                <button class="btn-action btn-approve approve-job" data-job-id="{{ job.id }}">
+                                    <i class="fas fa-check"></i>
+                                    <span>Approve</span>
+                                </button>
+                                <a href="{{ job.job_url }}" target="_blank" class="btn-action btn-view">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    <span>View Job</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- AI Analysis Section (if scored) -->
+                        {% if job.overall_match_score > 0 and job.skill_match_score > 0 %}
+                        <!-- Your existing AI analysis section -->
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                        <h3>No jobs pending review</h3>
+                        <p>All jobs have been reviewed. Use your Chrome extension to save more jobs!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Approved Jobs Tab -->
+        <div class="tab-pane" id="approved-tab">
+            <div class="job-container">
+                {% if approved_jobs %}
+                    {% for job in approved_jobs %}
+                    <div class="job-card approved-card">
+                        <div class="job-header">
+                            <div class="job-info-section">
+                                <!-- Approved Badge -->
+                                <div class="score-badge-container">
+                                    <div class="score-badge score-approved">
+                                        <span class="score-number"><i class="fas fa-check"></i></span>
+                                        <span class="score-label">Approved</span>
+                                    </div>
+                                </div>
+
+                                <div class="job-details">
+                                    <div class="job-title-section">
+                                        <h3 class="job-title">{{ job.job_title }}</h3>
+                                        <h4 class="company-name">{{ job.company_name }}</h4>
+                                    </div>
+
+                                    <div class="job-meta-grid">
+                                        <div class="meta-item">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            <span>Approved {{ job.approved_at|timesince }} ago</span>
+                                        </div>
+                                        <div class="meta-item">
+                                            <i class="fas fa-star"></i>
+                                            <span>{{ job.overall_match_score|floatformat:0 }}% match</span>
+                                        </div>
+                                        <div class="meta-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ job.created_at|date:"M j, Y" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions for approved jobs -->
+                            <div class="action-buttons">
+                                <a href="{% url 'jobs:application_detail' job.id %}" class="btn-action btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                    <span>View Details</span>
+                                </a>
+                                <a href="{{ job.job_url }}" target="_blank" class="btn-action btn-view">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    <span>View Job</span>
+                                </a>
+                                <button class="btn-action btn-documents" data-job-id="{{ job.id }}">
+                                    <i class="fas fa-file-alt"></i>
+                                    <span>Documents</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-check-circle"></i></div>
+                        <h3>No approved jobs yet</h3>
+                        <p>Approved jobs will appear here for easy access to documents and tracking.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- High Scoring Jobs Tab -->
+        <div class="tab-pane" id="high-scoring-tab">
+            <div class="job-container">
+                {% if high_scoring_jobs %}
+                    {% for job in high_scoring_jobs %}
+                    <div class="job-card high-score-card">
+                        <!-- Similar structure to pending jobs but with high-score styling -->
+                        <div class="job-header">
+                            <div class="job-info-section">
+                                <div class="score-badge-container">
+                                    <div class="score-badge score-excellent">
+                                        <span class="score-number">{{ job.overall_match_score|floatformat:0 }}%</span>
+                                        <span class="score-label">Top Match</span>
+                                    </div>
+                                </div>
+
+                                <div class="job-details">
+                                    <div class="job-title-section">
+                                        <h3 class="job-title">{{ job.job_title }}</h3>
+                                        <h4 class="company-name">{{ job.company_name }}</h4>
+                                    </div>
+
+                                    <div class="job-meta-grid">
+                                        <div class="meta-item">
+                                            <i class="fas fa-trophy text-warning"></i>
+                                            <span>Top {{ job.overall_match_score|floatformat:0 }}% Match</span>
+                                        </div>
+                                        <div class="meta-item">
+                                            <i class="fas fa-thumbs-up text-success"></i>
+                                            <span>{{ job.get_recommendation_level_display }}</span>
+                                        </div>
+                                        <div class="meta-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ job.created_at|date:"M j, Y" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                {% if job.approval_status == 'pending' %}
+                                <button class="btn-action btn-approve approve-job" data-job-id="{{ job.id }}">
+                                    <i class="fas fa-check"></i>
+                                    <span>Approve Now</span>
+                                </button>
+                                {% else %}
+                                <a href="{% url 'jobs:application_detail' job.id %}" class="btn-action btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                    <span>View Details</span>
+                                </a>
+                                {% endif %}
+                                <a href="{{ job.job_url }}" target="_blank" class="btn-action btn-view">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    <span>View Job</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-star"></i></div>
+                        <h3>No high-scoring jobs yet</h3>
+                        <p>Jobs with 85%+ match scores will appear here.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- All Jobs Tab -->
+        <div class="tab-pane" id="all-tab">
+            <div class="job-container">
+                {% if all_jobs %}
+                    {% for job in all_jobs %}
+                    <div class="job-card {% if job.approval_status == 'approved' %}approved-card{% elif job.overall_match_score >= 85 %}high-score-card{% endif %}">
+                        <div class="job-header">
+                            <div class="job-info-section">
+                                <div class="score-badge-container">
+                                    {% if job.approval_status == 'approved' %}
+                                    <div class="score-badge score-approved">
+                                        <span class="score-number"><i class="fas fa-check"></i></span>
+                                        <span class="score-label">Approved</span>
+                                    </div>
+                                    {% elif job.overall_match_score > 0 %}
+                                    <div class="score-badge score-{% if job.overall_match_score >= 85 %}excellent{% elif job.overall_match_score >= 70 %}good{% elif job.overall_match_score >= 50 %}average{% else %}poor{% endif %}">
+                                        <span class="score-number">{{ job.overall_match_score|floatformat:0 }}%</span>
+                                        <span class="score-label">Match</span>
+                                    </div>
+                                    {% else %}
+                                    <div class="score-badge score-unscored">
+                                        <span class="score-number">--</span>
+                                        <span class="score-label">Not Scored</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="job-details">
+                                    <div class="job-title-section">
+                                        <h3 class="job-title">{{ job.job_title }}</h3>
+                                        <h4 class="company-name">{{ job.company_name }}</h4>
+                                    </div>
+
+                                    <div class="job-meta-grid">
+                                        <div class="meta-item">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="status-{{ job.approval_status }}">{{ job.get_approval_status_display }}</span>
+                                        </div>
+                                        {% if job.overall_match_score > 0 %}
+                                        <div class="meta-item">
+                                            <i class="fas fa-percentage"></i>
+                                            <span>{{ job.overall_match_score|floatformat:0 }}% match</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="meta-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ job.created_at|date:"M j, Y" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <a href="{% url 'jobs:application_detail' job.id %}" class="btn-action btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                    <span>View Details</span>
+                                </a>
+                                <a href="{{ job.job_url }}" target="_blank" class="btn-action btn-view">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    <span>View Job</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-briefcase"></i></div>
+                        <h3>No jobs found</h3>
+                        <p>Start saving jobs using your Chrome extension!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mb-0 text-primary">Processing with AI...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Job Approval Styles */
+/* Tab Navigation */
+.job-tabs-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.tabs-nav {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+    overflow-x: auto;
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background: var(--bg-secondary);
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.tab-btn i {
+    font-size: 1rem;
+}
+
+/* Tab Content */
+.tab-content {
+    padding: 1.5rem;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Approved Job Cards */
+.approved-card {
+    border-left: 4px solid var(--success-500);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.high-score-card {
+    border-left: 4px solid var(--warning-500);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.score-approved {
+    background: linear-gradient(135deg, var(--success-500), var(--success-600));
+    color: white;
+}
+
+.score-approved::before {
+    background: var(--success-500);
+}
+
+/* Status Colors */
+.status-pending {
+    color: var(--warning-500);
+    font-weight: 600;
+}
+
+.status-approved {
+    color: var(--success-500);
+    font-weight: 600;
+}
+
+.status-applied {
+    color: var(--info-500);
+    font-weight: 600;
+}
+
+.status-rejected {
+    color: var(--danger-500);
+    font-weight: 600;
+}
+
+/* Documents Button */
+.btn-documents {
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--primary-500);
+    border-color: var(--primary-500);
+}
+
+.btn-documents:hover {
+    background: var(--primary-500);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Responsive Tabs */
+@media (max-width: 768px) {
+    .tabs-nav {
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        flex: 1;
+        min-width: 0;
+        padding: 0.75rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    .tab-btn span {
+        display: none;
+    }
+
+    .tab-btn i {
+        font-size: 1.2rem;
+    }
+}
+/* Stats Icons */
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto;
+}
+
+.stat-warning {
+    background: var(--warning-50);
+    color: var(--warning-500);
+}
+
+.stat-success {
+    background: var(--success-50);
+    color: var(--success-500);
+}
+
+.stat-info {
+    background: var(--info-50);
+    color: var(--info-500);
+}
+
+/* Job Container */
+.job-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Job Cards */
+.job-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-normal);
+    overflow: hidden;
+}
+
+.job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-primary);
+}
+
+/* Job Header */
+.job-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1.5rem;
+    gap: 1.5rem;
+}
+
+.job-info-section {
+    display: flex;
+    gap: 1.5rem;
+    flex: 1;
+}
+
+/* Score Badge */
+.score-badge-container {
+    flex-shrink: 0;
+}
+
+.score-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    text-align: center;
+    position: relative;
+    background: conic-gradient(var(--accent-primary) 0deg, var(--bg-tertiary) 360deg);
+    padding: 2px;
+}
+
+.score-badge::before {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+}
+
+.score-number,
+.score-label {
+    position: relative;
+    z-index: 1;
+}
+
+.score-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.score-label {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.score-excellent {
+    background: conic-gradient(var(--success-500) 0deg, var(--success-500) 85%, var(--bg-tertiary) 85%);
+}
+
+.score-good {
+    background: conic-gradient(var(--info-500) 0deg, var(--info-500) 70%, var(--bg-tertiary) 70%);
+}
+
+.score-average {
+    background: conic-gradient(var(--warning-500) 0deg, var(--warning-500) 50%, var(--bg-tertiary) 50%);
+}
+
+.score-poor {
+    background: conic-gradient(var(--danger-500) 0deg, var(--danger-500) 30%, var(--bg-tertiary) 30%);
+}
+
+.score-unscored {
+    background: var(--bg-tertiary);
+}
+
+/* Job Details */
+.job-details {
+    flex: 1;
+}
+
+.job-title-section {
+    margin-bottom: 1rem;
+}
+
+.job-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    line-height: 1.3;
+}
+
+.company-name {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.job-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.meta-item i {
+    width: 16px;
+    color: var(--text-tertiary);
+    text-align: center;
+}
+
+.extension-tag {
+    color: var(--accent-primary) !important;
+}
+
+.extension-tag i {
+    color: var(--accent-primary) !important;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    min-width: 120px;
+    justify-content: center;
+}
+
+.btn-score {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--info-500);
+    border-color: var(--info-500);
+}
+
+.btn-score:hover {
+    background: var(--info-500);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-approve {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--success-500);
+    border-color: var(--success-500);
+}
+
+.btn-approve:hover {
+    background: var(--success-500);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-view {
+    background: rgba(107, 114, 128, 0.1);
+    color: var(--text-secondary);
+    border-color: var(--border-secondary);
+}
+
+.btn-view:hover {
+    background: var(--text-secondary);
+    color: var(--bg-primary);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+/* AI Analysis Section */
+.ai-analysis-section {
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-primary);
+    padding: 1.5rem;
+}
+
+.analysis-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.analysis-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.analysis-title i {
+    color: var(--accent-primary);
+}
+
+.confidence-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.confidence-label {
+    color: var(--text-tertiary);
+}
+
+.confidence-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Score Breakdown */
+.score-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.score-item {
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
+}
+
+.score-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.score-category {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.score-percentage {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.progress-container {
+    width: 100%;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.8s ease;
+    border-radius: 4px;
+}
+
+.skills-bar {
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+}
+
+.experience-bar {
+    background: linear-gradient(90deg, #10b981, #047857);
+}
+
+.location-bar {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.salary-bar {
+    background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+}
+
+/* Insights Section */
+.insights-section {
+    margin-bottom: 1.5rem;
+}
+
+.insight-group {
+    margin-bottom: 1rem;
+}
+
+.insight-group:last-child {
+    margin-bottom: 0;
+}
+
+.insight-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.insight-group.positive .insight-header {
+    color: var(--success-500);
+}
+
+.insight-group.negative .insight-header {
+    color: var(--warning-500);
+}
+
+.insight-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.insight-tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-xl);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid;
+}
+
+.insight-tag.positive {
+    background: var(--success-50);
+    color: var(--success-500);
+    border-color: var(--success-500);
+}
+
+.insight-tag.negative {
+    background: var(--warning-50);
+    color: var(--warning-500);
+    border-color: var(--warning-500);
+}
+
+/* Recommendation Section */
+.recommendation-section {
+    text-align: center;
+}
+
+.recommendation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-xl);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 2px solid;
+    margin-bottom: 1rem;
+}
+
+.rec-highly_recommended {
+    background: var(--success-50);
+    color: var(--success-500);
+    border-color: var(--success-500);
+}
+
+.rec-recommended {
+    background: var(--info-50);
+    color: var(--info-500);
+    border-color: var(--info-500);
+}
+
+.rec-consider {
+    background: var(--warning-50);
+    color: var(--warning-500);
+    border-color: var(--warning-500);
+}
+
+.rec-not_recommended {
+    background: var(--danger-50);
+    color: var(--danger-500);
+    border-color: var(--danger-500);
+}
+
+.ai-reasoning {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+    line-height: 1.5;
+    margin: 0;
+    text-align: left;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-primary);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1.5rem;
+}
+
+.empty-state h3 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .job-meta-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .score-breakdown {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .job-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .job-info-section {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .action-buttons {
+        flex-direction: row;
+        justify-content: stretch;
+    }
+
+    .btn-action {
+        flex: 1;
+        min-width: auto;
+    }
+
+    .job-meta-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .score-breakdown {
+        grid-template-columns: 1fr;
+    }
+
+    .insights-section {
+        margin-bottom: 1rem;
+    }
+
+    .insight-items {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 576px) {
+    .job-card {
+        margin: 0 -0.5rem;
+    }
+
+    .job-header,
+    .ai-analysis-section {
+        padding: 1rem;
+    }
+
+    .score-badge {
+        width: 60px;
+        height: 60px;
+    }
+
+    .score-number {
+        font-size: 0.9rem;
+    }
+
+    .score-label {
+        font-size: 0.6rem;
+    }
+
+    .job-title {
+        font-size: 1.1rem;
+    }
+
+    .company-name {
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+<script>
+console.log('🚀 Starting Job Approval Script');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📱 DOM Content Loaded');
+
+    // Check for elements
+    const scoreButtons = document.querySelectorAll('.score-job');
+    const approveButtons = document.querySelectorAll('.approve-job');
+
+    console.log('🎯 Score buttons found:', scoreButtons.length);
+    console.log('✅ Approve buttons found:', approveButtons.length);
+
+    // Job scoring
+    scoreButtons.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const jobId = this.dataset.jobId;
+            console.log('🎯 Scoring job:', jobId);
+            await scoreJob(jobId, this);
+        });
+    });
+
+    // Job approval
+    approveButtons.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const jobId = this.dataset.jobId;
+            console.log('✅ Approving job:', jobId);
+            await approveJob(jobId, this);
+        });
+    });
+
+    async function scoreJob(jobId, button) {
+        try {
+            console.log('📊 Starting to score job:', jobId);
+
+            // Update button state
+            button.disabled = true;
+            const originalHtml = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Scoring...</span>';
+
+            // Show loading modal
+            showLoadingModal('Analyzing job with AI...');
+
+            const response = await fetch(`/jobs/${jobId}/score/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('📥 Response status:', response.status);
+
+            const result = await response.json();
+            console.log('📋 Response data:', result);
+
+            hideLoadingModal();
+
+            if (result.success) {
+                console.log('✅ Scoring successful!');
+
+                // Show success notification
+                showSuccessModal(
+                    'Job Scored Successfully!',
+                    `Overall Match: ${result.scores.overall_match_score}%<br>
+                     Recommendation: ${result.scores.recommendation_level.replace('_', ' ').toUpperCase()}<br>
+                     <small>Page will reload to show analysis</small>`
+                );
+
+                setTimeout(() => location.reload(), 3000);
+            } else {
+                console.error('❌ Scoring failed:', result.error);
+                alert('❌ Scoring failed: ' + (result.error || 'Unknown error'));
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+           }
+       } catch (error) {
+           console.error('💥 Scoring error:', error);
+           hideLoadingModal();
+           alert('💥 Error scoring job: ' + error.message);
+           button.disabled = false;
+           button.innerHTML = originalHtml;
+       }
+   }
+
+   async function approveJob(jobId, button) {
+       try {
+           console.log('✅ Starting to approve job:', jobId);
+
+           // Update button state
+           button.disabled = true;
+           const originalHtml = button.innerHTML;
+           button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Approving...</span>';
+
+           const response = await fetch(`/jobs/${jobId}/approve/`, {
+               method: 'POST',
+               headers: {
+                   'X-CSRFToken': getCsrfToken(),
+                   'Content-Type': 'application/json'
+               }
+           });
+
+           console.log('📥 Approval response status:', response.status);
+
+           const result = await response.json();
+           console.log('📋 Approval response data:', result);
+
+           if (result.success) {
+               console.log('✅ Approval successful!');
+
+               // Show success message
+               showSuccessModal(
+                   'Job Approved!',
+                   'This job has been approved for document generation.<br><small>Removing from pending list...</small>'
+               );
+
+               // Remove job from view with animation
+               const jobCard = document.querySelector(`[data-job-id="${jobId}"]`);
+               if (jobCard) {
+                   jobCard.style.transform = 'translateX(100%)';
+                   jobCard.style.opacity = '0';
+                   setTimeout(() => jobCard.remove(), 500);
+               }
+
+               // Update stats counter
+               updatePendingCount();
+
+           } else {
+               console.error('❌ Approval failed:', result.error);
+               alert('❌ Approval failed: ' + (result.error || 'Unknown error'));
+               button.disabled = false;
+               button.innerHTML = originalHtml;
+           }
+       } catch (error) {
+           console.error('💥 Approval error:', error);
+           alert('💥 Error approving job: ' + error.message);
+           button.disabled = false;
+           button.innerHTML = originalHtml;
+       }
+   }
+
+   function showLoadingModal(message) {
+       console.log('⏳ Showing loading modal:', message);
+       const modal = document.getElementById('loadingModal');
+       if (modal) {
+           const messageEl = modal.querySelector('p');
+           if (messageEl) messageEl.textContent = message;
+           new bootstrap.Modal(modal).show();
+       }
+   }
+
+   function hideLoadingModal() {
+       console.log('✅ Hiding loading modal');
+       const modal = document.getElementById('loadingModal');
+       if (modal) {
+           const bsModal = bootstrap.Modal.getInstance(modal);
+           if (bsModal) bsModal.hide();
+       }
+   }
+
+   function showSuccessModal(title, message) {
+       // Create a success modal
+       const modalHtml = `
+           <div class="modal fade" id="successModal" tabindex="-1">
+               <div class="modal-dialog modal-dialog-centered">
+                   <div class="modal-content">
+                       <div class="modal-header border-0 pb-0">
+                           <h5 class="modal-title text-success">
+                               <i class="fas fa-check-circle me-2"></i>${title}
+                           </h5>
+                       </div>
+                       <div class="modal-body pt-2">
+                           <p class="mb-0">${message}</p>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       `;
+
+       // Remove existing success modal
+       const existingModal = document.getElementById('successModal');
+       if (existingModal) existingModal.remove();
+
+       // Add new modal
+       document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+       // Show modal
+       const modal = new bootstrap.Modal(document.getElementById('successModal'));
+       modal.show();
+
+       // Auto-hide after 3 seconds
+       setTimeout(() => {
+           modal.hide();
+           setTimeout(() => {
+               document.getElementById('successModal')?.remove();
+           }, 300);
+       }, 2500);
+   }
+
+   function updatePendingCount() {
+       // Update the pending count in stats
+       const pendingCards = document.querySelectorAll('.job-card:not([style*="opacity: 0"])');
+       const pendingCountEl = document.querySelector('.stat-warning').closest('.card').querySelector('h3');
+       if (pendingCountEl) {
+           pendingCountEl.textContent = pendingCards.length;
+       }
+   }
+
+   function getCsrfToken() {
+       // Try multiple methods to get CSRF token
+       let token = null;
+
+       // Method 1: Hidden input
+       const hiddenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+       if (hiddenInput) {
+           token = hiddenInput.value;
+       }
+
+       // Method 2: Cookie
+       if (!token) {
+           const cookies = document.cookie.split(';');
+           for (let cookie of cookies) {
+               const [name, value] = cookie.trim().split('=');
+               if (name === 'csrftoken') {
+                   token = value;
+                   break;
+               }
+           }
+       }
+
+       if (!token) {
+           console.error('❌ No CSRF token found!');
+       }
+
+       return token;
+   }
+
+   console.log('✅ Job Approval functionality initialized');
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const tabId = this.dataset.tab;
+
+        // Remove active class from all tabs and panes
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+        // Add active class to clicked tab and corresponding pane
+        this.classList.add('active');
+        document.getElementById(tabId + '-tab').classList.add('active');
+    });
+});
+
+// Documents button functionality
+document.querySelectorAll('.btn-documents').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const jobId = this.dataset.jobId;
+        // Redirect to documents page for this job
+        window.location.href = `/documents/job/${jobId}/`;
+    });
+});
+});
+</script>
+{% endblock %}

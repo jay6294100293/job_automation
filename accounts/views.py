@@ -273,4 +273,3 @@ class CustomLogoutView(auth_views.LogoutView):
         if request.user.is_authenticated:
             messages.success(request, f'Goodbye {request.user.username}! You have been logged out successfully.')
         return super().dispatch(request, *args, **kwargs)
-

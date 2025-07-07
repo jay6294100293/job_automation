@@ -714,6 +714,10 @@
         <i class="fas fa-cog"></i>
         <span>Search Config</span>
     </a>
+    <a href="{% url 'dashboard:job_approval' %}" class="nav-item {% if 'job_approval' in request.resolver_match.url_name %}active{% endif %}">
+    <i class="fas fa-clipboard-check"></i>
+    <span>Job Approval</span>
+</a>
     <a href="{% url 'jobs:applications' %}" class="nav-item {% if 'applications' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-briefcase"></i>
         <span>Applications</span>

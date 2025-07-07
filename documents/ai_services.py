@@ -1,4 +1,6 @@
 # documents/ai_services.py - MAIN AI SERVICE MANAGER
+import os
+
 import requests
 import time
 import json
@@ -25,18 +27,44 @@ class AIServiceManager:
         self.timeout = settings.AI_SETTINGS.get('TIMEOUT_SECONDS', 30)
 
         # Initialize provider status
-        self._ensure_provider_status()
+        # self._ensure_provider_status()
 
     def _ensure_provider_status(self):
-        """Ensure AIProviderStatus records exist"""
-        for provider in ['groq', 'openrouter']:
+        """Safely ensure provider status exists - only call when tables exist"""
+        try:
+            # Check if we can access the database and table exists
+            from django.db import connection
+            from .models import AIProviderStatus
+            from django.utils import timezone
+
+            # Check if table exists before querying
+            table_names = connection.introspection.table_names()
+            if 'documents_aiproviderstatus' not in table_names:
+                logger.warning("AIProviderStatus table doesn't exist yet. Skipping provider status check.")
+                return
+
+            # Your existing code here - just add the table check above it
             AIProviderStatus.objects.get_or_create(
-                provider=provider,
+                provider_name='groq',
                 defaults={
-                    'is_active': True,
-                    'last_reset': timezone.now()
+                    'is_available': True,
+                    'api_key_configured': bool(os.getenv('GROQ_API_KEY')),
+                    'last_checked': timezone.now()
                 }
             )
+
+            AIProviderStatus.objects.get_or_create(
+                provider_name='openrouter',
+                defaults={
+                    'is_available': True,
+                    'api_key_configured': bool(os.getenv('OPENROUTER_API_KEY')),
+                    'last_checked': timezone.now()
+                }
+            )
+
+        except Exception as e:
+            # During migrations or initial setup, tables might not exist
+            logger.warning(f"Could not ensure provider status (this is normal during migrations): {e}")
 
     def generate_content(self, prompt: str, document_type: str, user_id: int) -> Dict[str, Any]:
         """

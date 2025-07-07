@@ -1,0 +1,1014 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Automation Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    .email-stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .email-setup-card {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .forwarding-email {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: monospace;
+        font-size: 1.1rem;
+        word-break: break-all;
+        position: relative;
+    }
+
+    .setup-step {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .step-number {
+        background: #007bff;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-weight: bold;
+    }
+
+    .processing-chart {
+        height: 300px;
+        margin: 20px 0;
+    }
+
+    .recent-emails {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .email-item {
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+    }
+
+    .email-subject {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .email-meta {
+        font-size: 0.85rem;
+        color: #666;
+        display: flex;
+        gap: 15px;
+    }
+
+    .confidence-bar {
+        height: 6px;
+        background: #e9ecef;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%);
+        transition: width 0.3s ease;
+    }
+
+    .copy-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+
+    .copy-btn:hover {
+        background: #0056b3;
+    }
+
+    .email-type-badge {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 500;
+    }
+
+    .processing-result-badge {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 500;
+    }
+
+    .auto-refresh-indicator {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .auto-refresh-indicator.show {
+        opacity: 1;
+    }
+
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Auto-refresh indicator -->
+    <div class="auto-refresh-indicator" id="refreshIndicator">
+        🔄 Refreshing data...
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">📧 Email Automation Settings</h1>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'dashboard:email_log' %}" class="btn btn-outline-primary">
+                        📋 View Email Log
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" id="refreshStats">
+                        🔄 Refresh Stats
+                    </button>
+                    <button type="button" class="btn btn-outline-info" id="testEmailProcessing">
+                        🧪 Test Processing
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Statistics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="email-stats-card">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalProcessed">{{ email_stats.total_processed }}</div>
+                            <div class="stat-label">Total Emails Processed</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="jobsFound">{{ email_stats.jobs_found }}</div>
+                            <div class="stat-label">Jobs Found</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="interviewsDetected">{{ email_stats.interviews_detected }}</div>
+                            <div class="stat-label">Interviews Detected</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="successRate">{{ email_stats.success_rate }}%</div>
+                            <div class="stat-label">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12 text-center">
+                        <small class="text-light">
+                            📊 This Week: {{ email_stats.this_week }} emails |
+                            ⚠️ Failed: {{ email_stats.failed_processing }} |
+                            🕐 Last Updated: <span id="lastUpdated">Just now</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Email Setup -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🔧 Email Processing Setup</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Email Forwarding Setup -->
+                    <div class="email-setup-card">
+                        <h6>📬 Method 1: Email Forwarding (Recommended)</h6>
+                        <p class="text-muted">Forward your job emails to this unique address:</p>
+                        <div class="forwarding-email">
+                            {{ forwarding_email }}
+                            <button class="copy-btn" onclick="copyToClipboard('{{ forwarding_email }}')">
+                                📋 Copy
+                            </button>
+                        </div>
+
+                        <div class="mt-3">
+                            <h6>Setup Steps:</h6>
+                            <div class="setup-step">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <strong>Set up forwarding rules</strong> in your email client (Gmail, Outlook, etc.)
+                                    <br><small class="text-muted">Create a filter for emails containing "job alert", "new position", "career opportunity"</small>
+                                </div>
+                            </div>
+                            <div class="setup-step">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <strong>Configure forwarding</strong> to your unique address above
+                                    <br><small class="text-muted">Set up automatic forwarding for job-related emails</small>
+                                </div>
+                            </div>
+                            <div class="setup-step">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <strong>Test the setup</strong> by forwarding a test job email
+                                    <br><small class="text-muted">Check the Email Log to verify processing</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Setup Links -->
+                        <div class="mt-3">
+                            <h6>Quick Setup Guides:</h6>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="showGmailSetup()">
+                                    Gmail Setup
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="showOutlookSetup()">
+                                    Outlook Setup
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="showAppleSetup()">
+                                    Apple Mail Setup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Form -->
+                    <form method="post" class="mt-4" id="emailSettingsForm">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>🎯 Processing Settings</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="email_processing_enabled"
+                                           id="email_processing_enabled" {% if user_profile.email_processing_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_processing_enabled">
+                                        <strong>Enable Email Processing</strong>
+                                        <br><small class="text-muted">Process job emails automatically</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="auto_process_job_alerts"
+                                           id="auto_process_job_alerts" {% if email_settings.auto_process_job_alerts %}checked{% endif %}>
+                                    <label class="form-check-label" for="auto_process_job_alerts">
+                                        Auto-process Job Alerts
+                                        <br><small class="text-muted">Extract job details from job alert emails</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="auto_process_interviews"
+                                           id="auto_process_interviews" {% if email_settings.auto_process_interviews %}checked{% endif %}>
+                                    <label class="form-check-label" for="auto_process_interviews">
+                                        Auto-process Interview Invitations
+                                        <br><small class="text-muted">Detect and extract interview details</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="auto_create_calendar_events"
+                                           id="auto_create_calendar_events" {% if email_settings.auto_create_calendar_events %}checked{% endif %}>
+                                    <label class="form-check-label" for="auto_create_calendar_events">
+                                        Auto-create Calendar Events
+                                        <br><small class="text-muted">Add interviews to your Google Calendar</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>🎚️ Quality Settings</h6>
+                                <div class="form-group mb-3">
+                                    <label for="minimum_confidence_score">Minimum Confidence Score</label>
+                                    <input type="range" class="form-range" id="minimum_confidence_score"
+                                           name="minimum_confidence_score" min="0" max="100"
+                                           value="{{ email_settings.minimum_confidence_score }}"
+                                           oninput="updateConfidenceValue(this.value)">
+                                    <div class="text-center mt-2">
+                                        <span class="badge bg-primary" id="confidenceValue">{{ email_settings.minimum_confidence_score }}%</span>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Only process emails with confidence above this threshold
+                                    </small>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="email_notifications">Email Notifications</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="notify_new_jobs"
+                                               id="notify_new_jobs" {% if email_settings.notify_new_jobs %}checked{% endif %}>
+                                        <label class="form-check-label" for="notify_new_jobs">
+                                            Notify when new jobs are found
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="notify_interviews"
+                                               id="notify_interviews" {% if email_settings.notify_interviews %}checked{% endif %}>
+                                        <label class="form-check-label" for="notify_interviews">
+                                            Notify when interviews are detected
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="notify_processing_errors"
+                                               id="notify_processing_errors" {% if email_settings.notify_processing_errors %}checked{% endif %}>
+                                        <label class="form-check-label" for="notify_processing_errors">
+                                            Notify when processing errors occur
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Settings -->
+                        <div class="mt-4">
+                            <h6>🔧 Advanced Settings</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="keep_email_logs_days">Keep Email Logs (Days)</label>
+                                        <select class="form-select" name="keep_email_logs_days" id="keep_email_logs_days">
+                                            <option value="30" {% if email_settings.keep_email_logs_days == 30 %}selected{% endif %}>30 Days</option>
+                                            <option value="60" {% if email_settings.keep_email_logs_days == 60 %}selected{% endif %}>60 Days</option>
+                                            <option value="90" {% if email_settings.keep_email_logs_days == 90 %}selected{% endif %}>90 Days</option>
+                                            <option value="180" {% if email_settings.keep_email_logs_days == 180 %}selected{% endif %}>180 Days</option>
+                                            <option value="365" {% if email_settings.keep_email_logs_days == 365 %}selected{% endif %}>1 Year</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="blacklisted_senders">Blacklisted Senders</label>
+                                        <textarea class="form-control" name="blacklisted_senders" id="blacklisted_senders"
+                                                  rows="3" placeholder="Enter email addresses to ignore, one per line">{% for sender in email_settings.blacklisted_senders %}{{ sender }}
+{% endfor %}</textarea>
+                                        <small class="form-text text-muted">
+                                            Emails from these senders will be ignored
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                💾 Save Settings
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg ms-2" onclick="resetToDefaults()">
+                                🔄 Reset to Defaults
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📊 Recent Activity</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshRecentActivity()">
+                        🔄 Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="loading-spinner" id="loadingSpinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading recent emails...</p>
+                    </div>
+
+                    <div class="recent-emails" id="recentEmails">
+                        {% if recent_processed_emails %}
+                            {% for email in recent_processed_emails %}
+                                <div class="email-item">
+                                    <div class="email-subject">
+                                        {{ email.email_subject|truncatechars:50 }}
+                                        <span class="float-end">
+                                            <span class="email-type-badge
+                                                {% if email.email_type == 'job_alert' %}bg-success text-white
+                                                {% elif email.email_type == 'interview_invite' %}bg-warning text-dark
+                                                {% elif email.email_type == 'rejection' %}bg-danger text-white
+                                                {% else %}bg-secondary text-white{% endif %}">
+                                                {% if email.email_type == 'job_alert' %}💼 Job
+                                                {% elif email.email_type == 'interview_invite' %}📅 Interview
+                                                {% elif email.email_type == 'rejection' %}❌ Rejection
+                                                {% else %}📧 Other{% endif %}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div class="email-meta">
+                                        <span>📧 {{ email.email_sender|truncatechars:20 }}</span>
+                                        <span>🕐 {{ email.created_at|timesince }} ago</span>
+                                        <span class="processing-result-badge
+                                            {% if email.processing_result == 'success' %}bg-success text-white
+                                            {% elif email.processing_result == 'failed' %}bg-danger text-white
+                                            {% else %}bg-warning text-dark{% endif %}">
+                                            {% if email.processing_result == 'success' %}✅ Success
+                                            {% elif email.processing_result == 'failed' %}❌ Failed
+                                            {% else %}⏳ Review{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: {{ email.confidence_score }}%"></div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Confidence: {{ email.confidence_score|floatformat:1 }}%
+                                        </small>
+                                        {% if email.created_application %}
+                                            <small class="text-success ms-2">
+                                                ✅ Job Created
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <div class="mb-3">
+                                    <i class="fas fa-inbox fa-3x text-muted"></i>
+                                </div>
+                                <h6 class="text-muted">No Recent Email Activity</h6>
+                                <p class="text-muted small">
+                                    Once you start forwarding emails, they'll appear here.
+                                </p>
+                                <button class="btn btn-sm btn-primary" onclick="showGmailSetup()">
+                                    📧 Set Up Email Forwarding
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Processing Chart -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Processing Trends</h5>
+                </div>
+                <div class="card-body">
+                    <div class="processing-chart">
+                        <canvas id="processingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Setup Modals -->
+<div class="modal fade" id="gmailSetupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📧 Gmail Email Forwarding Setup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="step-by-step">
+                    <div class="step">
+                        <h6>Step 1: Open Gmail Settings</h6>
+                        <p>Go to Gmail → Settings (⚙️) → See all settings → Filters and Blocked Addresses</p>
+                    </div>
+                    <div class="step">
+                        <h6>Step 2: Create a New Filter</h6>
+                        <p>Click "Create a new filter" and use these criteria:</p>
+                        <ul>
+                            <li><strong>From:</strong> noreply@indeed.com, jobs@linkedin.com, etc.</li>
+                            <li><strong>Subject:</strong> job alert, new position, career opportunity</li>
+                            <li><strong>Has the words:</strong> job, career, position, opportunity</li>
+                        </ul>
+                    </div>
+                    <div class="step">
+                        <h6>Step 3: Set Forward Action</h6>
+                        <p>Check "Forward it to" and enter: <code>{{ forwarding_email }}</code></p>
+                    </div>
+                    <div class="step">
+                        <h6>Step 4: Test the Setup</h6>
+                        <p>Send a test email with job-related keywords and verify it appears in your Email Log.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="outlookSetupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📧 Outlook Email Forwarding Setup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="step-by-step">
+                    <div class="step">
+                        <h6>Step 1: Open Outlook Rules</h6>
+                        <p>Go to Outlook → Home → Rules → Manage Rules & Alerts</p>
+                    </div>
+                    <div class="step">
+                        <h6>Step 2: Create New Rule</h6>
+                        <p>Click "New Rule" → "Apply rule on messages I receive"</p>
+                    </div>
+                    <div class="step">
+                        <h6>Step 3: Set Conditions</h6>
+                        <p>Select conditions:</p>
+                        <ul>
+                            <li>From people or public group</li>
+                            <li>With specific words in the subject</li>
+                            <li>With specific words in the body</li>
+                        </ul>
+                    </div>
+                    <div class="step">
+                        <h6>Step 4: Set Forward Action</h6>
+                        <p>Choose "Forward it to people or public group" and enter: <code>{{ forwarding_email }}</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global variables
+let processingChart;
+let autoRefreshInterval;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeProcessingChart();
+    startAutoRefresh();
+    setupFormValidation();
+});
+
+// Copy to clipboard function
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        showNotification('📋 Email address copied to clipboard!', 'success');
+    }, function(err) {
+        console.error('Could not copy text: ', err);
+        showNotification('❌ Failed to copy email address', 'error');
+    });
+}
+
+// Show notification
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(notification);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+// Update confidence value display
+function updateConfidenceValue(value) {
+    const confidenceValue = document.getElementById('confidenceValue');
+    confidenceValue.textContent = value + '%';
+
+    // Update color based on value
+    if (value >= 80) {
+        confidenceValue.className = 'badge bg-success';
+    } else if (value >= 60) {
+        confidenceValue.className = 'badge bg-warning';
+    } else {
+        confidenceValue.className = 'badge bg-danger';
+    }
+}
+
+// Initialize processing chart
+function initializeProcessingChart() {
+    const ctx = document.getElementById('processingChart').getContext('2d');
+    const chartData = {{ processing_chart_data|safe }};
+
+    processingChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Object.keys(chartData),
+            datasets: [{
+                label: 'Jobs Found',
+                data: Object.values(chartData).map(d => d.jobs),
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }, {
+                label: 'Interviews Detected',
+                data: Object.values(chartData).map(d => d.interviews),
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+// Auto-refresh functionality
+function startAutoRefresh() {
+    autoRefreshInterval = setInterval(() => {
+        refreshEmailStats();
+    }, 30000); // Refresh every 30 seconds
+}
+
+// Refresh email stats
+function refreshEmailStats() {
+    const indicator = document.getElementById('refreshIndicator');
+    indicator.classList.add('show');
+
+    fetch('/dashboard/api/email-stats/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        updateStatsDisplay(data);
+        indicator.classList.remove('show');
+        document.getElementById('lastUpdated').textContent = 'Just now';
+    })
+    .catch(error => {
+        console.error('Error refreshing stats:', error);
+        indicator.classList.remove('show');
+        showNotification('❌ Failed to refresh stats', 'error');
+    });
+}
+
+// Update stats display
+function updateStatsDisplay(data) {
+    document.getElementById('totalProcessed').textContent = data.total_processed;
+    document.getElementById('jobsFound').textContent = data.jobs_found_today;
+    document.getElementById('interviewsDetected').textContent = data.interviews_today;
+    document.getElementById('successRate').textContent = data.success_rate + '%';
+}
+
+// Refresh recent activity
+function refreshRecentActivity() {
+    const spinner = document.getElementById('loadingSpinner');
+    const emailsList = document.getElementById('recentEmails');
+
+    spinner.style.display = 'block';
+    emailsList.style.display = 'none';
+
+    fetch('/dashboard/api/recent-emails/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        updateRecentEmailsList(data.emails);
+        spinner.style.display = 'none';
+        emailsList.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Error refreshing recent activity:', error);
+        spinner.style.display = 'none';
+        emailsList.style.display = 'block';
+        showNotification('❌ Failed to refresh recent activity', 'error');
+    });
+}
+
+// Update recent emails list
+function updateRecentEmailsList(emails) {
+    const emailsList = document.getElementById('recentEmails');
+
+    if (emails.length === 0) {
+        emailsList.innerHTML = `
+            <div class="text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-inbox fa-3x text-muted"></i>
+                </div>
+                <h6 class="text-muted">No Recent Email Activity</h6>
+                <p class="text-muted small">
+                    Once you start forwarding emails, they'll appear here.
+                </p>
+                <button class="btn btn-sm btn-primary" onclick="showGmailSetup()">
+                    📧 Set Up Email Forwarding
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    emails.forEach(email => {
+        const emailTypeClass = getEmailTypeClass(email.email_type);
+        const resultClass = getResultClass(email.processing_result);
+
+        html += `
+            <div class="email-item">
+                <div class="email-subject">
+                    ${email.email_subject.substring(0, 50)}...
+                    <span class="float-end">
+                        <span class="email-type-badge ${emailTypeClass}">
+                            ${getEmailTypeIcon(email.email_type)}
+                        </span>
+                    </span>
+                </div>
+                <div class="email-meta">
+                    <span>📧 ${email.email_sender.substring(0, 20)}...</span>
+                    <span>🕐 ${email.time_ago}</span>
+                    <span class="processing-result-badge ${resultClass}">
+                        ${getResultIcon(email.processing_result)}
+                    </span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: ${email.confidence_score}%"></div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        Confidence: ${email.confidence_score.toFixed(1)}%
+                    </small>
+                    ${email.created_application ? '<small class="text-success ms-2">✅ Job Created</small>' : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    emailsList.innerHTML = html;
+}
+
+// Helper functions for email display
+function getEmailTypeClass(type) {
+    const classes = {
+        'job_alert': 'bg-success text-white',
+        'interview_invite': 'bg-warning text-dark',
+        'rejection': 'bg-danger text-white',
+        'follow_up': 'bg-info text-white'
+    };
+    return classes[type] || 'bg-secondary text-white';
+}
+
+function getEmailTypeIcon(type) {
+    const icons = {
+        'job_alert': '💼 Job',
+        'interview_invite': '📅 Interview',
+        'rejection': '❌ Rejection',
+        'follow_up': '📧 Follow-up'
+    };
+    return icons[type] || '📧 Other';
+}
+
+function getResultClass(result) {
+    const classes = {
+        'success': 'bg-success text-white',
+        'failed': 'bg-danger text-white',
+        'manual_review': 'bg-warning text-dark'
+    };
+    return classes[result] || 'bg-secondary text-white';
+}
+
+function getResultIcon(result) {
+    const icons = {
+        'success': '✅ Success',
+        'failed': '❌ Failed',
+        'manual_review': '⏳ Review'
+    };
+    return icons[result] || '❓ Unknown';
+}
+
+// Show setup modals
+function showGmailSetup() {
+    const modal = new bootstrap.Modal(document.getElementById('gmailSetupModal'));
+    modal.show();
+}
+
+function showOutlookSetup() {
+    const modal = new bootstrap.Modal(document.getElementById('outlookSetupModal'));
+    modal.show();
+}
+
+function showAppleSetup() {
+    showNotification('🍎 Apple Mail setup guide coming soon!', 'info');
+}
+
+// Form validation
+function setupFormValidation() {
+    const form = document.getElementById('emailSettingsForm');
+
+    form.addEventListener('submit', function(e) {
+        const emailProcessingEnabled = document.getElementById('email_processing_enabled').checked;
+        const confidenceScore = document.getElementById('minimum_confidence_score').value;
+
+        if (emailProcessingEnabled && confidenceScore < 50) {
+            e.preventDefault();
+            showNotification('⚠️ Confidence score below 50% may result in poor quality job extraction', 'warning');
+
+            if (!confirm('Are you sure you want to continue with a low confidence threshold?')) {
+                return;
+            }
+        }
+
+        showNotification('💾 Saving email settings...', 'info');
+    });
+}
+
+// Reset to defaults
+function resetToDefaults() {
+    if (confirm('Are you sure you want to reset all email settings to defaults?')) {
+        document.getElementById('email_processing_enabled').checked = false;
+        document.getElementById('auto_process_job_alerts').checked = true;
+        document.getElementById('auto_process_interviews').checked = true;
+        document.getElementById('auto_create_calendar_events').checked = true;
+        document.getElementById('minimum_confidence_score').value = 70;
+        document.getElementById('notify_new_jobs').checked = true;
+        document.getElementById('notify_interviews').checked = true;
+        document.getElementById('notify_processing_errors').checked = true;
+        document.getElementById('keep_email_logs_days').value = 90;
+        document.getElementById('blacklisted_senders').value = '';
+
+        updateConfidenceValue(70);
+        showNotification('🔄 Settings reset to defaults', 'success');
+    }
+}
+
+// Test email processing
+function testEmailProcessing() {
+    const btn = document.getElementById('testEmailProcessing');
+    const originalText = btn.textContent;
+
+    btn.textContent = '🔄 Testing...';
+    btn.disabled = true;
+
+    fetch('/dashboard/api/test-email-processing/', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✅ Email processing test successful!', 'success');
+        } else {
+            showNotification('❌ Email processing test failed: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Test error:', error);
+        showNotification('❌ Test failed: ' + error.message, 'error');
+    })
+    .finally(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    });
+}
+
+// Event listeners
+document.getElementById('refreshStats').addEventListener('click', refreshEmailStats);
+document.getElementById('testEmailProcessing').addEventListener('click', testEmailProcessing);
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+});
+
+// Utility function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl+R to refresh stats
+    if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        refreshEmailStats();
+    }
+
+    // Ctrl+T to test processing
+    if (e.ctrlKey && e.key === 't') {
+        e.preventDefault();
+        testEmailProcessing();
+    }
+
+    // Ctrl+S to save settings
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        document.getElementById('emailSettingsForm').submit();
+    }
+});
+
+// Initialize tooltips if Bootstrap is available
+if (typeof bootstrap !== 'undefined') {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+</script>
+{% endblock %}

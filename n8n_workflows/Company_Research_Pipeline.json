@@ -1,0 +1,501 @@
+{
+  "name": "Company Research Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "company-research",
+        "responseMode": "responseNode"
+      },
+      "id": "research-webhook",
+      "name": "Company Research Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.company_name }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "validate-company",
+      "name": "Validate Company Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "{{ $env.SERPER_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "q": "{{ $json.company_name }} company website about careers",
+          "num": 5
+        }
+      },
+      "id": "basic-search",
+      "name": "Basic Company Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "{{ $env.SERPER_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "q": "{{ $json.company_name }} company size employees revenue funding",
+          "num": 3
+        }
+      },
+      "id": "company-size-search",
+      "name": "Company Size & Funding Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "{{ $env.SERPER_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "q": "{{ $json.company_name }} company news recent updates 2024",
+          "num": 3
+        }
+      },
+      "id": "company-news-search",
+      "name": "Company News Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://api.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "{{ $env.SERPER_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "q": "{{ $json.company_name }} glassdoor reviews culture salary",
+          "num": 3
+        }
+      },
+      "id": "company-culture-search",
+      "name": "Company Culture & Reviews Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine all search results and extract company insights\\nconst items = $input.all();\\nconst originalData = items[0].json;\\n\\n// Initialize research data\\nlet companyData = {\\n  company_name: originalData.company_name || '',\\n  application_id: originalData.application_id || '',\\n  user_id: originalData.user_id || '',\\n  \\n  // Company basics\\n  company_website: '',\\n  company_description: '',\\n  company_industry: '',\\n  company_size: '',\\n  company_location: '',\\n  \\n  // Financial info\\n  funding_info: '',\\n  revenue_info: '',\\n  company_stage: '', // startup, growth, enterprise\\n  \\n  // Culture & reviews\\n  glassdoor_rating: '',\\n  company_culture: '',\\n  employee_reviews: '',\\n  \\n  // Recent news\\n  recent_news: [],\\n  news_sentiment: '', // positive, neutral, negative\\n  \\n  // Research metadata\\n  research_completed: true,\\n  research_timestamp: new Date().toISOString(),\\n  research_confidence: 0\\n};\\n\\ntry {\\n  // Process basic company search results\\n  if (items.length > 0 && items[0].json.organic) {\\n    const basicResults = items[0].json.organic;\\n    \\n    // Extract website and description\\n    if (basicResults.length > 0) {\\n      const firstResult = basicResults[0];\\n      companyData.company_website = firstResult.link || '';\\n      companyData.company_description = firstResult.snippet || '';\\n      \\n      // Extract industry from snippets\\n      const allText = basicResults.map(r => r.snippet).join(' ').toLowerCase();\\n      const industries = [\\n        'technology', 'software', 'fintech', 'healthcare', 'finance',\\n        'education', 'retail', 'manufacturing', 'consulting', 'media',\\n        'gaming', 'automotive', 'energy', 'real estate', 'nonprofit'\\n      ];\\n      \\n      for (const industry of industries) {\\n        if (allText.includes(industry)) {\\n          companyData.company_industry = industry;\\n          break;\\n        }\\n      }\\n    }\\n  }\\n  \\n  // Process company size search results\\n  if (items.length > 1 && items[1].json.organic) {\\n    const sizeResults = items[1].json.organic;\\n    const sizeText = sizeResults.map(r => r.snippet).join(' ');\\n    \\n    // Extract company size\\n    const sizePatterns = [\\n      /(\\\\d{1,3}[,.]?\\\\d*)\\\\s*[-–]?\\\\s*(\\\\d{1,3}[,.]?\\\\d*)\\\\s*employees?/i,\\n      /(\\\\d{1,3}[,.]?\\\\d*)\\\\+?\\\\s*employees?/i,\\n      /(startup|small|medium|large|enterprise)\\\\s*company/i,\\n      /(\\\\d{1,3}[,.]?\\\\d*)\\\\s*people/i\\n    ];\\n    \\n    for (const pattern of sizePatterns) {\\n      const match = sizeText.match(pattern);\\n      if (match) {\\n        companyData.company_size = match[0];\\n        break;\\n      }\\n    }\\n    \\n    // Extract funding information\\n    const fundingPatterns = [\\n      /\\\\$([\\\\d,.]+)\\\\s*(million|billion|M|B)\\\\s*(funding|raised|investment)/i,\\n      /(series\\\\s*[A-Z])\\\\s*funding/i,\\n      /(seed|pre-seed|series|ipo|public)\\\\s*(funding|round)/i\\n    ];\\n    \\n    for (const pattern of fundingPatterns) {\\n      const match = sizeText.match(pattern);\\n      if (match) {\\n        companyData.funding_info = match[0];\\n        break;\\n      }\\n    }\\n  }\\n  \\n  // Process news search results\\n  if (items.length > 2 && items[2].json.organic) {\\n    const newsResults = items[2].json.organic;\\n    companyData.recent_news = newsResults.slice(0, 3).map(item => ({\\n      title: item.title,\\n      snippet: item.snippet,\\n      link: item.link,\\n      date: item.date || 'Recent'\\n    }));\\n    \\n    // Analyze news sentiment\\n    const newsText = newsResults.map(r => r.title + ' ' + r.snippet).join(' ').toLowerCase();\\n    const positiveWords = ['growth', 'expansion', 'funding', 'launch', 'success', 'partnership', 'award'];\\n    const negativeWords = ['layoffs', 'loss', 'decline', 'controversy', 'lawsuit', 'bankruptcy'];\\n    \\n    const positiveCount = positiveWords.filter(word => newsText.includes(word)).length;\\n    const negativeCount = negativeWords.filter(word => newsText.includes(word)).length;\\n    \\n    if (positiveCount > negativeCount) {\\n      companyData.news_sentiment = 'positive';\\n    } else if (negativeCount > positiveCount) {\\n      companyData.news_sentiment = 'negative';\\n    } else {\\n      companyData.news_sentiment = 'neutral';\\n    }\\n  }\\n  \\n  // Process culture and reviews search results\\n  if (items.length > 3 && items[3].json.organic) {\\n    const cultureResults = items[3].json.organic;\\n    const cultureText = cultureResults.map(r => r.snippet).join(' ');\\n    \\n    // Extract Glassdoor rating\\n    const ratingMatch = cultureText.match(/(\\\\d\\\\.\\\\d)\\\\s*\\\\/\\\\s*5|rating\\\\s*:\\\\s*(\\\\d\\\\.\\\\d)/i);\\n    if (ratingMatch) {\\n      companyData.glassdoor_rating = ratingMatch[1] || ratingMatch[2];\\n    }\\n    \\n    // Extract culture keywords\\n    const cultureKeywords = [\\n      'remote-friendly', 'work-life balance', 'innovative', 'fast-paced',\\n      'collaborative', 'flexible', 'diverse', 'inclusive', 'startup culture'\\n    ];\\n    \\n    const foundKeywords = cultureKeywords.filter(keyword => \\n      cultureText.toLowerCase().includes(keyword)\\n    );\\n    \\n    if (foundKeywords.length > 0) {\\n      companyData.company_culture = foundKeywords.join(', ');\\n    }\\n  }\\n  \\n  // Calculate research confidence\\n  let confidence = 0;\\n  if (companyData.company_website) confidence += 20;\\n  if (companyData.company_description) confidence += 20;\\n  if (companyData.company_industry) confidence += 15;\\n  if (companyData.company_size) confidence += 15;\\n  if (companyData.recent_news.length > 0) confidence += 15;\\n  if (companyData.glassdoor_rating) confidence += 10;\\n  if (companyData.funding_info) confidence += 5;\\n  \\n  companyData.research_confidence = confidence;\\n  \\n  // Determine company stage\\n  if (companyData.funding_info.toLowerCase().includes('seed')) {\\n    companyData.company_stage = 'startup';\\n  } else if (companyData.funding_info.toLowerCase().includes('series')) {\\n    companyData.company_stage = 'growth';\\n  } else if (companyData.company_size && parseInt(companyData.company_size) > 1000) {\\n    companyData.company_stage = 'enterprise';\\n  } else {\\n    companyData.company_stage = 'unknown';\\n  }\\n  \\n  return [{ json: companyData }];\\n  \\n} catch (error) {\\n  console.error('Company research processing error:', error);\\n  return [{\\n    json: {\\n      ...companyData,\\n      research_completed: false,\\n      research_error: error.message,\\n      research_confidence: 0\\n    }\\n  }];\\n}"
+      },
+      "id": "process-research",
+      "name": "Process Research Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.GROQ_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "model": "llama3-70b-8192",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a company research analyst. Analyze the provided company data and create a comprehensive company summary. Return ONLY valid JSON with these fields: {\"executive_summary\": \"Brief 2-3 sentence overview\", \"key_strengths\": [\"strength1\", \"strength2\"], \"potential_concerns\": [\"concern1\", \"concern2\"], \"work_environment\": \"Description of work culture\", \"growth_trajectory\": \"Assessment of company growth\", \"recommendation_score\": 85, \"why_join\": \"Top reasons to consider this company\", \"questions_to_ask\": [\"question1\", \"question2\"]}"
+            },
+            {
+              "role": "user",
+              "content": "Analyze this company data:\\n\\nCompany: {{ $json.company_name }}\\nWebsite: {{ $json.company_website }}\\nIndustry: {{ $json.company_industry }}\\nSize: {{ $json.company_size }}\\nFunding: {{ $json.funding_info }}\\nGlassdoor Rating: {{ $json.glassdoor_rating }}\\nCulture: {{ $json.company_culture }}\\nRecent News: {{ $json.recent_news }}\\nNews Sentiment: {{ $json.news_sentiment }}\\nStage: {{ $json.company_stage }}"
+            }
+          ],
+          "temperature": 0.3,
+          "max_tokens": 800
+        }
+      },
+      "id": "ai-analysis",
+      "name": "AI Company Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI analysis and combine with research data\\nconst items = $input.all();\\nconst researchData = items[0].json;\\nconst aiResponse = items[0].json;\\n\\ntry {\\n  // Extract AI analysis\\n  let aiAnalysis = {};\\n  if (aiResponse.choices && aiResponse.choices[0]) {\\n    const aiContent = aiResponse.choices[0].message.content;\\n    const cleanContent = aiContent.replace(/```json|```/g, '').trim();\\n    aiAnalysis = JSON.parse(cleanContent);\\n  }\\n  \\n  // Combine research data with AI analysis\\n  const finalCompanyData = {\\n    ...researchData,\\n    \\n    // AI Analysis results\\n    executive_summary: aiAnalysis.executive_summary || '',\\n    key_strengths: aiAnalysis.key_strengths || [],\\n    potential_concerns: aiAnalysis.potential_concerns || [],\\n    work_environment: aiAnalysis.work_environment || '',\\n    growth_trajectory: aiAnalysis.growth_trajectory || '',\\n    recommendation_score: aiAnalysis.recommendation_score || 50,\\n    why_join: aiAnalysis.why_join || '',\\n    questions_to_ask: aiAnalysis.questions_to_ask || [],\\n    \\n    // AI processing metadata\\n    ai_analysis_completed: true,\\n    ai_tokens_used: aiResponse.usage?.total_tokens || 0,\\n    total_research_time: Date.now() - new Date(researchData.research_timestamp).getTime()\\n  };\\n  \\n  return [{ json: finalCompanyData }];\\n  \\n} catch (error) {\\n  console.error('AI analysis processing error:', error);\\n  return [{\\n    json: {\\n      ...researchData,\\n      ai_analysis_completed: false,\\n      ai_analysis_error: error.message\\n    }\\n  }];\\n}"
+      },
+      "id": "combine-analysis",
+      "name": "Combine Research & Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.application_id }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "check-application",
+      "name": "Check if Application Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/applications/{{ $json.application_id }}/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "company_website": "={{ $json.company_website }}",
+          "company_description": "={{ $json.company_description }}",
+          "company_size": "={{ $json.company_size }}",
+          "company_industry": "={{ $json.company_industry }}",
+          "ai_extraction_notes": "Company research completed with {{ $json.research_confidence }}% confidence. {{ $json.executive_summary }}"
+        }
+      },
+      "id": "update-application",
+      "name": "Update Job Application",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/webhooks/company-research/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user_id": "={{ $json.user_id }}",
+          "application_id": "={{ $json.application_id }}",
+          "company_name": "={{ $json.company_name }}",
+          "research_data": {
+            "company_website": "={{ $json.company_website }}",
+            "company_description": "={{ $json.company_description }}",
+            "company_industry": "={{ $json.company_industry }}",
+            "company_size": "={{ $json.company_size }}",
+            "company_stage": "={{ $json.company_stage }}",
+            "funding_info": "={{ $json.funding_info }}",
+            "glassdoor_rating": "={{ $json.glassdoor_rating }}",
+            "company_culture": "={{ $json.company_culture }}",
+            "recent_news": "={{ $json.recent_news }}",
+            "news_sentiment": "={{ $json.news_sentiment }}",
+            "executive_summary": "={{ $json.executive_summary }}",
+            "key_strengths": "={{ $json.key_strengths }}",
+            "potential_concerns": "={{ $json.potential_concerns }}",
+            "work_environment": "={{ $json.work_environment }}",
+            "growth_trajectory": "={{ $json.growth_trajectory }}",
+            "recommendation_score": "={{ $json.recommendation_score }}",
+            "why_join": "={{ $json.why_join }}",
+            "questions_to_ask": "={{ $json.questions_to_ask }}"
+          },
+          "research_confidence": "={{ $json.research_confidence }}",
+          "research_completed": true
+        }
+      },
+      "id": "log-research",
+      "name": "Log Research to Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2000, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\\n  \\\"success\\\": true,\\n  \\\"company_name\\\": $json.company_name,\\n  \\\"research_confidence\\\": $json.research_confidence,\\n  \\\"recommendation_score\\\": $json.recommendation_score,\\n  \\\"executive_summary\\\": $json.executive_summary,\\n  \\\"application_updated\\\": $json.application_id ? true : false,\\n  \\\"message\\\": \\\"Company research completed successfully\\\"\\n} }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\\n  \\\"success\\\": false,\\n  \\\"error\\\": \\\"Invalid company data\\\",\\n  \\\"message\\\": \\\"Company name is required for research\\\"\\n} }}"
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 500]
+    }
+  ],
+  "connections": {
+    "Company Research Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Company Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Company Data": {
+      "main": [
+        [
+          {
+            "node": "Basic Company Search",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic Company Search": {
+      "main": [
+        [
+          {
+            "node": "Company Size & Funding Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Company News Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Company Culture & Reviews Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Size & Funding Search": {
+      "main": [
+        [
+          {
+            "node": "Process Research Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company News Search": {
+      "main": [
+        [
+          {
+            "node": "Process Research Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Culture & Reviews Search": {
+      "main": [
+        [
+          {
+            "node": "Process Research Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Research Results": {
+      "main": [
+        [
+          {
+            "node": "AI Company Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Company Analysis": {
+      "main": [
+        [
+          {
+            "node": "Combine Research & Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Research & Analysis": {
+      "main": [
+        [
+          {
+            "node": "Check if Application Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Application Exists": {
+      "main": [
+        [
+          {
+            "node": "Update Job Application",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Research to Django",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Research to Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Job Application": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Research to Django": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

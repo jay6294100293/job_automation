@@ -32,4 +32,10 @@ urlpatterns = [
     path('api/duplicate-config/<int:config_id>/', views.DuplicateConfigView.as_view(), name='duplicate_config'),
     path('api/toggle-config/<int:config_id>/', views.ToggleConfigView.as_view(), name='toggle_config'),
     path('api/schedule-search/<int:config_id>/', views.ScheduleSearchView.as_view(), name='schedule_search'),
+
+    path('webhook/<str:webhook_type>/', views.EnhancedN8NWebhookView.as_view(), name='enhanced_n8n_webhook'),
+    path('api/email-stats/', views.EmailProcessingStatsView.as_view(), name='email_processing_stats'),
+
+    path('<int:job_id>/score/', views.score_job_with_ai, name='score_job_ai'),
+    path('<int:job_id>/approve/', views.approve_job, name='approve_job'),
 ]

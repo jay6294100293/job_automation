@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Legal Consent Required{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt"></i>
+                        Legal Consent Required
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <p class="lead">Before you can use the Job Automation System, we need your explicit consent for data processing.</p>
+                    <p>This ensures full compliance with GDPR, CCPA, and PIPEDA privacy regulations.</p>
+                    
+                    <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#legalConsentModal">
+                        <i class="fas fa-file-contract"></i>
+                        Review Terms & Provide Consent
+                    </button>
+                    
+                    <div class="mt-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card border-success">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-shield-alt fa-3x text-success"></i>
+                                        <h6 class="mt-2">Secure & Private</h6>
+                                        <p class="small">Your data is encrypted and protected</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-info">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-balance-scale fa-3x text-info"></i>
+                                        <h6 class="mt-2">Legally Compliant</h6>
+                                        <p class="small">Full GDPR, CCPA, PIPEDA compliance</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-warning">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-user-cog fa-3x text-warning"></i>
+                                        <h6 class="mt-2">You're in Control</h6>
+                                        <p class="small">Withdraw consent anytime</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include the legal consent modal -->
+{% include 'legal/consent_modal.html' %}
+
+{% if show_consent_modal %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-show modal on page load
+    const modal = new bootstrap.Modal(document.getElementById('legalConsentModal'));
+    modal.show();
+});
+</script>
+{% endif %}
+{% endblock %}

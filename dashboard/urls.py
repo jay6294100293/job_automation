@@ -74,4 +74,18 @@ urlpatterns = [
 
     # Market intelligence API
     path('api/market-data/', views.MarketIntelligenceView.as_view(), name='market_data_api'),
+
+    path('email-settings/', views.EmailSettingsView.as_view(), name='email_settings'),
+    path('email-log/', views.EmailLogView.as_view(), name='email_log'),
+
+    # API endpoints for AJAX requests
+    path('api/email-stats/', views.EmailStatsAPIView.as_view(), name='email_stats_api'),
+    path('api/recent-emails/', views.RecentEmailsAPIView.as_view(), name='recent_emails_api'),
+    path('api/test-email-processing/', views.TestEmailProcessingView.as_view(), name='test_email_processing'),
+
+    # Email processing actions
+    path('email-action/', views.EmailProcessingActionView.as_view(), name='email_action'),
+    path('bulk-email-action/', views.BulkEmailActionView.as_view(), name='bulk_email_action'),
+
+    path('jobs/approval/', views.job_approval_dashboard, name='job_approval'),
 ]

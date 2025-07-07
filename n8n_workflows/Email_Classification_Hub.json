@@ -1,0 +1,336 @@
+{
+  "name": "Email Classification Hub",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "email-processing",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "182703ca-c7f3-4679-9e58-2839966ee60a",
+      "name": "Email Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "ed5dceee-2e1a-411f-970c-39ddc4397234"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.subject }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.body.sender }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.body.body }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "fd11f364-293c-4b40-887a-816a1c73c5ad",
+      "name": "Validate Email Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "model": "llama3-70b-8192",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are an email classifier for job search automation. Classify emails into these categories: job_alert, interview_invite, application_response, rejection, follow_up, other. Also extract confidence score 0-100. Return only valid JSON: {\"classification\": \"job_alert\", \"confidence\": 95, \"reasoning\": \"Contains job posting details\"}"
+            },
+            {
+              "role": "user",
+              "content": "Subject: {{ $json.body.subject }}\\n\\nFrom: {{ $json.body.sender }}\\n\\nBody: {{ $json.body.body }}"
+            }
+          ],
+          "temperature": 0.1,
+          "max_tokens": 150
+        },
+        "options": {}
+      },
+      "id": "dc39fe8f-cdcb-4bde-b5e1-4f2b2077080f",
+      "name": "Groq AI Classification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "U8WqtRh480tENdM1",
+          "name": "Groq API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Groq AI response and prepare data for routing\nconst inputData = $input.all();\nconst originalWebhookData = inputData[0].json;\nconst groqResponse = inputData[0].json;\n\ntry {\n  // Extract the JSON from Groq response\n  let aiContent = '';\n  if (groqResponse.choices && groqResponse.choices[0]) {\n    aiContent = groqResponse.choices[0].message.content;\n  } else {\n    throw new Error('Invalid Groq response format');\n  }\n  \n  // Clean and parse AI response\n  const cleanContent = aiContent.replace(/```json|```/g, '').trim();\n  const classificationData = JSON.parse(cleanContent);\n  \n  // Get original email data from webhook body\n  const emailData = originalWebhookData.body || originalWebhookData;\n  \n  // Prepare output data\n  const outputData = {\n    // Original email data (flattened)\n    subject: emailData.subject || '',\n    sender: emailData.sender || '',\n    body: emailData.body || '',\n    user_id: emailData.user_id || '',\n    received_timestamp: emailData.received_timestamp || Date.now(),\n    \n    // AI classification results\n    classification: classificationData.classification || 'other',\n    confidence: classificationData.confidence || 0,\n    reasoning: classificationData.reasoning || 'No reasoning provided',\n    \n    // Processing metadata\n    processing_time: (Date.now() - (emailData.received_timestamp || Date.now())) / 1000,\n    ai_tokens_used: groqResponse.usage?.total_tokens || 0,\n    ai_cost: (groqResponse.usage?.total_tokens || 0) * 0.0000001,\n    processing_success: true\n  };\n  \n  return [{ json: outputData }];\n  \n} catch (error) {\n  // Handle parsing errors\n  console.error('AI Response parsing error:', error);\n  const emailData = originalWebhookData.body || originalWebhookData;\n  \n  return [{\n    json: {\n      subject: emailData.subject || '',\n      sender: emailData.sender || '',\n      body: emailData.body || '',\n      user_id: emailData.user_id || '',\n      classification: 'other',\n      confidence: 0,\n      reasoning: 'AI parsing error: ' + error.message,\n      processing_error: true,\n      processing_success: false,\n      error_message: error.message\n    }\n  }];\n}"
+      },
+      "id": "42e0f37d-08d2-4bdd-8ab7-98f682992e93",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.confidence }}",
+              "operation": "largerEqual",
+              "value2": "70"
+            },
+            {
+              "value1": "={{ $json.processing_success }}",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "3c865a55-a195-4530-9297-0de570f6a374",
+      "name": "Check Confidence",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.classification }}",
+              "value2": "job_alert"
+            }
+          ]
+        }
+      },
+      "id": "f7c05c9b-1263-4546-a24d-87203e1e66dd",
+      "name": "Route Job Alerts",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.classification }}",
+              "value2": "interview_invite"
+            }
+          ]
+        }
+      },
+      "id": "c0623f1c-6e3f-4450-b493-f376aa74c66f",
+      "name": "Route Interviews",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/webhooks/email-processing/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user_id": "={{ $json.user_id }}",
+          "email_subject": "={{ $json.subject }}",
+          "email_sender": "={{ $json.sender }}",
+          "email_body": "={{ $json.body }}",
+          "email_type": "={{ $json.classification }}",
+          "confidence_score": "={{ $json.confidence }}",
+          "processing_result": "={{ $json.processing_success ? 'success' : 'failed' }}",
+          "processing_time": "={{ $json.processing_time }}",
+          "ai_tokens_used": "={{ $json.ai_tokens_used }}",
+          "ai_cost": "={{ $json.ai_cost }}",
+          "ai_response": "={{ $json.reasoning }}",
+          "error_message": "={{ $json.error_message || '' }}"
+        },
+        "options": {}
+      },
+      "id": "02567f73-69b6-47e7-be28-9a3ad9cc17b3",
+      "name": "Log to Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\": true, \"classification\": \"{{ $json.classification }}\", \"confidence\": {{ $json.confidence }}, \"message\": \"Email processed successfully\"}",
+        "options": {}
+      },
+      "id": "2d379857-71bb-4ae6-930b-a1cd68941b7e",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\": false, \"error\": \"Low confidence or processing error\", \"classification\": \"{{ $json.classification }}\", \"confidence\": {{ $json.confidence }}, \"message\": \"Email requires manual review\"}",
+        "options": {}
+      },
+      "id": "54d0af1b-8bd8-4aa1-95bf-251fe1ba4a62",
+      "name": "Manual Review Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\": false, \"error\": \"Invalid email data\", \"message\": \"Email validation failed - missing required fields\"}",
+        "options": {}
+      },
+      "id": "f87a27ce-ced6-4e3a-badd-9b1bb9175efb",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 500]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Email Data": {
+      "main": [
+        [
+          {
+            "node": "Groq AI Classification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq AI Classification": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Check Confidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Confidence": {
+      "main": [
+        [
+          {
+            "node": "Route Job Alerts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Interviews",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Django",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manual Review Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Django": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2029f31f-0c50-4746-a1b5-64bea6c5c81b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "215b654a581084162cbecdb0f4009429c112b4f7709487e8916c88958f09204f"
+  },
+  "id": "IHQEHVYIq55MLfjO",
+  "tags": []
+}

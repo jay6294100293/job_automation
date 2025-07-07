@@ -1,0 +1,694 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Email Processing Log - Job Automation{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .email-status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .confidence-bar {
+        height: 20px;
+        min-width: 60px;
+        border-radius: 10px;
+        position: relative;
+        overflow: hidden;
+        background: #e9ecef;
+    }
+
+    .confidence-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+
+    .confidence-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        z-index: 1;
+    }
+
+    .email-subject {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+    .email-subject:hover {
+        text-decoration: underline;
+    }
+
+    .sender-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .processing-date {
+        font-size: 0.875rem;
+        color: #495057;
+        white-space: nowrap;
+    }
+
+    .stats-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .filter-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .action-btn {
+        padding: 0.25rem 0.5rem;
+        margin: 0.1rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+    }
+
+    .table-container {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+    }
+
+    .notification-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
+        min-width: 300px;
+        max-width: 500px;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .email-row {
+        transition: background-color 0.2s ease;
+    }
+
+    .email-row:hover {
+        background-color: rgba(0,123,255,0.05);
+    }
+
+    .email-row.selected {
+        background-color: rgba(0,123,255,0.1);
+    }
+
+    .modal-body pre {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        font-size: 0.875rem;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-2">
+                    <i class="fas fa-envelope-open-text"></i> Email Processing Log
+                </h1>
+                <p class="lead mb-0">Monitor and manage your automated email processing</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-light" onclick="refreshEmailStats()" title="Refresh Statistics">
+                        <i class="fas fa-sync-alt"></i> <span class="d-none d-md-inline">Refresh</span>
+                    </button>
+                    <a href="{% url 'dashboard:email_settings' %}" class="btn btn-light">
+                        <i class="fas fa-cog"></i> <span class="d-none d-md-inline">Settings</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Processed
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800" id="total-emails">
+                                {{ total_logs }}
+                            </div>
+                            <div class="text-xs text-muted">
+                                <i class="fas fa-arrow-up text-success"></i> All time
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-envelope fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Jobs Found
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800" id="jobs-found">
+                                {{ jobs_found_count }}
+                            </div>
+                            <div class="text-xs text-muted">
+                                <i class="fas fa-briefcase text-success"></i> Success rate: {{ success_rate }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-briefcase fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Interviews Detected
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800" id="interviews-detected">
+                                {{ interviews_count }}
+                            </div>
+                            <div class="text-xs text-muted">
+                                <i class="fas fa-calendar-alt text-info"></i> Auto-scheduled
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                This Week
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800" id="this-week">
+                                {{ this_week_count }}
+                            </div>
+                            <div class="text-xs text-muted">
+                                <i class="fas fa-clock text-warning"></i> Recent activity
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="filter-section">
+        <div class="row align-items-end">
+            <div class="col-md-2">
+                <label for="email-type-filter" class="form-label fw-bold">
+                    <i class="fas fa-filter"></i> Email Type
+                </label>
+                <select id="email-type-filter" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="job_alert">Job Alerts</option>
+                    <option value="interview_invite">Interview Invites</option>
+                    <option value="rejection">Rejections</option>
+                    <option value="response">Responses</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="processing-result-filter" class="form-label fw-bold">
+                    <i class="fas fa-check-circle"></i> Result
+                </label>
+                <select id="processing-result-filter" class="form-select">
+                    <option value="">All Results</option>
+                    <option value="success">Success</option>
+                    <option value="failed">Failed</option>
+                    <option value="manual_review">Manual Review</option>
+                    <option value="ignored">Ignored</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="date-range-filter" class="form-label fw-bold">
+                    <i class="fas fa-calendar"></i> Date Range
+                </label>
+                <select id="date-range-filter" class="form-select">
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="quarter">This Quarter</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="confidence-filter" class="form-label fw-bold">
+                    <i class="fas fa-chart-line"></i> Confidence
+                </label>
+                <select id="confidence-filter" class="form-select">
+                    <option value="">All Levels</option>
+                    <option value="high">High (80%+)</option>
+                    <option value="medium">Medium (60-80%)</option>
+                    <option value="low">Low (<60%)</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="sender-filter" class="form-label fw-bold">
+                    <i class="fas fa-user"></i> Sender
+                </label>
+                <input type="text" id="sender-filter" class="form-control" placeholder="Filter by sender">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Clear Filters
+                </button>
+                <button class="btn btn-outline-info btn-sm ms-2" onclick="saveFilters()">
+                    <i class="fas fa-save"></i> Save Filters
+                </button>
+                <button class="btn btn-outline-success btn-sm ms-2" onclick="loadSavedFilters()">
+                    <i class="fas fa-download"></i> Load Saved
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Processing Log Table -->
+    <div class="card table-container">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-primary">
+                <i class="fas fa-history"></i> Email Processing History
+                <span class="badge bg-secondary ms-2" id="total-count">{{ total_logs }}</span>
+            </h6>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="exportEmailLog()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+                <button class="btn btn-outline-warning btn-sm" onclick="reprocessFailedEmails()">
+                    <i class="fas fa-redo"></i> Reprocess Failed
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="clearFailedEmails()">
+                    <i class="fas fa-trash"></i> Clear Failed
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if email_logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="emailLogTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="select-all" class="form-check-input">
+                                </th>
+                                <th>Date Processed</th>
+                                <th>Email Subject</th>
+                                <th>Sender</th>
+                                <th>Type</th>
+                                <th>Result</th>
+                                <th>Confidence</th>
+                                <th style="width: 150px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in email_logs %}
+                            <tr class="email-row" data-email-id="{{ log.id }}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input email-select" value="{{ log.id }}">
+                                </td>
+                                <td class="processing-date">
+                                    <div class="fw-bold">{{ log.processing_date|date:"M d, Y" }}</div>
+                                    <small class="text-muted">{{ log.processing_date|date:"g:i A" }}</small>
+                                </td>
+                                <td>
+                                    <div class="email-subject fw-bold" title="{{ log.email_subject }}" onclick="showEmailDetails({{ log.id }})">
+                                        {{ log.email_subject|truncatechars:50 }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="fas fa-clock"></i> Received: {{ log.email_received_date|date:"M d, g:i A" }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="sender-info" title="{{ log.email_sender }}">
+                                        {{ log.email_sender|truncatechars:25 }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        {{ log.email_sender|slice:":20" }}...
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if log.email_type == 'job_alert' %}
+                                        <span class="badge bg-primary email-status-badge">
+                                            <i class="fas fa-briefcase"></i> Job Alert
+                                        </span>
+                                    {% elif log.email_type == 'interview_invite' %}
+                                        <span class="badge bg-info email-status-badge">
+                                            <i class="fas fa-calendar-alt"></i> Interview
+                                        </span>
+                                    {% elif log.email_type == 'rejection' %}
+                                        <span class="badge bg-danger email-status-badge">
+                                            <i class="fas fa-times"></i> Rejection
+                                        </span>
+                                    {% elif log.email_type == 'response' %}
+                                        <span class="badge bg-success email-status-badge">
+                                            <i class="fas fa-reply"></i> Response
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary email-status-badge">
+                                            <i class="fas fa-question"></i> Other
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.processing_result == 'success' %}
+                                        <span class="badge bg-success email-status-badge">
+                                            <i class="fas fa-check"></i> Success
+                                        </span>
+                                    {% elif log.processing_result == 'failed' %}
+                                        <span class="badge bg-danger email-status-badge">
+                                            <i class="fas fa-times"></i> Failed
+                                        </span>
+                                        {% if log.error_message %}
+                                            <div class="text-danger small mt-1" title="{{ log.error_message }}">
+                                                <i class="fas fa-exclamation-triangle"></i> {{ log.error_message|truncatechars:30 }}
+                                            </div>
+                                        {% endif %}
+                                    {% elif log.processing_result == 'manual_review' %}
+                                        <span class="badge bg-warning email-status-badge">
+                                            <i class="fas fa-exclamation-triangle"></i> Review
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary email-status-badge">
+                                            <i class="fas fa-question"></i> {{ log.processing_result }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.extracted_data.confidence %}
+                                        <div class="confidence-bar">
+                                            <div class="confidence-fill
+                                                {% if log.extracted_data.confidence > 0.8 %}bg-success
+                                                {% elif log.extracted_data.confidence > 0.6 %}bg-warning
+                                                {% else %}bg-danger{% endif %}"
+                                                style="width: {{ log.extracted_data.confidence|floatformat:0 }}%">
+                                            </div>
+                                            <div class="confidence-text">
+                                                {{ log.extracted_data.confidence|floatformat:0 }}%
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        {% if log.job_application %}
+                                            <a href="{% url 'jobs:application_detail' log.job_application.id %}"
+                                               class="btn btn-outline-primary action-btn" title="View Job">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        {% endif %}
+
+                                        <button class="btn btn-outline-secondary action-btn"
+                                                onclick="showEmailDetails({{ log.id }})" title="View Details">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+
+                                        {% if log.processing_result == 'failed' %}
+                                            <button class="btn btn-outline-warning action-btn"
+                                                    onclick="reprocessEmail({{ log.id }})" title="Reprocess">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                        {% endif %}
+
+                                        <button class="btn btn-outline-danger action-btn"
+                                                onclick="deleteEmailLog({{ log.id }})" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if email_logs.has_other_pages %}
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light">
+                    <div class="text-muted">
+                        Showing {{ email_logs.start_index }} to {{ email_logs.end_index }} of {{ email_logs.paginator.count }} entries
+                    </div>
+                    <nav aria-label="Email log pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if email_logs.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">&laquo; First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ email_logs.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in email_logs.paginator.page_range %}
+                                {% if email_logs.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > email_logs.number|add:'-3' and num < email_logs.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if email_logs.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ email_logs.next_page_number }}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ email_logs.paginator.num_pages }}">Last &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-envelope-open"></i>
+                    <h5 class="mt-3">No email processing history found</h5>
+                    <p class="text-muted">
+                        Once you enable email processing, processed emails will appear here.
+                    </p>
+                    <div class="mt-4">
+                        <a href="{% url 'dashboard:email_settings' %}" class="btn btn-primary">
+                            <i class="fas fa-cog"></i> Setup Email Processing
+                        </a>
+                        <button class="btn btn-outline-secondary ms-2" onclick="refreshEmailStats()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Email Details Modal -->
+<div class="modal fade" id="emailDetailsModal" tabindex="-1" aria-labelledby="emailDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailDetailsModalLabel">
+                    <i class="fas fa-envelope-open-text"></i> Email Processing Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="emailDetailsContent">
+                <div class="text-center py-4">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3 text-muted">Loading email details...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadEmailContent()">
+                    <i class="fas fa-download"></i> Download Details
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions Modal -->
+<div class="modal fade" id="bulkActionsModal" tabindex="-1" aria-labelledby="bulkActionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkActionsModalLabel">
+                    <i class="fas fa-tasks"></i> Bulk Actions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkActionsForm">
+                    <div class="mb-3">
+                        <label for="bulkAction" class="form-label">Select Action</label>
+                        <select class="form-select" id="bulkAction" required>
+                            <option value="">Choose an action...</option>
+                            <option value="delete">Delete Selected</option>
+                            <option value="reprocess">Reprocess Failed</option>
+                            <option value="mark_reviewed">Mark as Reviewed</option>
+                            <option value="export">Export Selected</option>
+                            <option value="change_type">Change Email Type</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="additionalOptions" style="display: none;">
+                        <!-- Additional options will be shown based on selected action -->
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Selected Emails (<span id="selectedCount">0</span>)</label>
+                        <div id="selectedEmailsList" class="border rounded p-2" style="height: 150px; overflow-y: auto;">
+                            <!-- Selected emails will be listed here -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="executeBulkAction()">
+                    <i class="fas fa-play"></i> Execute Action
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Container -->
+<div id="notificationContainer" class="position-fixed" style="top: 20px; right: 20px; z-index: 1060;">
+    <!-- Notifications will be added here -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    const emailTable = $('#emailLogTable').DataTable({
+        "order": [[ 1, "desc" ]],
+        "pageLength": 25,
+        "responsive": true,
+        "processing": true,
+        "columnDefs": [
+            { "orderable": false, "targets": [0, 7] },
+            { "searchable": false, "targets": [0, 7] }
+        ],
+        "language": {
+            "search": "Search emails:",
+            "lengthMenu": "Show _MENU_ emails per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ emails",
+            "infoEmpty": "No emails found",
+            "emptyTable": "No email processing history available",
+            "processing": "Processing..."
+        },
+        "dom": "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-

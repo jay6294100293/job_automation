@@ -1,0 +1,315 @@
+{
+  "name": "Job Discovery from Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-discovery",
+        "options": {}
+      },
+      "id": "webhook-job-discovery",
+      "name": "Job Discovery Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "job-discovery"
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.GROQ_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "llama3-70b-8192"
+            },
+            {
+              "name": "messages",
+              "value": [
+                {
+                  "role": "system",
+                  "content": "Extract job details from email content. Return JSON with: job_title, company_name, location, salary_range, job_url, application_deadline, job_type, experience_level, key_requirements. If information is not available, use null."
+                },
+                {
+                  "role": "user",
+                  "content": "Subject: {{ $json.email_data.subject }}\n\nFrom: {{ $json.email_data.from }}\n\nBody: {{ $json.email_data.body }}"
+                }
+              ]
+            },
+            {
+              "name": "temperature",
+              "value": 0.1
+            },
+            {
+              "name": "max_tokens",
+              "value": 500
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "groq-extract-job",
+      "name": "Groq Extract Job Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse job extraction response\nconst response = $input.first().json;\nconst emailData = $('Job Discovery Webhook').first().json;\n\nlet jobDetails;\ntry {\n  jobDetails = JSON.parse(response.choices[0].message.content);\n} catch (error) {\n  // If JSON parsing fails, extract basic info\n  jobDetails = {\n    job_title: 'Extracted from email',\n    company_name: emailData.email_data.from || 'Unknown',\n    location: null,\n    salary_range: null,\n    job_url: null\n  };\n}\n\n// Enhanced job data for Django\nconst enhancedJobData = {\n  ...jobDetails,\n  user_id: emailData.user_id,\n  source_platform: 'email_auto',\n  auto_discovered: true,\n  email_thread_id: emailData.email_data.message_id || '',\n  original_email_subject: emailData.email_data.subject,\n  original_email_date: emailData.email_data.date,\n  confidence_score: emailData.confidence_score || 0.8,\n  processing_status: 'processed'\n};\n\nreturn [{ json: enhancedJobData }];"
+      },
+      "id": "parse-job-details",
+      "name": "Parse Job Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-company-condition",
+              "leftValue": "{{ $json.company_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-job-data",
+      "name": "Validate Job Data",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.serper.dev/search",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "{{ $env.SERPER_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "{{ $json.company_name }} company website careers contact information"
+            },
+            {
+              "name": "num",
+              "value": 3
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "company-research",
+      "name": "Company Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process company research data\nconst jobData = $('Parse Job Details').first().json;\nconst researchData = $input.first().json;\n\nlet companyInfo = {\n  website: null,\n  industry: null,\n  company_size: null,\n  description: null\n};\n\n// Extract company info from search results\nif (researchData.organic && researchData.organic.length > 0) {\n  const firstResult = researchData.organic[0];\n  companyInfo.website = firstResult.link;\n  companyInfo.description = firstResult.snippet;\n  \n  // Try to extract industry/size from snippets\n  const snippet = firstResult.snippet.toLowerCase();\n  if (snippet.includes('technology') || snippet.includes('software')) {\n    companyInfo.industry = 'Technology';\n  } else if (snippet.includes('healthcare') || snippet.includes('medical')) {\n    companyInfo.industry = 'Healthcare';\n  } else if (snippet.includes('finance') || snippet.includes('bank')) {\n    companyInfo.industry = 'Finance';\n  }\n}\n\n// Combine job data with company research\nconst finalJobData = {\n  ...jobData,\n  company_website: companyInfo.website,\n  company_industry: companyInfo.industry,\n  company_size: companyInfo.company_size,\n  notes: `Company research: ${companyInfo.description || 'No additional info found'}`\n};\n\nreturn [{ json: finalJobData }];"
+      },
+      "id": "process-company-research",
+      "name": "Process Company Research",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/applications/",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user",
+              "value": "{{ $json.user_id }}"
+            },
+            {
+              "name": "job_title",
+              "value": "{{ $json.job_title }}"
+            },
+            {
+              "name": "company_name",
+              "value": "{{ $json.company_name }}"
+            },
+            {
+              "name": "location",
+              "value": "{{ $json.location }}"
+            },
+            {
+              "name": "salary_range",
+              "value": "{{ $json.salary_range }}"
+            },
+            {
+              "name": "job_url",
+              "value": "{{ $json.job_url }}"
+            },
+            {
+              "name": "source_platform",
+              "value": "{{ $json.source_platform }}"
+            },
+            {
+              "name": "auto_discovered",
+              "value": "{{ $json.auto_discovered }}"
+            },
+            {
+              "name": "email_thread_id",
+              "value": "{{ $json.email_thread_id }}"
+            },
+            {
+              "name": "original_email_subject",
+              "value": "{{ $json.original_email_subject }}"
+            },
+            {
+              "name": "confidence_score",
+              "value": "{{ $json.confidence_score }}"
+            },
+            {
+              "name": "notes",
+              "value": "{{ $json.notes }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-to-django",
+      "name": "Save Job to Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Job Discovery Webhook": {
+      "main": [
+        [
+          {
+            "node": "Groq Extract Job Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Extract Job Details": {
+      "main": [
+        [
+          {
+            "node": "Parse Job Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Job Details": {
+      "main": [
+        [
+          {
+            "node": "Validate Job Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Job Data": {
+      "main": [
+        [
+          {
+            "node": "Company Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Research": {
+      "main": [
+        [
+          {
+            "node": "Process Company Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Company Research": {
+      "main": [
+        [
+          {
+            "node": "Save Job to Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "1"
+}

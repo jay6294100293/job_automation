@@ -1,0 +1,485 @@
+{
+  "name": "Interview Detection",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "interview-detection",
+        "responseMode": "responseNode"
+      },
+      "id": "interview-webhook",
+      "name": "Interview Detection Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.classification }}",
+              "operation": "equal",
+              "value2": "interview_invite"
+            },
+            {
+              "value1": "={{ $json.confidence }}",
+              "operation": "largerEqual",
+              "value2": "70"
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "validate-interview",
+      "name": "Validate Interview Email",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.GROQ_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "model": "llama3-70b-8192",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are an interview scheduling assistant. Extract interview details from emails and return ONLY valid JSON with these fields: {\"interview_date\": \"2024-12-15\", \"interview_time\": \"14:00\", \"interview_datetime\": \"2024-12-15T14:00:00\", \"interviewer_name\": \"John Smith\", \"interviewer_email\": \"john@company.com\", \"interviewer_phone\": \"+1234567890\", \"company_name\": \"TechCorp\", \"job_title\": \"Software Engineer\", \"interview_type\": \"video\", \"interview_location\": \"Zoom meeting\", \"meeting_link\": \"https://zoom.us/j/123456789\", \"meeting_id\": \"123 456 789\", \"meeting_password\": \"password123\", \"duration_minutes\": 60, \"preparation_notes\": \"Bring portfolio\", \"timezone\": \"PST\", \"confidence_score\": 95}"
+            },
+            {
+              "role": "user",
+              "content": "Extract interview details from this email:\\n\\nSubject: {{ $json.subject }}\\n\\nFrom: {{ $json.sender }}\\n\\nBody: {{ $json.body }}"
+            }
+          ],
+          "temperature": 0.1,
+          "max_tokens": 600
+        }
+      },
+      "id": "extract-interview",
+      "name": "Extract Interview Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse interview extraction response\\nconst items = $input.all();\\nconst originalData = items[0].json;\\nconst groqResponse = items[0].json;\\n\\ntry {\\n  // Extract JSON from Groq response\\n  let aiContent = '';\\n  if (groqResponse.choices && groqResponse.choices[0]) {\\n    aiContent = groqResponse.choices[0].message.content;\\n  } else {\\n    throw new Error('Invalid Groq response format');\\n  }\\n  \\n  // Clean and parse AI response\\n  const cleanContent = aiContent.replace(/```json|```/g, '').trim();\\n  const interviewData = JSON.parse(cleanContent);\\n  \\n  // Validate required fields\\n  if (!interviewData.interview_datetime && !interviewData.interview_date) {\\n    throw new Error('No interview date/time found');\\n  }\\n  \\n  // Parse and format datetime\\n  let interviewDateTime = '';\\n  if (interviewData.interview_datetime) {\\n    interviewDateTime = interviewData.interview_datetime;\\n  } else if (interviewData.interview_date && interviewData.interview_time) {\\n    interviewDateTime = `${interviewData.interview_date}T${interviewData.interview_time}:00`;\\n  }\\n  \\n  // Determine interview type\\n  let interviewType = interviewData.interview_type || 'unknown';\\n  const location = (interviewData.interview_location || '').toLowerCase();\\n  const body = (originalData.body || '').toLowerCase();\\n  \\n  if (location.includes('zoom') || location.includes('teams') || location.includes('meet') || \\n      body.includes('video call') || body.includes('zoom') || body.includes('teams')) {\\n    interviewType = 'video';\\n  } else if (location.includes('phone') || body.includes('phone call') || body.includes('call you')) {\\n    interviewType = 'phone';\\n  } else if (location.includes('office') || location.includes('address') || \\n           location.includes('street') || location.includes('building')) {\\n    interviewType = 'in-person';\\n  }\\n  \\n  // Prepare complete interview data\\n  const completeInterviewData = {\\n    // Original email data\\n    user_id: originalData.user_id || '',\\n    email_subject: originalData.subject || '',\\n    email_sender: originalData.sender || '',\\n    email_thread_id: originalData.thread_id || '',\\n    \\n    // Interview details\\n    interview_date: interviewData.interview_date || '',\\n    interview_time: interviewData.interview_time || '',\\n    interview_datetime: interviewDateTime,\\n    interviewer_name: interviewData.interviewer_name || '',\\n    interviewer_email: interviewData.interviewer_email || originalData.sender || '',\\n    interviewer_phone: interviewData.interviewer_phone || '',\\n    company_name: interviewData.company_name || '',\\n    job_title: interviewData.job_title || '',\\n    interview_type: interviewType,\\n    interview_location: interviewData.interview_location || '',\\n    \\n    // Meeting details\\n    meeting_link: interviewData.meeting_link || '',\\n    meeting_id: interviewData.meeting_id || '',\\n    meeting_password: interviewData.meeting_password || '',\\n    duration_minutes: interviewData.duration_minutes || 60,\\n    preparation_notes: interviewData.preparation_notes || '',\\n    timezone: interviewData.timezone || 'UTC',\\n    \\n    // Processing metadata\\n    processing_confidence: interviewData.confidence_score || 0,\\n    extraction_success: true,\\n    ai_tokens_used: groqResponse.usage?.total_tokens || 0,\\n    processing_time: Date.now() - (originalData.received_timestamp || Date.now())\\n  };\\n  \\n  return [{ json: completeInterviewData }];\\n  \\n} catch (error) {\\n  console.error('Interview extraction error:', error);\\n  return [{\\n    json: {\\n      user_id: originalData.user_id || '',\\n      email_subject: originalData.subject || '',\\n      email_sender: originalData.sender || '',\\n      extraction_success: false,\\n      error_message: error.message,\\n      needs_manual_review: true\\n    }\\n  }];\\n}"
+      },
+      "id": "parse-interview",
+      "name": "Parse Interview Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.extraction_success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-extraction",
+      "name": "Check Extraction Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/applications/find-by-company/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user_id": "={{ $json.user_id }}",
+          "company_name": "={{ $json.company_name }}",
+          "job_title": "={{ $json.job_title }}"
+        }
+      },
+      "id": "find-application",
+      "name": "Find Related Job Application",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process application search results\\nconst items = $input.all();\\nconst interviewData = items[0].json;\\nconst searchResponse = items[0].json;\\n\\nlet applicationId = null;\\nlet applicationFound = false;\\n\\ntry {\\n  // Check if we found a matching application\\n  if (searchResponse.applications && searchResponse.applications.length > 0) {\\n    // Use the first matching application\\n    applicationId = searchResponse.applications[0].id;\\n    applicationFound = true;\\n  }\\n} catch (error) {\\n  console.error('Application search error:', error);\\n}\\n\\n// Prepare data for next step\\nconst processedData = {\\n  ...interviewData,\\n  application_id: applicationId,\\n  application_found: applicationFound\\n};\\n\\nreturn [{ json: processedData }];"
+      },
+      "id": "process-application",
+      "name": "Process Application Search",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "calendar": "primary",
+        "start": "={{ $json.interview_datetime }}",
+        "end": "={{ $json.interview_datetime }}",
+        "summary": "Interview: {{ $json.job_title }} at {{ $json.company_name }}",
+        "description": "Interview Details:\\n\\nPosition: {{ $json.job_title }}\\nCompany: {{ $json.company_name }}\\nInterviewer: {{ $json.interviewer_name }}\\nType: {{ $json.interview_type }}\\nLocation: {{ $json.interview_location }}\\n\\n{% if $json.meeting_link %}Meeting Link: {{ $json.meeting_link }}{% endif %}\\n{% if $json.meeting_id %}Meeting ID: {{ $json.meeting_id }}{% endif %}\\n{% if $json.meeting_password %}Password: {{ $json.meeting_password }}{% endif %}\\n\\n{% if $json.preparation_notes %}Preparation Notes: {{ $json.preparation_notes }}{% endif %}\\n\\nEmail Subject: {{ $json.email_subject }}",
+        "location": "={{ $json.interview_location }}",
+        "attendees": "={{ $json.interviewer_email }}",
+        "sendUpdates": "all",
+        "reminders": {
+          "useDefault": false,
+          "overrides": [
+            {
+              "method": "email",
+              "minutes": 1440
+            },
+            {
+              "method": "popup",
+              "minutes": 15
+            }
+          ]
+        }
+      },
+      "id": "create-calendar",
+      "name": "Create Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process calendar creation results\\nconst items = $input.all();\\nconst interviewData = items[0].json;\\nconst calendarResponse = items[0].json;\\n\\nlet calendarEventId = '';\\nlet calendarCreated = false;\\n\\ntry {\\n  if (calendarResponse.id) {\\n    calendarEventId = calendarResponse.id;\\n    calendarCreated = true;\\n  }\\n} catch (error) {\\n  console.error('Calendar processing error:', error);\\n}\\n\\n// Prepare final data\\nconst finalData = {\\n  ...interviewData,\\n  calendar_event_id: calendarEventId,\\n  calendar_created: calendarCreated\\n};\\n\\nreturn [{ json: finalData }];"
+      },
+      "id": "process-calendar",
+      "name": "Process Calendar Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/applications/{{ $json.application_id }}/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "application_status": "interview_scheduled",
+          "interview_date": "={{ $json.interview_datetime }}",
+          "interviewer_name": "={{ $json.interviewer_name }}",
+          "interviewer_email": "={{ $json.interviewer_email }}",
+          "interviewer_phone": "={{ $json.interviewer_phone }}",
+          "interview_location": "={{ $json.interview_location }}",
+          "interview_type": "={{ $json.interview_type }}",
+          "calendar_event_id": "={{ $json.calendar_event_id }}",
+          "ai_extraction_notes": "Auto-scheduled from email with {{ $json.processing_confidence }}% confidence"
+        }
+      },
+      "id": "update-application",
+      "name": "Update Job Application",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2220, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/webhooks/interview-detected/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user_id": "={{ $json.user_id }}",
+          "application_id": "={{ $json.application_id }}",
+          "interview_datetime": "={{ $json.interview_datetime }}",
+          "interviewer_name": "={{ $json.interviewer_name }}",
+          "interviewer_email": "={{ $json.interviewer_email }}",
+          "interview_type": "={{ $json.interview_type }}",
+          "interview_location": "={{ $json.interview_location }}",
+          "calendar_event_id": "={{ $json.calendar_event_id }}",
+          "meeting_link": "={{ $json.meeting_link }}",
+          "meeting_id": "={{ $json.meeting_id }}",
+          "processing_confidence": "={{ $json.processing_confidence }}",
+          "email_subject": "={{ $json.email_subject }}",
+          "email_sender": "={{ $json.email_sender }}"
+        }
+      },
+      "id": "notify-django",
+      "name": "Notify Django of Interview",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2440, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\\n  \\\"success\\\": true,\\n  \\\"interview_scheduled\\\": true,\\n  \\\"interview_datetime\\\": $json.interview_datetime,\\n  \\\"interviewer_name\\\": $json.interviewer_name,\\n  \\\"calendar_created\\\": $json.calendar_created,\\n  \\\"application_updated\\\": $json.application_found,\\n  \\\"message\\\": \\\"Interview successfully detected and scheduled\\\"\\n} }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2660, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.DJANGO_API_URL }}/api/webhooks/email-processing/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.DJANGO_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "user_id": "={{ $json.user_id }}",
+          "email_subject": "={{ $json.email_subject }}",
+          "email_sender": "={{ $json.email_sender }}",
+          "email_type": "interview_invite",
+          "processing_result": "failed",
+          "confidence_score": 0,
+          "error_message": "={{ $json.error_message }}",
+          "needs_manual_review": true
+        }
+      },
+      "id": "log-failure",
+      "name": "Log Extraction Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1340, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\\n  \\\"success\\\": false,\\n  \\\"error\\\": \\\"Interview extraction failed\\\",\\n  \\\"message\\\": \\\"Email requires manual review\\\",\\n  \\\"needs_manual_review\\\": true\\n} }}"
+      },
+      "id": "failure-response",
+      "name": "Failure Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\\n  \\\"success\\\": false,\\n  \\\"error\\\": \\\"Invalid interview email\\\",\\n  \\\"message\\\": \\\"Email does not contain valid interview information\\\"\\n} }}"
+      },
+      "id": "invalid-response",
+      "name": "Invalid Email Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 500]
+    }
+  ],
+  "connections": {
+    "Interview Detection Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Interview Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Interview Email": {
+      "main": [
+        [
+          {
+            "node": "Extract Interview Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Email Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Interview Details": {
+      "main": [
+        [
+          {
+            "node": "Parse Interview Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Interview Data": {
+      "main": [
+        [
+          {
+            "node": "Check Extraction Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Extraction Success": {
+      "main": [
+        [
+          {
+            "node": "Find Related Job Application",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Extraction Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Related Job Application": {
+      "main": [
+        [
+          {
+            "node": "Process Application Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Application Search": {
+      "main": [
+        [
+          {
+            "node": "Create Google Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Process Calendar Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Calendar Result": {
+      "main": [
+        [
+          {
+            "node": "Update Job Application",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Job Application": {
+      "main": [
+        [
+          {
+            "node": "Notify Django of Interview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Django of Interview": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Extraction Failure": {
+      "main": [
+        [
+          {
+            "node": "Failure Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
